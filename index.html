@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Clasament Concurs Pescuit</title>
+<meta name="theme-color" content="#0e63b8">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{
+    --pine:#10263c;      /* text / headers */
+    --teal:#0e63b8;      /* primary */
+    --teal-d:#0a4a8c;
+    --amber:#e08a1e;     /* accent / weigh */
+    --amber-soft:#fbe9cf;
+    --bg:#eef4fa;        /* app background */
+    --card:#ffffff;
+    --line:#b9cbdc;
+    --muted:#44586c;
+    --gold:#e7b53c; --silver:#b9c2c2; --bronze:#c88a56;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--pine);
+    font-size:16px; line-height:1.35;
+    padding-bottom:88px;
+  }
+  .num{font-variant-numeric:tabular-nums;}
+
+  header{
+    background:linear-gradient(160deg,var(--teal) 0%,var(--teal-d) 100%);
+    color:#fff; padding:16px 16px 14px;
+    position:sticky; top:0; z-index:20;
+    box-shadow:0 2px 10px rgba(8,26,46,.22);
+  }
+  header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
+  header h1{margin:2px 0 0; font-size:20px; font-weight:800; letter-spacing:-.01em;}
+  header .comp{font-size:13px; opacity:.85; margin-top:2px; min-height:16px;}
+
+  main{padding:14px 14px 20px; max-width:640px; margin:0 auto;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* tab bar */
+  nav.tabs{
+    position:fixed; bottom:0; left:0; right:0; z-index:30;
+    background:var(--card); border-top:1px solid var(--line);
+    display:flex; padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+  }
+  nav.tabs button{
+    flex:1; border:0; background:none; padding:8px 4px; border-radius:12px;
+    color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+  }
+  nav.tabs button .ic{font-size:19px; line-height:1;}
+  nav.tabs button.on{color:var(--teal); background:#e4eef9;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px;}
+  .sec-title{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:800; margin:2px 0 10px;}
+
+  label.f{display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 4px;}
+  input,select{
+    width:100%; font-size:16px; font-family:inherit; color:var(--pine);
+    padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; background:#fff;
+  }
+  input:focus,select:focus{outline:none; border-color:var(--teal);}
+  textarea{width:100%; font-size:15px; font-family:inherit; color:var(--pine); padding:11px 12px; border:1.5px solid var(--line); border-radius:10px; background:#fff; resize:vertical; line-height:1.4; margin-bottom:8px;}
+  textarea:focus{outline:none; border-color:var(--teal);}
+  .row{display:flex; gap:8px;}
+  .row>*{flex:1; min-width:0;}
+  .w-stand{flex:0 0 78px;}
+
+  button.btn{
+    border:0; border-radius:11px; padding:12px 14px; font-size:15px; font-weight:800;
+    cursor:pointer; font-family:inherit; width:100%;
+  }
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:active{background:var(--teal-d);}
+  .btn-amber{background:var(--amber); color:#fff;}
+  .btn-ghost{background:#eef4fa; color:var(--teal-d); border:1.5px solid var(--line);}
+  .btn-danger{background:#fff; color:#b23b2e; border:1.5px solid #ecccc6;}
+
+  /* participant card */
+  .p{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px;}
+  .p-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .avatar{width:48px; height:48px; border-radius:12px;
+    background-image:linear-gradient(90deg,#002B7F 0 33.3%,#FCD116 33.3% 66.6%,#CE1126 66.6% 100%);
+    background-position:center; background-size:cover; background-repeat:no-repeat;
+    color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .av-x{position:absolute; z-index:2; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:#b23b2e; color:#fff; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; font-weight:800; box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .p-sub{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px;}
+  .av-wrap{position:relative; flex:0 0 auto; width:48px; height:48px;}
+  .av-file{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1;}
+  .stand{
+    flex:0 0 auto; min-width:40px; height:40px; padding:0 8px; border-radius:10px;
+    background:var(--pine); color:#fff; font-weight:800; font-size:17px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .p-name{flex:1; min-width:0;}
+  .p-name .nm{font-weight:800; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .chip{display:inline-block; margin-top:2px; font-size:11px; font-weight:800; letter-spacing:.03em;
+    background:var(--amber-soft); color:#8a5a12; padding:2px 8px; border-radius:999px;}
+  .del{flex:0 0 auto; border:0; background:#f4eae8; color:#b23b2e; width:34px; height:34px; border-radius:9px; font-size:18px; font-weight:800; cursor:pointer;}
+  .edit{flex:0 0 auto; border:0; background:#e4eef9; color:var(--teal-d); width:34px; height:34px; border-radius:9px; font-size:15px; font-weight:800; cursor:pointer; margin-right:2px;}
+  .p-edit{margin-bottom:10px;}
+  .erow{display:flex; gap:8px;}
+  .erow>*{flex:1; min-width:0;}
+  .mt8{margin-top:8px;}
+
+  .metrics{display:flex; gap:8px;}
+  .metric{flex:1;}
+  .metric label{display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:3px; text-align:center;}
+  .metric input{text-align:center; padding:9px 4px; font-weight:700;}
+  .catchbox{margin-bottom:8px;}
+  .mlabel{display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:5px;}
+  .catch-row{display:flex; gap:8px;}
+  .catch-in{flex:1; text-align:center; font-weight:700; padding:10px 8px;}
+  .catch-add{flex:0 0 50px; border:0; border-radius:10px; background:var(--teal); color:#fff; font-size:24px; font-weight:800; line-height:1; cursor:pointer;}
+  .catch-add:active{background:var(--teal-d);}
+  .chips-c{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center;}
+  .chips-empty{font-size:12px; color:var(--muted);}
+  .chip-c{display:inline-flex; align-items:center; gap:6px; background:#ebf3fb; border:1px solid var(--line); border-radius:999px; padding:4px 6px 4px 11px; font-weight:800; font-size:14px; font-variant-numeric:tabular-nums;}
+  .chip-c b{background:#cfe0f2; color:var(--teal-d); width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer;}
+  .chip-sum{margin-left:auto; font-weight:800; color:var(--teal-d); font-variant-numeric:tabular-nums;}
+  .p-total{margin-top:10px; display:flex; align-items:baseline; justify-content:space-between;
+    background:#ebf3fb; border-radius:10px; padding:8px 12px;}
+  .p-total .lbl{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--teal-d);}
+  .p-total .val{font-size:20px; font-weight:800;}
+  .p-total .val small{font-size:12px; font-weight:700; color:var(--muted);}
+
+  .summary{display:flex; gap:10px; margin-bottom:12px;}
+  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .stat .n{font-size:22px; font-weight:800;}
+  .stat .l{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
+
+  .empty{text-align:center; color:var(--muted); padding:30px 16px; font-size:14px;}
+  .empty .big{font-size:30px; margin-bottom:6px;}
+
+  /* toggle */
+  .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
+  .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
+  .seg button.on{background:#fff; color:var(--teal-d); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+
+  .cmmc{background:linear-gradient(120deg,#fff5e4,#fbe9cf); border:1.5px solid #f0d29a; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
+  .cmmc .medal{font-size:26px;}
+  .cmmc .t{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#8a5a12;}
+  .cmmc .who{font-weight:800; font-size:16px;}
+  .cmmc .kg{margin-left:auto; font-size:20px; font-weight:800; color:#8a5a12;}
+
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  th,td{padding:9px 8px; text-align:left; font-size:14px;}
+  th{background:#eef4fa; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800;}
+  td{border-top:1px solid var(--line);}
+  td.pos{width:34px; font-weight:800; text-align:center;}
+  td.kg{text-align:right; font-weight:800; width:78px;}
+  td.small{color:var(--muted); font-size:12px;}
+  tr.p1 td.pos{color:#a67c12;} tr.p1{background:#fdf6e6;}
+  tr.p2 td.pos{color:#7d8686;} 
+  tr.p3 td.pos{color:#a5673c;}
+  .sector-h{font-size:15px; font-weight:800; margin:16px 0 8px; display:flex; align-items:center; gap:8px;}
+  .sector-h .tag{background:var(--teal); color:#fff; padding:2px 10px; border-radius:8px; font-size:13px;}
+  .sector-h .cnt{font-size:12px; color:var(--muted); font-weight:700;}
+
+  .sectors-list{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .sec-chip{display:flex; align-items:center; gap:6px; background:#e4eef9; border:1px solid var(--line); border-radius:999px; padding:5px 6px 5px 12px; font-weight:800;}
+  .sec-chip button{border:0; background:#c9d9ea; width:22px; height:22px; border-radius:50%; font-weight:800; cursor:pointer; color:var(--teal-d);}
+  .hint{font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.4;}
+  .mt{margin-top:10px;}
+
+  /* blocare cu PIN */
+  #lockBtn{position:absolute; top:14px; right:14px; border:0; background:rgba(255,255,255,.14);
+    color:#fff; width:40px; height:40px; border-radius:12px; font-size:19px; cursor:pointer;}
+  body.locked .lockhide{display:none !important;}
+  .lockbar{display:none; background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12;
+    border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
+  body.locked .lockbar{display:block;}
+  .metric .ro{ text-align:center; font-weight:700; padding:11px 4px; border:1.5px dashed var(--line); border-radius:10px; background:#f5f8fc;}
+
+  /* mod tabela TV */
+  #tv{position:fixed; inset:0; background:#081a2e; color:#fff; z-index:100; display:none; flex-direction:column; padding:3vh 4vw; overflow:hidden; cursor:pointer;}
+  #tv.on{display:flex;}
+  #tv .tv-head{display:flex; align-items:baseline; justify-content:space-between; gap:2vw; margin-bottom:2vh; flex-wrap:wrap;}
+  #tv .tv-title{font-size:4.5vh; font-weight:800;}
+  #tv .tv-sub{font-size:2.6vh; color:#9cc6ee; font-weight:800; text-transform:uppercase; letter-spacing:.12em;}
+  #tv table{width:100%; border-collapse:collapse; background:none; border:0;}
+  #tv td{border:0; border-bottom:1px solid rgba(255,255,255,.08); padding:1.2vh 1vw; font-size:3.6vh; color:#fff;}
+  #tv td.pos{width:8vw; font-weight:800; text-align:center; font-size:4vh;}
+  #tv td.kg{text-align:right; font-weight:800; font-variant-numeric:tabular-nums;}
+  #tv tr.p1 td{background:rgba(231,181,60,.14);}
+  #tv .tv-cmmc{margin-top:auto; font-size:2.8vh; color:#e7b53c; font-weight:800; padding-top:2vh;}
+  #tv .tv-hint{position:absolute; bottom:1.2vh; right:2vw; font-size:1.7vh; color:rgba(255,255,255,.35);}
+
+  /* ora capturii pe chip */
+  .cht{font-style:normal; font-size:10px; color:var(--muted); font-weight:700; margin-left:3px;}
+
+  /* statistici – bare */
+  .hb-row{display:flex; align-items:center; gap:8px; margin:6px 0;}
+  .hb-l{flex:0 0 46px; font-size:12px; font-weight:800; color:var(--muted);}
+  .hb{flex:1; height:14px; background:#dce6f0; border-radius:7px; overflow:hidden;}
+  .hb-f{height:100%; background:var(--teal); border-radius:7px;}
+  .hb-v{flex:0 0 auto; font-size:12px; font-weight:800;}
+
+  /* NOU LIDER + confetti */
+  #leader{position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
+    flex-direction:column; background:rgba(8,26,46,.92); color:#fff; text-align:center; padding:20px; cursor:pointer;}
+  #leader.on{display:flex;}
+  #leader .lh{font-size:30px; font-weight:800; color:#e7b53c; letter-spacing:.06em;}
+  #leader .ln{font-size:38px; font-weight:800; margin:12px 0 6px;}
+  #leader .lk{font-size:20px; font-weight:700; color:#9cc6ee;}
+  .cf{position:fixed; top:-16px; width:9px; height:15px; z-index:201; border-radius:2px; animation:cffall linear forwards; pointer-events:none;}
+  @keyframes cffall{ to{ transform:translateY(112vh) rotate(720deg); } }
+
+  /* print: clasament + diplome */
+  #printArea{display:none;}
+  @media print{
+    body>*:not(#printArea){display:none !important;}
+    #printArea{display:block !important;}
+    body{background:#fff; padding:0;}
+  }
+  .pr-h1{font-family:Georgia,serif; font-size:22pt; text-align:center; margin:0 0 4pt;}
+  .pr-sub{text-align:center; font-size:11pt; color:#444; margin:0 0 10pt;}
+  .pr-sec{font-size:13pt; font-weight:bold; margin:12pt 0 6pt; font-family:Georgia,serif;}
+  .pr-t{width:100%; border-collapse:collapse; margin-bottom:12pt;}
+  .pr-t th,.pr-t td{border:1px solid #999; padding:4pt 7pt; font-size:11pt; text-align:left;}
+  .pr-t th{background:#eee;}
+  .pr-t td.c{text-align:center;}
+  .pr-t td.r{text-align:right; font-weight:bold;}
+  .dipl{page-break-after:always; display:flex; align-items:center; justify-content:center; height:96vh;}
+  .dipl-frame{border:6px double #b8860b; padding:44pt 30pt; text-align:center; width:86%; font-family:Georgia,serif;}
+  .dipl-medal{font-size:42pt;}
+  .dipl-h{font-size:34pt; letter-spacing:.35em; margin:10pt 0; font-weight:bold;}
+  .dipl-loc{font-size:15pt; letter-spacing:.2em; color:#b8860b; font-weight:bold; margin-bottom:16pt;}
+  .dipl-name{font-size:26pt; font-style:italic; margin-bottom:10pt;}
+  .dipl-kg{font-size:13pt; color:#333; margin-bottom:20pt;}
+  .dipl-comp{font-size:12pt; color:#555; border-top:1px solid #b8860b; display:inline-block; padding-top:8pt;}
+
+  /* poza la captura */
+  .catch-cam{flex:0 0 46px; border:0; border-radius:10px; background:#e4eef9; color:var(--teal-d); font-size:19px; cursor:pointer;}
+  #photoView{position:fixed; inset:0; z-index:210; display:none; align-items:center; justify-content:center; flex-direction:column; background:rgba(8,26,46,.94); cursor:pointer; padding:16px;}
+  #photoView.on{display:flex;}
+  #photoView img{max-width:94vw; max-height:72vh; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
+  #photoCap{color:#fff; font-weight:800; font-size:17px; margin-top:14px; text-align:center;}
+
+  /* cronometru */
+  #timerBar{margin-top:8px; background:rgba(255,255,255,.16); border-radius:10px; padding:6px 12px; font-weight:800; font-size:14px; display:none; font-variant-numeric:tabular-nums;}
+  .tv-timer{font-size:3.2vh; font-weight:800; color:#e7b53c; font-variant-numeric:tabular-nums;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Clasament concurs</div>
+  <h1>Cântar &amp; Clasament</h1>
+  <div class="comp" id="compName"></div>
+  <div id="timerBar"></div>
+  <button id="lockBtn" onclick="toggleLock()" aria-label="Blocare editare">🔓</button>
+</header>
+
+<main>
+  <!-- PARTICIPANȚI -->
+  <section class="view active" id="view-part">
+    <div class="lockbar">🔒 Mod vizualizare – doar organizatorul poate modifica (lacătul de sus + PIN).</div>
+    <div class="seg">
+      <button id="mc-1" class="on" onclick="setManche(1)">🎣 Manșa 1</button>
+      <button id="mc-2" onclick="setManche(2)">🎣 Manșa 2</button>
+    </div>
+    <div class="card lockhide">
+      <div class="sec-title">Adaugă participant</div>
+      <div class="row" style="margin-bottom:8px;">
+        <div class="w-stand"><label class="f">Stand</label><input id="in-stand" inputmode="numeric" placeholder="Nr"></div>
+        <div><label class="f">Prenume</label><input id="in-prenume" placeholder="Prenume"></div>
+      </div>
+      <div class="row" style="margin-bottom:8px;">
+        <div><label class="f">Nume</label><input id="in-nume" placeholder="Nume"></div>
+        <div><label class="f">Sector</label><select id="in-sector"></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="addParticipant()">+ Adaugă la listă</button>
+    </div>
+
+    <div class="summary">
+      <div class="stat"><div class="n num" id="st-count">0</div><div class="l">Participanți</div></div>
+      <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
+    </div>
+
+    <div id="list"></div>
+  </section>
+
+  <!-- CLASAMENTE -->
+  <section class="view" id="view-rank">
+    <div class="seg">
+      <button id="rs-1" class="on" onclick="setRankScope(1)">Manșa 1</button>
+      <button id="rs-2" onclick="setRankScope(2)">Manșa 2</button>
+      <button id="rs-total" onclick="setRankScope('total')">General</button>
+    </div>
+    <div class="seg">
+      <button id="seg-sec" class="on" onclick="setRankMode('sec')">Pe sectoare</button>
+      <button id="seg-fin" onclick="setRankMode('fin')">Final</button>
+      <button id="seg-stat" onclick="setRankMode('stat')">Statistici</button>
+    </div>
+    <div class="seg" id="finMethod" style="display:none;">
+      <button id="fm-kg" class="on" onclick="setFinMethod('kg')">După kg</button>
+      <button id="fm-pct" onclick="setFinMethod('pct')">După puncte</button>
+    </div>
+    <div id="cmmcBox"></div>
+    <div id="rankBody"></div>
+    <button class="btn btn-ghost mt" onclick="copyRank()">⧉ Copiază clasamentul</button>
+    <button class="btn btn-primary mt" onclick="tvStart()">📺 Mod Tabelă (ecran mare)</button>
+    <div class="row mt">
+      <button class="btn btn-ghost" onclick="printRank()">🖨 Print / PDF</button>
+      <button class="btn btn-ghost" onclick="printDiplomas()">🏆 Diplome</button>
+    </div>
+    <button class="btn btn-ghost mt" onclick="shareImage()">🖼 Imagine pentru WhatsApp / Facebook</button>
+  </section>
+
+  <!-- SETĂRI -->
+  <section class="view" id="view-set">
+    <div class="card lockhide">
+      <div class="sec-title">Numele concursului</div>
+      <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Sectoare</div>
+      <div class="sectors-list" id="sectors-list"></div>
+      <div class="row">
+        <input id="in-newsec" placeholder="ex: A, B, C..." maxlength="12">
+        <button class="btn btn-primary" style="flex:0 0 96px;" onclick="addSector()">Adaugă</button>
+      </div>
+      <p class="hint">Standurile se împart pe sectoare. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Import participanți</div>
+      <textarea id="imp-text" rows="6" placeholder="Un participant pe linie, ex:&#10;1, Ion Popescu, A&#10;2, Vasile Ionescu, A&#10;Gheorghe Marin, B"></textarea>
+      <p class="hint">Un participant pe linie. Separi cu virgulă sau tab: <b>stand, nume, sector</b>. Standul și sectorul sunt opționale. Sectoarele noi se creează automat.</p>
+      <div class="row">
+        <button class="btn btn-ghost" onclick="previewImport()">Verifică</button>
+        <button class="btn btn-primary" onclick="doImport()">Importă</button>
+      </div>
+      <p class="hint" id="imp-preview"></p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Tragere la sorți</div>
+      <label class="f">Număr de standuri</label>
+      <input id="draw-stands" inputmode="numeric" placeholder="= nr. participanți" oninput="previewDraw()">
+      <p class="hint" id="draw-preview" style="margin-top:8px;"></p>
+      <div class="row">
+        <button class="btn btn-primary" onclick="drawLots()">🎲 Trage la sorți</button>
+        <button class="btn btn-ghost" onclick="copyDraw()">Copiază</button>
+      </div>
+      <p class="hint">Trage întâi <b>ordinea</b>, apoi <b>standul</b> pentru fiecare; sectorul iese din stand (ex: 1–20 = A). Rescrie ordinea, standul și sectorul.</p>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Cum se calculează</div>
+      <p class="hint">
+        <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra + CMMC.</b> CMMC premiază și cel mai mare exemplar.
+        La egalitate de total, departajează CMMC-ul mai mare. Datele se salvează automat.
+      </p>
+      <p class="hint"><b>Concurs pe 2 zile (manșe):</b> în tab-ul Participanți, sus, alegi „Manșa 1" sau „Manșa 2" — tot ce cântărești merge în manșa activă. În tab-ul Clasamente alegi ce vrei să vezi: Manșa 1, Manșa 2 sau <b>General</b> (suma celor două zile). La „General" + „După puncte", clasamentul e suma locurilor din fiecare manșă — câștigă cine are cele mai puține puncte, exact ca la concursurile oficiale.</p>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Sincronizare &amp; backup</div>
+      <p class="hint" style="margin:0 0 10px;">Exportă datele într-un fișier și trimite-l pe alt telefon (WhatsApp, e-mail). Acolo, deschide aplicația și apasă „Importă din fișier".</p>
+      <button class="btn btn-primary" onclick="exportData()">⇪ Exportă datele (fișier)</button>
+      <label class="f" style="margin-top:12px;">La import</label>
+      <select id="imp-mode">
+        <option value="merge">Combină cu datele existente</option>
+        <option value="replace">Înlocuiește tot</option>
+      </select>
+      <button class="btn btn-ghost mt" onclick="document.getElementById('imp-file').click()">⇩ Importă din fișier</button>
+      <input type="file" id="imp-file" accept=".json,application/json,text/plain" style="display:none;" onchange="importData(this)">
+      <p class="hint">„Combină" actualizează participanții comuni și îi adaugă pe cei noi — bun când două telefoane cântăresc sectoare diferite. „Înlocuiește tot" copiază fișierul exact cum e. <b>Atenție la 2 manșe:</b> dacă doi organizatori cântăresc manșe diferite pentru ACELAȘI participant pe telefoane separate, sincronizați între manșe (nu în paralel) — altfel „Combină" poate suprascrie datele uneia dintre zile pentru acel participant.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Anunț vocal la cântar</div>
+      <button class="btn btn-ghost" id="btn-voice" onclick="toggleVoice()">🔇 Oprit – apasă ca să pornești</button>
+      <p class="hint">Telefonul anunță cu voce tare fiecare cântărire și locul în clasament (ex: „Ion Popescu, 8 kilograme și 650 de grame. Locul 2 la general."). Folosește vocea telefonului, fără internet.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Cronometru concurs</div>
+      <label class="f">Începe la (opțional)</label>
+      <input type="datetime-local" id="t-start" onchange="setTimer()">
+      <label class="f" style="margin-top:8px;">Nădire grea înainte de start (minute)</label>
+      <input inputmode="numeric" id="t-nadire" placeholder="ex: 10" onchange="setTimer()">
+      <label class="f" style="margin-top:8px;">Se termină la</label>
+      <input type="datetime-local" id="t-end" onchange="setTimer()">
+      <button class="btn btn-danger mt" onclick="clearTimer()">Șterge cronometrul</button>
+      <p class="hint">Timpul rămas apare sus în aplicație și pe Tabela TV. Dacă setezi „Nădire grea", cu 10 minute (sau câte alegi) înainte de start sună o alertă de „ÎNCEPE NĂDIREA", apoi la ora de start sună „START PESCUIT". La final sună alarma și se anunță „STOP PESCUIT!". Cântărirea rămâne permisă și după stop (peștii prinși înainte de final se cântăresc după).</p>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Instalare pe telefoane – cod QR</div>
+      <div style="display:flex; justify-content:center; padding:4px 0 8px;"><svg viewBox="0 0 33 33" width="220" height="220" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect width="33" height="33" fill="#ffffff"/><path d="M2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM12 2h1v1h-1zM15 2h1v1h-1zM16 2h1v1h-1zM18 2h1v1h-1zM19 2h1v1h-1zM20 2h1v1h-1zM21 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM27 2h1v1h-1zM28 2h1v1h-1zM29 2h1v1h-1zM30 2h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM10 3h1v1h-1zM12 3h1v1h-1zM13 3h1v1h-1zM14 3h1v1h-1zM16 3h1v1h-1zM17 3h1v1h-1zM21 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM30 3h1v1h-1zM2 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM16 4h1v1h-1zM18 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM26 4h1v1h-1zM27 4h1v1h-1zM28 4h1v1h-1zM30 4h1v1h-1zM2 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM11 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM17 5h1v1h-1zM18 5h1v1h-1zM20 5h1v1h-1zM21 5h1v1h-1zM24 5h1v1h-1zM26 5h1v1h-1zM27 5h1v1h-1zM28 5h1v1h-1zM30 5h1v1h-1zM2 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM20 6h1v1h-1zM21 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM30 6h1v1h-1zM2 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM15 7h1v1h-1zM17 7h1v1h-1zM19 7h1v1h-1zM20 7h1v1h-1zM21 7h1v1h-1zM24 7h1v1h-1zM30 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM22 8h1v1h-1zM24 8h1v1h-1zM25 8h1v1h-1zM26 8h1v1h-1zM27 8h1v1h-1zM28 8h1v1h-1zM29 8h1v1h-1zM30 8h1v1h-1zM14 9h1v1h-1zM15 9h1v1h-1zM16 9h1v1h-1zM17 9h1v1h-1zM19 9h1v1h-1zM20 9h1v1h-1zM21 9h1v1h-1zM22 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM19 10h1v1h-1zM20 10h1v1h-1zM21 10h1v1h-1zM22 10h1v1h-1zM26 10h1v1h-1zM29 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM22 11h1v1h-1zM23 11h1v1h-1zM24 11h1v1h-1zM27 11h1v1h-1zM30 11h1v1h-1zM4 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM13 12h1v1h-1zM15 12h1v1h-1zM19 12h1v1h-1zM24 12h1v1h-1zM26 12h1v1h-1zM28 12h1v1h-1zM29 12h1v1h-1zM30 12h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM14 13h1v1h-1zM17 13h1v1h-1zM19 13h1v1h-1zM29 13h1v1h-1zM3 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM10 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM18 14h1v1h-1zM19 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM27 14h1v1h-1zM29 14h1v1h-1zM30 14h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1zM18 15h1v1h-1zM22 15h1v1h-1zM24 15h1v1h-1zM27 15h1v1h-1zM30 15h1v1h-1zM2 16h1v1h-1zM4 16h1v1h-1zM5 16h1v1h-1zM7 16h1v1h-1zM8 16h1v1h-1zM11 16h1v1h-1zM12 16h1v1h-1zM14 16h1v1h-1zM16 16h1v1h-1zM18 16h1v1h-1zM19 16h1v1h-1zM24 16h1v1h-1zM27 16h1v1h-1zM29 16h1v1h-1zM30 16h1v1h-1zM3 17h1v1h-1zM5 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM15 17h1v1h-1zM16 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM27 17h1v1h-1zM29 17h1v1h-1zM2 18h1v1h-1zM3 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM8 18h1v1h-1zM9 18h1v1h-1zM11 18h1v1h-1zM13 18h1v1h-1zM16 18h1v1h-1zM17 18h1v1h-1zM18 18h1v1h-1zM19 18h1v1h-1zM24 18h1v1h-1zM27 18h1v1h-1zM29 18h1v1h-1zM30 18h1v1h-1zM7 19h1v1h-1zM10 19h1v1h-1zM12 19h1v1h-1zM14 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM22 19h1v1h-1zM23 19h1v1h-1zM24 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM30 19h1v1h-1zM2 20h1v1h-1zM4 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM7 20h1v1h-1zM8 20h1v1h-1zM10 20h1v1h-1zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM23 20h1v1h-1zM25 20h1v1h-1zM26 20h1v1h-1zM29 20h1v1h-1zM30 20h1v1h-1zM3 21h1v1h-1zM5 21h1v1h-1zM6 21h1v1h-1zM7 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM17 21h1v1h-1zM19 21h1v1h-1zM20 21h1v1h-1zM21 21h1v1h-1zM22 21h1v1h-1zM25 21h1v1h-1zM27 21h1v1h-1zM29 21h1v1h-1zM2 22h1v1h-1zM7 22h1v1h-1zM8 22h1v1h-1zM9 22h1v1h-1zM11 22h1v1h-1zM14 22h1v1h-1zM17 22h1v1h-1zM19 22h1v1h-1zM21 22h1v1h-1zM22 22h1v1h-1zM23 22h1v1h-1zM24 22h1v1h-1zM25 22h1v1h-1zM26 22h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM12 23h1v1h-1zM13 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM21 23h1v1h-1zM22 23h1v1h-1zM26 23h1v1h-1zM28 23h1v1h-1zM29 23h1v1h-1zM30 23h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM5 24h1v1h-1zM6 24h1v1h-1zM7 24h1v1h-1zM8 24h1v1h-1zM12 24h1v1h-1zM13 24h1v1h-1zM16 24h1v1h-1zM18 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM24 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM29 24h1v1h-1zM30 24h1v1h-1zM2 25h1v1h-1zM8 25h1v1h-1zM11 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM15 25h1v1h-1zM16 25h1v1h-1zM18 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM26 25h1v1h-1zM27 25h1v1h-1zM29 25h1v1h-1zM2 26h1v1h-1zM4 26h1v1h-1zM5 26h1v1h-1zM6 26h1v1h-1zM8 26h1v1h-1zM10 26h1v1h-1zM11 26h1v1h-1zM14 26h1v1h-1zM16 26h1v1h-1zM18 26h1v1h-1zM19 26h1v1h-1zM22 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM25 26h1v1h-1zM26 26h1v1h-1zM29 26h1v1h-1zM30 26h1v1h-1zM2 27h1v1h-1zM4 27h1v1h-1zM5 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM13 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM25 27h1v1h-1zM26 27h1v1h-1zM28 27h1v1h-1zM29 27h1v1h-1zM30 27h1v1h-1zM2 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM10 28h1v1h-1zM13 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM23 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM30 28h1v1h-1zM2 29h1v1h-1zM8 29h1v1h-1zM12 29h1v1h-1zM15 29h1v1h-1zM17 29h1v1h-1zM19 29h1v1h-1zM21 29h1v1h-1zM22 29h1v1h-1zM23 29h1v1h-1zM26 29h1v1h-1zM29 29h1v1h-1zM2 30h1v1h-1zM3 30h1v1h-1zM4 30h1v1h-1zM5 30h1v1h-1zM6 30h1v1h-1zM7 30h1v1h-1zM8 30h1v1h-1zM10 30h1v1h-1zM11 30h1v1h-1zM14 30h1v1h-1zM15 30h1v1h-1zM16 30h1v1h-1zM17 30h1v1h-1zM18 30h1v1h-1zM19 30h1v1h-1zM21 30h1v1h-1zM22 30h1v1h-1zM26 30h1v1h-1zM29 30h1v1h-1zM30 30h1v1h-1z" fill="#10263c"/></svg></div>
+      <p class="hint" style="text-align:center;">Concurenții scanează cu camera telefonului → se deschide aplicația → „Adaugă la ecranul principal". Fiecare telefon are datele lui; sincronizați prin Export/Import.</p>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Protecție cu PIN</div>
+      <div id="pin-status" class="hint" style="margin:0 0 8px;"></div>
+      <div class="lockhide">
+        <label class="f">PIN (4–6 cifre)</label>
+        <input id="in-pin" inputmode="numeric" maxlength="6" placeholder="ex: 2580" autocomplete="off">
+        <button class="btn btn-primary mt" onclick="setPin()">🔒 Setează PIN și blochează</button>
+        <button class="btn btn-ghost mt" id="btn-removepin" style="display:none;" onclick="removePin()">Scoate PIN-ul</button>
+      </div>
+      <p class="hint">Când e blocată, aplicația poate fi doar privită: nimeni nu poate adăuga sau modifica cântăriri fără PIN. Deblochezi de pe lacătul din dreapta-sus.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Reset</div>
+      <button class="btn btn-danger" onclick="wipe()">Șterge toate datele</button>
+    </div>
+  </section>
+</main>
+
+<div id="tv" onclick="tvStop()">
+  <div class="tv-head"><div class="tv-title" id="tv-title"></div><div class="tv-timer" id="tv-timer"></div><div class="tv-sub" id="tv-sub"></div></div>
+  <div id="tv-body" style="flex:1; overflow:hidden;"></div>
+  <div class="tv-cmmc" id="tv-cmmc"></div>
+  <div class="tv-hint">atinge ecranul ca să ieși</div>
+</div>
+
+<div id="leader" onclick="hideLeader()">
+  <div class="lh">🏆 NOU LIDER!</div>
+  <div class="ln" id="leader-name"></div>
+  <div class="lk" id="leader-kg"></div>
+</div>
+
+<div id="printArea"></div>
+
+<div id="photoView" onclick="this.classList.remove('on')">
+  <img id="photoImg" alt="Poza capturii">
+  <div id="photoCap"></div>
+</div>
+
+<nav class="tabs">
+  <button id="tab-part" class="on" onclick="showView('part')"><span class="ic">🎣</span>Participanți</button>
+  <button id="tab-rank" onclick="showView('rank')"><span class="ic">🏆</span>Clasamente</button>
+  <button id="tab-set" onclick="showView('set')"><span class="ic">⚙️</span>Setări</button>
+</nav>
+
+<script>
+  // ---------- state ----------
+  var state = { name:"", sectors:["A","B","C"], participants:[], manche:1 };
+  var rankMode = "sec";
+  var finMethod = "kg";
+  var rankScope = 1;
+  var KEY = "concurs-pescuit-v1";
+  var saveT = null;
+  var editingId = null;
+
+  // ---------- helpers ----------
+  function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
+  function fmt(n){ if(!n) return "0"; var s=(Math.round(n*1000)/1000).toString(); return s.replace(".",","); }
+  function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+  // ---------- manșe (concurs pe 2 zile) ----------
+  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], cmmc:""}; }
+  function ensureManche(p){
+    if(!p.m) p.m={};
+    if(!p.m[1]) p.m[1]=emptyManche();
+    if(!p.m[2]) p.m[2]=emptyManche();
+  }
+  function mOf(p, mi){ ensureManche(p); return p.m[mi]; }
+  function cantOfM(p, mi){
+    if(mi==='total') return cantOfM(p,1)+cantOfM(p,2);
+    var s=0; (mOf(p,mi).catches||[]).forEach(function(v){ s+=(+v||0); }); return s;
+  }
+  function extraOfM(p, mi){
+    if(mi==='total') return extraOfM(p,1)+extraOfM(p,2);
+    var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ s+=(+v||0); }); return s;
+  }
+  function cmmcOfM(p, mi){
+    if(mi==='total') return cmmcOfM(p,1)+cmmcOfM(p,2);
+    return num(mOf(p,mi).cmmc);
+  }
+  function totalOfM(p, mi){ return cantOfM(p,mi) + extraOfM(p,mi) + cmmcOfM(p,mi); }
+  // premiul CMMC (cel mai mare pește) — la scor "general" e maximul dintre cele 2 zile, nu suma (nu se cântărește de 2 ori același pește)
+  function cmmcAward(p, mi){ return mi==='total' ? Math.max(cmmcOfM(p,1), cmmcOfM(p,2)) : cmmcOfM(p,mi); }
+  function scopeLabel(mi){ return mi===1?"Manșa 1":mi===2?"Manșa 2":"General (ambele manșe)"; }
+
+  // ---------- versiuni "manșa activă" (cântărire live, tab Participanți) ----------
+  function cantOf(p){ return cantOfM(p, state.manche||1); }
+  function extraOf(p){ return extraOfM(p, state.manche||1); }
+  function cmmcOf(p){ return cmmcOfM(p, state.manche||1); }
+  function cmmcRaw(p){ return mOf(p, state.manche||1).cmmc || ""; }
+  function totalOf(p){ return totalOfM(p, state.manche||1); }
+
+  // ---------- blocare cu PIN ----------
+  function pinHash(p){ var h=5381; p=""+p; for(var i=0;i<p.length;i++){ h=((h*33)^p.charCodeAt(i))>>>0; } return "h"+h; }
+  function isLocked(){ return !!(state.lock && state.pinHash); }
+  function guard(){ if(isLocked()){ toast("🔒 Blocat – apasă lacătul de sus și introdu PIN-ul"); return true; } return false; }
+  function updateLockUI(){
+    document.body.classList.toggle("locked", isLocked());
+    var b=document.getElementById("lockBtn"); if(b) b.textContent=isLocked()?"🔒":"🔓";
+    var st=document.getElementById("pin-status");
+    if(st) st.innerHTML = state.pinHash ? (isLocked()?"Stare: <b>blocată</b> 🔒 – doar vizualizare.":"Stare: <b>deblocată</b> – PIN setat. Apasă lacătul din dreapta-sus ca să blochezi.") : "Niciun PIN setat – oricine are telefonul poate modifica datele.";
+    var rm=document.getElementById("btn-removepin"); if(rm) rm.style.display = state.pinHash ? "block" : "none";
+  }
+  function setPin(){
+    var v=document.getElementById("in-pin").value.trim();
+    if(!/^\d{4,6}$/.test(v)){ toast("PIN-ul trebuie să aibă 4–6 cifre"); return; }
+    state.pinHash=pinHash(v); state.lock=true;
+    document.getElementById("in-pin").value="";
+    save(); updateLockUI(); renderList(); toast("PIN setat – aplicația e blocată 🔒");
+  }
+  function removePin(){
+    var v=prompt("PIN-ul actual:"); if(v===null) return;
+    if(pinHash(v.trim())!==state.pinHash){ toast("PIN greșit"); return; }
+    state.pinHash=""; state.lock=false; save(); updateLockUI(); renderList(); toast("PIN scos – aplicația e deschisă");
+  }
+  function toggleLock(){
+    if(!state.pinHash){ showView('set'); toast("Setează întâi un PIN, mai jos"); return; }
+    if(isLocked()){
+      var v=prompt("PIN:"); if(v===null) return;
+      if(pinHash(v.trim())!==state.pinHash){ toast("PIN greșit"); return; }
+      state.lock=false; toast("Deblocat – poți edita");
+    } else { state.lock=true; toast("Blocat 🔒 – doar vizualizare"); }
+    save(); updateLockUI(); renderList();
+  }
+
+  // ---------- persistence (localStorage) ----------
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast("Stocare plină – șterge câteva poze"); } }
+  function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); }
+  function load(){ try{ var v=localStorage.getItem(KEY); if(v){ var d=JSON.parse(v); if(d&&typeof d==="object"){ state=Object.assign(state,d); } } }catch(e){} normalize(); }
+  function normalize(){
+    if(!state.manche) state.manche=1;
+    if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
+    (state.participants||[]).forEach(function(p){
+      if(!p.m){
+        if(!Array.isArray(p.catches)){ var v=num(p.cant); p.catches = v>0 ? [v] : []; }
+        if(!Array.isArray(p.catchTimes)) p.catchTimes=[];
+        while(p.catchTimes.length<p.catches.length) p.catchTimes.push(null);
+        if(p.catchTimes.length>p.catches.length) p.catchTimes.length=p.catches.length;
+        if(!Array.isArray(p.catchPhotos)) p.catchPhotos=[];
+        while(p.catchPhotos.length<p.catches.length) p.catchPhotos.push(null);
+        if(p.catchPhotos.length>p.catches.length) p.catchPhotos.length=p.catches.length;
+        if(!Array.isArray(p.extras)){ var ev=num(p.extra); p.extras = ev>0 ? [ev] : []; }
+        p.m = {
+          1: {catches:p.catches, catchTimes:p.catchTimes, catchPhotos:p.catchPhotos, extras:p.extras, cmmc:p.cmmc||""},
+          2: emptyManche()
+        };
+      }
+      delete p.catches; delete p.catchTimes; delete p.catchPhotos; delete p.extras; delete p.cmmc; delete p.cant; delete p.extra;
+      ensureManche(p);
+      [1,2].forEach(function(mi){
+        var m=p.m[mi];
+        if(!Array.isArray(m.catches)) m.catches=[];
+        if(!Array.isArray(m.catchTimes)) m.catchTimes=[];
+        while(m.catchTimes.length<m.catches.length) m.catchTimes.push(null);
+        if(m.catchTimes.length>m.catches.length) m.catchTimes.length=m.catches.length;
+        if(!Array.isArray(m.catchPhotos)) m.catchPhotos=[];
+        while(m.catchPhotos.length<m.catches.length) m.catchPhotos.push(null);
+        if(m.catchPhotos.length>m.catches.length) m.catchPhotos.length=m.catches.length;
+        if(!Array.isArray(m.extras)) m.extras=[];
+        if(m.cmmc===undefined) m.cmmc="";
+      });
+    });
+  }
+
+  // ---------- views ----------
+  function showView(v){
+    document.querySelectorAll(".view").forEach(function(el){el.classList.remove("active");});
+    document.getElementById("view-"+v).classList.add("active");
+    document.querySelectorAll("nav.tabs button").forEach(function(b){b.classList.remove("on");});
+    document.getElementById("tab-"+v).classList.add("on");
+    if(v==="rank") renderRank();
+    if(v==="set") previewDraw();
+    window.scrollTo(0,0);
+  }
+  function setManche(mi){
+    state.manche=mi; save();
+    var b1=document.getElementById("mc-1"), b2=document.getElementById("mc-2");
+    if(b1) b1.classList.toggle("on", mi===1);
+    if(b2) b2.classList.toggle("on", mi===2);
+    renderList();
+    toast("Manșa "+mi+" activă pentru cântărire");
+  }
+
+  // ---------- participants ----------
+  function addParticipant(){
+    if(guard()) return;
+    var stand=document.getElementById("in-stand").value.trim();
+    var pre=document.getElementById("in-prenume").value.trim();
+    var nume=document.getElementById("in-nume").value.trim();
+    var sec=document.getElementById("in-sector").value;
+    if(!pre && !nume && !stand){ return; }
+    state.participants.push({id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{1:emptyManche(),2:emptyManche()}});
+    document.getElementById("in-stand").value="";
+    document.getElementById("in-prenume").value="";
+    document.getElementById("in-nume").value="";
+    queueSave(); renderList();
+    document.getElementById("in-stand").focus();
+  }
+
+  function updField(id, field, val){
+    if(isLocked()) return;
+    var p=state.participants.find(function(x){return x.id===id;});
+    if(!p) return;
+    if(field==='cmmc'){ mOf(p, state.manche||1).cmmc = val; } else { p[field]=val; }
+    // update just the total line for this card
+    var tot=document.getElementById("tot-"+id);
+    if(tot) tot.innerHTML = fmt(totalOf(p))+' <small>kg</small>';
+    document.getElementById("st-total").textContent = fmt(sumAll());
+    queueSave();
+  }
+
+  function delParticipant(id){
+    if(guard()) return;
+    var p=state.participants.find(function(x){return x.id===id;});
+    if(p && !confirm("Ștergi participantul "+nameOf(p)+" împreună cu toate cântăririle lui?")) return;
+    state.participants = state.participants.filter(function(x){return x.id!==id;});
+    queueSave(); renderList();
+  }
+
+  function sumAll(){ return state.participants.reduce(function(a,p){return a+totalOf(p);},0); }
+
+  function chipsHtml(p){
+    var m=mOf(p, state.manche||1);
+    var cs=m.catches||[]; var h=""; var L=isLocked();
+    if(!cs.length){ return '<span class="chips-empty">nicio captură încă</span>'; }
+    cs.forEach(function(v,idx){
+      var tm=(m.catchTimes||[])[idx];
+      var tt=tm?('<i class="cht">'+hhmm(tm)+'</i>'):'';
+      var ph=(m.catchPhotos||[])[idx];
+      var pm=ph?'<i class="cht">📷</i>':'';
+      var click=ph?(' onclick="showCatchPhoto(\''+p.id+'\','+idx+')"'):'';
+      h+='<span class="chip-c"'+click+'>'+fmt(v)+tt+pm+(L?'':'<b onclick="event.stopPropagation();removeCatch(\''+p.id+'\','+idx+')">×</b>')+'</span>';
+    });
+    h+='<span class="chip-sum">= '+fmt(cantOf(p))+' kg</span>';
+    return h;
+  }
+  function addCatchCore(id, photo){
+    var el=document.getElementById("catch-"+id); if(!el) return;
+    var v=num(el.value);
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var m=mOf(p, state.manche||1);
+    if(v>0){
+      var prevLeader=leaderId();
+      var vr=Math.round(v*1000)/1000;
+      m.catches.push(vr);
+      m.catchTimes.push(Date.now());
+      m.catchPhotos.push(photo||null);
+      queueSave(); refreshCard(id);
+      var newLeader=leaderId();
+      var isLeaderNow = (prevLeader && newLeader===p.id && newLeader!==prevLeader);
+      var loc=1; var sorted=sortRankS(state.participants, state.manche||1);
+      for(var i=0;i<sorted.length;i++){ if(sorted[i].id===p.id){ loc=i+1; break; } }
+      announceCatch(p, vr, loc, isLeaderNow);
+      if(isLeaderNow){ showNewLeader(p); }
+    }
+    el.value=""; el.focus();
+  }
+  function addCatch(id){ if(guard()) return; addCatchCore(id, null); }
+  function pickCatchPhoto(id){
+    if(guard()) return;
+    var el=document.getElementById("catch-"+id);
+    if(!el || num(el.value)<=0){ toast("Scrie întâi greutatea, apoi apasă 📷"); return; }
+    var f=document.getElementById("cph-"+id); if(f) f.click();
+  }
+  function onCatchPhoto(id, input){
+    var f=input.files && input.files[0]; input.value=""; if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var max=480, w=img.width, h=img.height;
+        if(w>=h && w>max){ h=Math.round(h*max/w); w=max; } else if(h>w && h>max){ w=Math.round(w*max/h); h=max; }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        var data=null; try{ data=c.toDataURL("image/jpeg",0.55); }catch(err){}
+        addCatchCore(id, data);
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(f);
+  }
+  function showCatchPhoto(id, idx){
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var m=mOf(p, state.manche||1);
+    var ph=(m.catchPhotos||[])[idx]; if(!ph) return;
+    document.getElementById("photoImg").src=ph;
+    var tm=(m.catchTimes||[])[idx];
+    document.getElementById("photoCap").textContent=fmt(m.catches[idx])+" kg · "+(tm?hhmm(tm)+" · ":"")+nameOf(p);
+    document.getElementById("photoView").classList.add("on");
+  }
+  function removeCatch(id,idx){
+    if(guard()) return;
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var m=mOf(p, state.manche||1);
+    m.catches.splice(idx,1);
+    m.catchTimes.splice(idx,1);
+    m.catchPhotos.splice(idx,1);
+    queueSave(); refreshCard(id);
+  }
+  function addExtra(id){
+    if(guard()) return;
+    var el=document.getElementById("extra-"+id); if(!el) return;
+    var v=num(el.value);
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var m=mOf(p, state.manche||1);
+    if(v>0){
+      var prevLeader=leaderId();
+      var vr=Math.round(v*1000)/1000;
+      m.extras.push(vr);
+      queueSave(); refreshCard(id);
+      var newLeader=leaderId();
+      if(prevLeader && newLeader===p.id && newLeader!==prevLeader){ showNewLeader(p); }
+      speak(nameOf(p)+", pește extra de "+kgSpeech(vr)+".");
+    }
+    el.value=""; el.focus();
+  }
+  function removeExtra(id,idx){
+    if(guard()) return;
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    mOf(p, state.manche||1).extras.splice(idx,1); queueSave(); refreshCard(id);
+  }
+  function extrasChipsHtml(p){
+    var m=mOf(p, state.manche||1);
+    var cs=m.extras||[]; var L=isLocked();
+    if(!cs.length){ return '<span class="chips-empty">niciun pește extra</span>'; }
+    var h="";
+    cs.forEach(function(v,idx){
+      h+='<span class="chip-c">'+fmt(v)+(L?'':'<b onclick="removeExtra(\''+p.id+'\','+idx+')">×</b>')+'</span>';
+    });
+    h+='<span class="chip-sum">= '+fmt(extraOf(p))+' kg</span>';
+    return h;
+  }
+  function refreshCard(id){
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var box=document.getElementById("chips-"+id); if(box) box.innerHTML=chipsHtml(p);
+    var ebox=document.getElementById("exchips-"+id); if(ebox) ebox.innerHTML=extrasChipsHtml(p);
+    var tot=document.getElementById("tot-"+id); if(tot) tot.innerHTML=fmt(totalOf(p))+' <small>kg</small>';
+    var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
+  }
+
+  function sectorOptions(sel){ return state.sectors.map(function(s){ return '<option value="'+esc(s)+'"'+(s===sel?' selected':'')+'>Sector '+esc(s)+'</option>'; }).join(''); }
+  function editParticipant(id){ if(guard()) return; editingId=id; renderList(); }
+  function cancelEdit(){ editingId=null; renderList(); }
+  function saveEdit(id){
+    if(guard()) return;
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var g=function(f){ var el=document.getElementById(f+"-"+id); return el?el.value:undefined; };
+    p.stand=(g("ed-stand")||"").trim();
+    p.prenume=(g("ed-prenume")||"").trim();
+    p.nume=(g("ed-nume")||"").trim();
+    var sec=g("ed-sector"); if(sec!==undefined) p.sector=sec;
+    editingId=null; queueSave(); renderList();
+  }
+
+  function renderList(){
+    var list=document.getElementById("list");
+    document.getElementById("st-count").textContent = state.participants.length;
+    document.getElementById("st-total").textContent = fmt(sumAll());
+    if(state.participants.length===0){
+      list.innerHTML='<div class="empty"><div class="big">🎣</div>Niciun participant încă.<br>Adaugă primul stand mai sus.</div>';
+      return;
+    }
+    var html="";
+    var L=isLocked();
+    if(L) editingId=null;
+    state.participants.forEach(function(p){
+      var full=(esc(p.prenume)+" "+esc(p.nume)).trim() || "—";
+      var head;
+      if(editingId===p.id){
+        head='<div class="p-edit">'+
+          '<div class="erow"><input class="w-stand" id="ed-stand-'+p.id+'" inputmode="numeric" placeholder="Stand" value="'+esc(p.stand||"")+'"><input id="ed-prenume-'+p.id+'" placeholder="Prenume" value="'+esc(p.prenume||"")+'"></div>'+
+          '<div class="erow mt8"><input id="ed-nume-'+p.id+'" placeholder="Nume" value="'+esc(p.nume||"")+'"><select id="ed-sector-'+p.id+'">'+sectorOptions(p.sector)+'</select></div>'+
+          '<div class="erow mt8"><button class="btn btn-primary" onclick="saveEdit(\''+p.id+'\')">Salvează</button><button class="btn btn-ghost" onclick="cancelEdit()">Renunță</button></div>'+
+        '</div>';
+      } else {
+        head='<div class="p-head">'+
+          '<div class="av-wrap">'+
+            '<div class="avatar'+(p.photo?' has':'')+'" id="av-'+p.id+'"></div>'+
+            (L?'':'<input type="file" accept="image/*" class="av-file" aria-label="Adaugă poză" onchange="onPhoto(\''+p.id+'\',this)">')+
+            (p.photo&&!L?'<button class="av-x" onclick="removePhoto(\''+p.id+'\')">×</button>':'')+
+          '</div>'+
+          '<div class="p-name"><div class="nm">'+full+'</div>'+
+            '<div class="p-sub">'+(p.ordine?'Ordine '+p.ordine+' · ':'')+(esc(p.stand)?'Stand '+esc(p.stand):'fără stand')+(p.sector?' · Sector '+esc(p.sector):'')+'</div></div>'+
+          (L?'':'<button class="edit" onclick="editParticipant(\''+p.id+'\')">✎</button>'+
+          '<button class="del" onclick="delParticipant(\''+p.id+'\')">×</button>')+
+        '</div>';
+      }
+      var metrics;
+      if(L){
+        metrics='<div class="metrics">'+
+          '<div class="metric" style="max-width:200px;"><label>CMMC kg</label><div class="ro num">'+fmt(cmmcOf(p))+'</div></div>'+
+        '</div>';
+      } else {
+        metrics='<div class="metrics">'+
+          '<div class="metric" style="max-width:200px;"><label>CMMC kg</label><input inputmode="decimal" value="'+esc(cmmcRaw(p))+'" oninput="updField(\''+p.id+'\',\'cmmc\',this.value)"></div>'+
+        '</div>';
+      }
+      html+='<div class="p">'+
+        head+
+        '<div class="catchbox">'+
+          '<label class="mlabel">'+(L?'Capturi (kg)':'Cantitate — adaugă fiecare captură (kg)')+'</label>'+
+          (L?'':'<div class="catch-row">'+
+            '<input id="catch-'+p.id+'" class="catch-in" inputmode="decimal" placeholder="ex: 8,65" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addCatch(\''+p.id+'\');}">'+
+            '<button class="catch-cam" onclick="pickCatchPhoto(\''+p.id+'\')">📷</button>'+
+            '<button class="catch-add" onclick="addCatch(\''+p.id+'\')">+</button>'+
+          '</div>'+
+          '<input type="file" accept="image/*" capture="environment" id="cph-'+p.id+'" style="display:none;" onchange="onCatchPhoto(\''+p.id+'\',this)">')+
+          '<div class="chips-c" id="chips-'+p.id+'">'+chipsHtml(p)+'</div>'+
+        '</div>'+
+        '<div class="catchbox">'+
+          '<label class="mlabel">'+(L?'Pești extra (kg)':'Pești extra — adaugă fiecare (kg)')+'</label>'+
+          (L?'':'<div class="catch-row">'+
+            '<input id="extra-'+p.id+'" class="catch-in" inputmode="decimal" placeholder="ex: 1,2" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addExtra(\''+p.id+'\');}">'+
+            '<button class="catch-add" onclick="addExtra(\''+p.id+'\')">+</button>'+
+          '</div>')+
+          '<div class="chips-c" id="exchips-'+p.id+'">'+extrasChipsHtml(p)+'</div>'+
+        '</div>'+
+        metrics+
+        '<div class="p-total"><span class="lbl">Total</span><span class="val num" id="tot-'+p.id+'">'+fmt(totalOf(p))+' <small>kg</small></span></div>'+
+      '</div>';
+    });
+    list.innerHTML=html;
+    applyPhotos();
+  }
+  function applyPhotos(){
+    state.participants.forEach(function(p){
+      if(p.photo){ var el=document.getElementById("av-"+p.id); if(el){ el.style.backgroundImage="url('"+p.photo+"')"; } }
+    });
+  }
+  function removePhoto(id){ if(guard()) return; var p=state.participants.find(function(x){return x.id===id;}); if(!p) return; p.photo=null; queueSave(); renderList(); }
+  function onPhoto(id,input){
+    if(guard()) return;
+    var f=input.files && input.files[0]; if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var max=360, w=img.width, h=img.height;
+        if(w>=h && w>max){ h=Math.round(h*max/w); w=max; } else if(h>w && h>max){ w=Math.round(w*max/h); h=max; }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        var data=null; try{ data=c.toDataURL("image/jpeg",0.6); }catch(err){}
+        var p=state.participants.find(function(x){return x.id===id;}); if(!p||!data) return;
+        p.photo=data; queueSave(); renderList();
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(f);
+    input.value="";
+  }
+
+  // ---------- rankings ----------
+  function sortRankS(arr, mi){
+    return arr.slice().sort(function(a,b){
+      var d=totalOfM(b,mi)-totalOfM(a,mi);
+      if(Math.abs(d)>1e-9) return d;
+      var c=cmmcOfM(b,mi)-cmmcOfM(a,mi); if(Math.abs(c)>1e-9) return c;
+      return (a.nume+a.prenume).localeCompare(b.nume+b.prenume,"ro");
+    });
+  }
+  function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
+
+  function setRankScope(mi){
+    rankScope=mi;
+    document.getElementById("rs-1").classList.toggle("on", mi===1);
+    document.getElementById("rs-2").classList.toggle("on", mi===2);
+    document.getElementById("rs-total").classList.toggle("on", mi==='total');
+    renderRank();
+  }
+  function setRankMode(m){ rankMode=m;
+    document.getElementById("seg-sec").classList.toggle("on",m==="sec");
+    document.getElementById("seg-fin").classList.toggle("on",m==="fin");
+    document.getElementById("seg-stat").classList.toggle("on",m==="stat");
+    document.getElementById("finMethod").style.display = (m==="fin")?"flex":"none";
+    renderRank();
+  }
+  function setFinMethod(m){ finMethod=m;
+    document.getElementById("fm-kg").classList.toggle("on",m==="kg");
+    document.getElementById("fm-pct").classList.toggle("on",m==="pct");
+    renderRank();
+  }
+  // puncte pe sector: loc 1 = 1 punct; egalitate de kg => puncte egale
+  function pointsMapS(mi){
+    var secs={};
+    state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; (secs[k]=secs[k]||[]).push(p); });
+    var map={};
+    Object.keys(secs).forEach(function(k){
+      var arr=secs[k];
+      arr.forEach(function(p){
+        var better=arr.filter(function(o){ return totalOfM(o,mi) > totalOfM(p,mi)+1e-9; }).length;
+        map[p.id]=better+1;
+      });
+    });
+    return map;
+  }
+  // clasament combinat: suma punctelor din manșa 1 și manșa 2 (câștigă cel mai mic total)
+  function pointsCombo(){
+    var p1=pointsMapS(1), p2=pointsMapS(2), map={};
+    state.participants.forEach(function(p){ map[p.id]=(p1[p.id]||0)+(p2[p.id]||0); });
+    return map;
+  }
+  function currentPmap(){ return rankScope==='total' ? pointsCombo() : pointsMapS(rankScope); }
+  function sortByPointsS(arr,pmap,mi){
+    return arr.slice().sort(function(a,b){
+      var d=pmap[a.id]-pmap[b.id]; if(d!==0) return d;
+      // la egalitate de puncte, câștigă cantitatea totală de pește (cantitate + pești extra + CMMC)
+      var t=totalOfM(b,mi)-totalOfM(a,mi); if(Math.abs(t)>1e-9) return t;
+      var c=cmmcOfM(b,mi)-cmmcOfM(a,mi); if(Math.abs(c)>1e-9) return c;
+      return (a.nume+a.prenume).localeCompare(b.nume+b.prenume,"ro");
+    });
+  }
+
+  function rankRows(sorted, opts){
+    opts=opts||{}; var mi=opts.mi!==undefined?opts.mi:rankScope; var out="";
+    sorted.forEach(function(p,i){
+      var cls=i===0?"p1":i===1?"p2":i===2?"p3":"";
+      var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+      var pts = opts.pmap ? '<td class="kg num" style="width:52px;color:var(--teal-d);">'+opts.pmap[p.id]+'</td>' : '';
+      var sub='Stand '+(esc(p.stand)||"–")+((opts.showSector&&p.sector)?' · Sec '+esc(p.sector):'');
+      out+='<tr class="'+cls+'">'+
+        '<td class="pos">'+medal+'</td>'+
+        '<td>'+esc(nameOf(p))+'<div class="small">'+sub+'</div></td>'+
+        pts+
+        '<td class="kg num">'+fmt(totalOfM(p,mi))+'</td>'+
+      '</tr>';
+    });
+    return out;
+  }
+
+  function renderRank(){
+    // CMMC winner (după scopul curent: Manșa 1, Manșa 2 sau General)
+    var cbox=document.getElementById("cmmcBox");
+    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
+    if(withFish.length){
+      var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;});
+      cbox.innerHTML='<div class="cmmc"><div class="medal">🐟</div><div><div class="t">CMMC — cel mai mare pește · '+esc(scopeLabel(rankScope))+'</div><div class="who">'+esc(nameOf(best))+' <span style="font-weight:600;color:#8a5a12;">· Stand '+(esc(best.stand)||"–")+'</span></div></div><div class="kg num">'+fmt(cmmcAward(best,rankScope))+' kg</div></div>';
+    } else { cbox.innerHTML=""; }
+
+    var body=document.getElementById("rankBody");
+    if(state.participants.length===0){ body.innerHTML='<div class="empty">Niciun participant de clasat încă.</div>'; return; }
+
+    if(rankMode==="stat"){ body.innerHTML=statsHtml(); return; }
+
+    var pmap=currentPmap();
+    if(rankMode==="fin" && finMethod==="pct"){
+      var pctHint = rankScope==='total'
+        ? 'Punctele sunt suma locurilor din sector obținute în Manșa 1 și Manșa 2 (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra + CMMC).'
+        : 'Punctele vin din locul din sector (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra + CMMC).';
+      body.innerHTML='<p class="hint" style="margin:0 0 10px;">'+pctHint+'</p>'+
+        '<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
+        rankRows(sortByPointsS(state.participants,pmap,rankScope),{pmap:pmap,showSector:true,mi:rankScope})+'</tbody></table>';
+    } else if(rankMode==="fin"){
+      body.innerHTML='<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg">Total kg</th></tr></thead><tbody>'+
+        rankRows(sortRankS(state.participants,rankScope),{showSector:true,mi:rankScope})+'</tbody></table>';
+    } else {
+      var secs={}; var order=[];
+      state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p); });
+      order.sort(function(a,b){return a.localeCompare(b,"ro");});
+      var html="";
+      order.forEach(function(k){
+        html+='<div class="sector-h"><span class="tag">Sector '+esc(k)+'</span><span class="cnt">'+secs[k].length+' participanți</span></div>';
+        html+='<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
+          rankRows(sortRankS(secs[k],rankScope),{pmap:pmap,mi:rankScope})+'</tbody></table>';
+      });
+      body.innerHTML=html;
+    }
+  }
+
+  function copyRank(){
+    var lines=[]; var title=state.name?state.name:"Concurs pescuit";
+    lines.push(title+" — "+scopeLabel(rankScope)); lines.push("");
+    var pmap=currentPmap();
+    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
+    if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); lines.push("CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg"); lines.push(""); }
+    if(rankMode==="fin" && finMethod==="pct"){
+      lines.push("CLASAMENT FINAL (pe puncte)");
+      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+", Sec "+(p.sector||"-")+") — "+pmap[p.id]+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
+    } else if(rankMode==="fin"){
+      lines.push("CLASAMENT FINAL (pe kg)");
+      sortRankS(state.participants,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+") — "+fmt(totalOfM(p,rankScope))+" kg"); });
+    } else {
+      var secs={},order=[]; state.participants.forEach(function(p){var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
+      order.sort(function(a,b){return a.localeCompare(b,"ro");});
+      order.forEach(function(k){ lines.push("SECTOR "+k); sortRankS(secs[k],rankScope).forEach(function(p,i){ lines.push("  "+(i+1)+". "+nameOf(p)+" — "+fmt(totalOfM(p,rankScope))+" kg ("+pmap[p.id]+" pct)"); }); lines.push(""); });
+    }
+    var txt=lines.join("\n");
+    try{ navigator.clipboard.writeText(txt).then(function(){toast("Clasament copiat");},function(){fallbackCopy(txt);}); }
+    catch(e){ fallbackCopy(txt); }
+  }
+  function fallbackCopy(txt){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Clasament copiat");}catch(e){toast("Nu am putut copia");} document.body.removeChild(ta); }
+  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#10263c;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
+
+  // ---------- sectors ----------
+  function renderSectors(){
+    var list=document.getElementById("sectors-list"); list.innerHTML="";
+    state.sectors.forEach(function(s,i){
+      var el=document.createElement("div"); el.className="sec-chip";
+      el.innerHTML=esc(s)+' <button onclick="delSector('+i+')">×</button>';
+      list.appendChild(el);
+    });
+    var sel=document.getElementById("in-sector"); var cur=sel.value; sel.innerHTML="";
+    state.sectors.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent="Sector "+s; sel.appendChild(o); });
+    if(state.sectors.indexOf(cur)>=0) sel.value=cur;
+  }
+  function addSector(){
+    if(guard()) return;
+    var v=document.getElementById("in-newsec").value.trim(); if(!v) return;
+    if(state.sectors.indexOf(v)<0) state.sectors.push(v);
+    document.getElementById("in-newsec").value=""; queueSave(); renderSectors();
+  }
+  function delSector(i){
+    if(guard()) return;
+    var s=state.sectors[i];
+    var used=state.participants.filter(function(p){return p.sector===s;}).length;
+    if(used>0 && !confirm("Sectorul "+s+" are "+used+" participanți. Îl ștergi oricum? (participanții rămân, doar fără sector)")) return;
+    state.sectors.splice(i,1); queueSave(); renderSectors();
+  }
+
+  // ---------- settings ----------
+  function splitName(full){ full=(full||"").trim(); var sp=full.indexOf(" "); if(sp<0) return {prenume:full, nume:""}; return {prenume:full.slice(0,sp), nume:full.slice(sp+1).trim()}; }
+  function parseImport(text){
+    var out=[];
+    (text||"").split(/\r?\n/).forEach(function(line){
+      var raw=line.trim(); if(!raw) return;
+      var stand="";
+      var m=raw.match(/^(\d+)\s*[\.\)\-]\s+(.+)$/);
+      if(m){ stand=m[1]; raw=m[2].trim(); }
+      var parts=raw.split(/[\t,;|]/).map(function(x){return x.trim();}).filter(function(x){return x!=="";});
+      var name="", sector="";
+      if(parts.length<=1){ name=parts[0]||""; }
+      else if(parts.length===2){
+        if(!stand && /^\d+$/.test(parts[0])){ stand=parts[0]; name=parts[1]; }
+        else { name=parts[0]; sector=parts[1]; }
+      } else {
+        var i=0; if(!stand && /^\d+$/.test(parts[0])){ stand=parts[0]; i=1; }
+        name=parts[i]||""; sector=parts[i+1]||"";
+      }
+      if(!stand){ var mm=name.match(/^(\d+)\s+(.+)$/); if(mm){ stand=mm[1]; name=mm[2].trim(); } }
+      if(name){ out.push({stand:stand, name:name, sector:sector}); }
+    });
+    return out;
+  }
+  function previewImport(){
+    var arr=parseImport(document.getElementById("imp-text").value);
+    var box=document.getElementById("imp-preview");
+    if(!arr.length){ box.innerHTML="Nimic de importat — verifică lista."; return; }
+    var s=arr.slice(0,4).map(function(x){ return "• "+(x.stand?("St."+x.stand+" "):"")+esc(x.name)+(x.sector?(" · Sec "+esc(x.sector)):""); }).join("<br>");
+    box.innerHTML="Am găsit <b>"+arr.length+"</b> participanți:<br>"+s+(arr.length>4?"<br>…":"");
+  }
+  function doImport(){
+    if(guard()) return;
+    var arr=parseImport(document.getElementById("imp-text").value);
+    if(!arr.length){ toast("Nimic de importat"); return; }
+    arr.forEach(function(x){
+      if(x.sector && state.sectors.indexOf(x.sector)<0) state.sectors.push(x.sector);
+      var nm=splitName(x.name);
+      state.participants.push({id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:x.sector||"", m:{1:emptyManche(),2:emptyManche()}});
+    });
+    document.getElementById("imp-text").value="";
+    document.getElementById("imp-preview").innerHTML="";
+    queueSave(); renderSectors(); renderList(); toast(arr.length+" participanți adăugați");
+    showView("part");
+  }
+
+  function sectorRanges(N, secs){
+    var k=secs.length; if(k===0||N<=0) return [];
+    var base=Math.floor(N/k), rem=N%k, start=1, out=[];
+    secs.forEach(function(s,i){ var size=base+(i<rem?1:0); out.push({sector:s, from:start, to:start+size-1}); start+=size; });
+    return out;
+  }
+  function previewDraw(){
+    var box=document.getElementById("draw-preview"); if(!box) return;
+    var P=state.participants.length;
+    var el=document.getElementById("draw-stands");
+    var N=parseInt(el?el.value:"",10)||P;
+    var r=sectorRanges(N, state.sectors);
+    if(!r.length){ box.innerHTML="Adaugă întâi sectoare (A, B, C...)."; return; }
+    box.innerHTML=N+" standuri · "+r.map(function(x){return "<b>"+esc(x.sector)+"</b> "+x.from+"–"+x.to;}).join(" · ");
+  }
+  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var r=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[r]; a[r]=t; } return a; }
+  function sectorForStand(s, ranges){ for(var q=0;q<ranges.length;q++){ if(s>=ranges[q].from && s<=ranges[q].to) return ranges[q].sector; } return ""; }
+  function drawLots(){
+    if(guard()) return;
+    var P=state.participants.length;
+    if(P===0){ toast("Nu ai participanți"); return; }
+    var el=document.getElementById("draw-stands");
+    var N=parseInt(el?el.value:"",10); if(!N||N<1) N=P;
+    if(N<P){ toast("Prea puține standuri: "+N+" pentru "+P+" participanți"); return; }
+    if(!confirm("Tragi la sorți? Se rescriu ordinea, standul și sectorul pentru toți cei "+P+" participanți.")) return;
+    var ranges=sectorRanges(N, state.sectors);
+    var ord=[]; for(var i=1;i<=P;i++) ord.push(i); shuffle(ord);
+    var pool=[]; for(var j=1;j<=N;j++) pool.push(j); shuffle(pool);
+    var stands=pool.slice(0,P);
+    state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
+    var seq=state.participants.slice().sort(function(a,b){return a.ordine-b.ordine;});
+    seq.forEach(function(p,k){ var s=stands[k]; p.stand=String(s); p.sector=sectorForStand(s, ranges); });
+    queueSave(); renderList(); toast("Tragere făcută – ordine + standuri");
+    showView("part");
+  }
+  function copyText(txt){ try{ navigator.clipboard.writeText(txt).then(function(){toast("Copiat");},function(){fallbackCopy(txt);}); }catch(e){ fallbackCopy(txt); } }
+  function copyDraw(){
+    var arr=state.participants.filter(function(p){return p.stand;});
+    if(!arr.length){ toast("Nicio repartizare de copiat"); return; }
+    var lines=[(state.name||"Concurs")+" – tragere la sorți",""];
+    lines.push("ORDINEA TRAGERII:");
+    arr.slice().sort(function(a,b){return (a.ordine||0)-(b.ordine||0);}).forEach(function(p){
+      lines.push((p.ordine||"-")+". "+nameOf(p)+" → Stand "+p.stand+(p.sector?" ("+p.sector+")":""));
+    });
+    lines.push("");
+    lines.push("PE STANDURI:");
+    arr.slice().sort(function(a,b){return (parseInt(a.stand,10)||0)-(parseInt(b.stand,10)||0);}).forEach(function(p){
+      lines.push("Stand "+p.stand+" – "+nameOf(p)+(p.sector?" ("+p.sector+")":""));
+    });
+    copyText(lines.join("\n"));
+  }
+
+  // ---------- ora capturii / lider / statistici ----------
+  function hhmm(t){ var d=new Date(t); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
+  function leaderId(){
+    var best=null, bt=0;
+    state.participants.forEach(function(q){ var t=totalOf(q); if(t>bt+1e-9){ bt=t; best=q.id; } });
+    return best;
+  }
+  var leaderT=null;
+  function showNewLeader(p){
+    document.getElementById("leader-name").textContent=nameOf(p);
+    document.getElementById("leader-kg").textContent=fmt(totalOf(p))+" kg"+(p.stand?" · Stand "+p.stand:"");
+    document.getElementById("leader").classList.add("on");
+    confettiBurst();
+    if(navigator.vibrate){ try{ navigator.vibrate([120,60,120]); }catch(e){} }
+    clearTimeout(leaderT); leaderT=setTimeout(hideLeader, 4200);
+  }
+  function hideLeader(){ document.getElementById("leader").classList.remove("on"); }
+  function confettiBurst(){
+    var colors=["#e7b53c","#ffffff","#0e63b8","#e08a1e","#9cc6ee"];
+    for(var i=0;i<90;i++){
+      var c=document.createElement("div"); c.className="cf";
+      c.style.left=(Math.random()*100)+"vw";
+      c.style.background=colors[Math.floor(Math.random()*colors.length)];
+      c.style.animationDuration=(2.2+Math.random()*2)+"s";
+      c.style.animationDelay=(Math.random()*0.8)+"s";
+      document.body.appendChild(c);
+      (function(el){ setTimeout(function(){ el.remove(); }, 5400); })(c);
+    }
+  }
+  function statsHtml(){
+    var all=[];
+    var scopes = rankScope==='total' ? [1,2] : [rankScope];
+    state.participants.forEach(function(p){
+      scopes.forEach(function(mi){
+        var m=mOf(p,mi);
+        (m.catches||[]).forEach(function(v,i){ all.push({v:+v||0, t:(m.catchTimes||[])[i]||null, p:p}); });
+      });
+    });
+    if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă — '+esc(scopeLabel(rankScope))+'.</div>';
+    var totalC=0; all.forEach(function(c){ totalC+=c.v; });
+    var big=all[0]; all.forEach(function(c){ if(c.v>big.v) big=c; });
+    var withCatch={}; all.forEach(function(c){ withCatch[c.p.id]=1; });
+    var html='<p class="hint" style="margin:0 0 10px;">'+esc(scopeLabel(rankScope))+'</p>'+
+    '<div class="summary">'+
+      '<div class="stat"><div class="n num">'+all.length+'</div><div class="l">Capturi cântărite</div></div>'+
+      '<div class="stat"><div class="n num">'+fmt(totalC)+'</div><div class="l">Kg din capturi</div></div>'+
+    '</div>'+
+    '<div class="summary">'+
+      '<div class="stat"><div class="n num">'+fmt(totalC/Math.max(1,state.participants.length))+'</div><div class="l">Medie kg / participant</div></div>'+
+      '<div class="stat"><div class="n num">'+Object.keys(withCatch).length+'/'+state.participants.length+'</div><div class="l">Au prins pește</div></div>'+
+    '</div>'+
+    '<div class="card"><div class="sec-title">Cea mai mare captură individuală</div><div style="font-weight:800;font-size:16px;">'+fmt(big.v)+' kg — '+esc(nameOf(big.p))+(big.t?(' <span style="color:var(--muted);font-size:12px;font-weight:700;">cântărită la '+hhmm(big.t)+'</span>'):'')+'</div></div>';
+    var hours={}, timed=0;
+    all.forEach(function(c){ if(c.t){ timed++; var h=new Date(c.t).getHours(); if(!hours[h]) hours[h]={n:0,kg:0}; hours[h].n++; hours[h].kg+=c.v; } });
+    if(timed){
+      var keys=Object.keys(hours).map(Number).sort(function(a,b){return a-b;});
+      var maxkg=0; keys.forEach(function(h){ if(hours[h].kg>maxkg) maxkg=hours[h].kg; });
+      html+='<div class="card"><div class="sec-title">Pe ore (kg cântărite)</div>';
+      keys.forEach(function(h){
+        var w=maxkg?Math.max(4, Math.round(hours[h].kg/maxkg*100)):4;
+        html+='<div class="hb-row"><span class="hb-l num">'+("0"+h).slice(-2)+':00</span><div class="hb"><div class="hb-f" style="width:'+w+'%;"></div></div><span class="hb-v num">'+fmt(hours[h].kg)+' kg · '+hours[h].n+' capturi</span></div>';
+      });
+      html+='<p class="hint">Ora se înregistrează automat la fiecare apăsare pe „+" la cântar.</p></div>';
+    }
+    var secs={};
+    state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,rankScope); });
+    var sk=Object.keys(secs).sort(function(a,b){return a.localeCompare(b,"ro");});
+    if(sk.length>1){
+      var mx=0; sk.forEach(function(k){ if(secs[k]>mx) mx=secs[k]; });
+      html+='<div class="card"><div class="sec-title">Total pe sectoare</div>';
+      sk.forEach(function(k){
+        var w=mx?Math.max(4, Math.round(secs[k]/mx*100)):4;
+        html+='<div class="hb-row"><span class="hb-l">'+esc(k)+'</span><div class="hb"><div class="hb-f" style="width:'+w+'%;"></div></div><span class="hb-v num">'+fmt(secs[k])+' kg</span></div>';
+      });
+      html+='</div>';
+    }
+    return html;
+  }
+
+  // ---------- anunt vocal ----------
+  function toggleVoice(){
+    if(guard()) return;
+    state.voiceOn=!state.voiceOn; save(); updateVoiceBtn();
+    if(state.voiceOn) speak("Anunțul vocal este pornit.");
+  }
+  function updateVoiceBtn(){
+    var b=document.getElementById("btn-voice");
+    if(b) b.textContent = state.voiceOn ? "🔊 Pornit – apasă ca să oprești" : "🔇 Oprit – apasă ca să pornești";
+  }
+  function speak(txt){
+    if(!state.voiceOn || !window.speechSynthesis) return;
+    try{
+      var u=new SpeechSynthesisUtterance(txt); u.lang="ro-RO"; u.rate=1;
+      var vs=speechSynthesis.getVoices();
+      for(var i=0;i<vs.length;i++){ if((vs[i].lang||"").toLowerCase().indexOf("ro")===0){ u.voice=vs[i]; break; } }
+      speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  function kgSpeech(v){
+    var kg=Math.floor(v), g=Math.round((v-kg)*1000);
+    var s="";
+    if(kg>0) s+= kg===1 ? "un kilogram" : kg+" kilograme";
+    if(g>0) s+= (s?" și ":"")+g+" de grame";
+    return s||"zero kilograme";
+  }
+  function announceCatch(p, v, loc, isLeader){
+    speak(nameOf(p)+", "+kgSpeech(v)+". "+(isLeader ? "Este noul lider al concursului!" : "Locul "+loc+" la general."));
+  }
+
+  // ---------- cronometru concurs ----------
+  var timerInt=null, timerWasRunning=false, nadireAlerted=false, startAlerted=false;
+  function toLocalInput(ms){
+    var d=new Date(ms);
+    function p2(n){ return (n<10?"0":"")+n; }
+    return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+"T"+p2(d.getHours())+":"+p2(d.getMinutes());
+  }
+  function setTimer(){
+    if(guard()) return;
+    var s=document.getElementById("t-start").value, e=document.getElementById("t-end").value;
+    var nd=document.getElementById("t-nadire").value;
+    state.startAt = s ? new Date(s).getTime() : null;
+    state.endAt = e ? new Date(e).getTime() : null;
+    state.nadireMin = nd!=="" ? Math.max(0, parseInt(nd,10)||0) : 10;
+    save(); timerWasRunning=false; nadireAlerted=false; startAlerted=false; startTimerLoop();
+    if(state.endAt) toast("Cronometru setat");
+  }
+  function clearTimer(){
+    if(guard()) return;
+    state.startAt=null; state.endAt=null; save();
+    document.getElementById("t-start").value=""; document.getElementById("t-end").value="";
+    timerWasRunning=false; nadireAlerted=false; startAlerted=false;
+    startTimerLoop(); toast("Cronometru șters");
+  }
+  function fmtDur(ms){
+    var s=Math.max(0,Math.floor(ms/1000));
+    var h=Math.floor(s/3600), m=Math.floor(s%3600/60), sec=s%60;
+    return h+":"+("0"+m).slice(-2)+":"+("0"+sec).slice(-2);
+  }
+  function timerTick(){
+    var bar=document.getElementById("timerBar"), tvT=document.getElementById("tv-timer");
+    var now=Date.now(), txt="", show=false;
+    if(state.endAt){
+      show=true;
+      var ndMin=state.nadireMin||0;
+      var nadireAt = (state.startAt && ndMin>0) ? (state.startAt - ndMin*60000) : null;
+      if(nadireAt && now<nadireAt){
+        txt="⏱ Nădire grea în "+fmtDur(nadireAt-now); timerWasRunning=false;
+      } else if(nadireAt && now<state.startAt){
+        if(!nadireAlerted){ nadireAlerted=true; alarmNadire(); }
+        txt="🎣 NĂDIRE GREA — mai sunt "+fmtDur(state.startAt-now); timerWasRunning=false;
+      } else if(state.startAt && !nadireAt && now<state.startAt){
+        txt="⏱ Începe în "+fmtDur(state.startAt-now); timerWasRunning=false;
+      } else if(now<=state.endAt){
+        if(state.startAt && !startAlerted){ startAlerted=true; alarmStart(); }
+        txt="⏱ Timp rămas: "+fmtDur(state.endAt-now); timerWasRunning=true;
+      } else {
+        txt="🏁 Concurs încheiat"; if(timerWasRunning){ timerWasRunning=false; alarmEnd(); }
+      }
+    }
+    if(bar){ bar.style.display=show?"block":"none"; bar.textContent=txt; }
+    if(tvT){ tvT.textContent = show?txt:""; }
+  }
+  function startTimerLoop(){ if(timerInt) clearInterval(timerInt); timerTick(); timerInt=setInterval(timerTick,1000); }
+  function alarmNadire(){
+    beep(2, 700, 0.6);
+    if(navigator.vibrate){ try{ navigator.vibrate([250,150,250]); }catch(e){} }
+    var wasOn=state.voiceOn; state.voiceOn=true;
+    speak("Atenție! Începe nădirea grea!");
+    state.voiceOn=wasOn;
+    toast("🎣 ÎNCEPE NĂDIREA GREA!");
+  }
+  function alarmStart(){
+    beep(3, 1046, 0.35);
+    if(navigator.vibrate){ try{ navigator.vibrate([150,80,150,80,400]); }catch(e){} }
+    var wasOn=state.voiceOn; state.voiceOn=true;
+    speak("Start pescuit!");
+    state.voiceOn=wasOn;
+    toast("🎣 START PESCUIT!");
+  }
+  function alarmEnd(){
+    beep(4);
+    if(navigator.vibrate){ try{ navigator.vibrate([300,150,300,150,700]); }catch(e){} }
+    var wasOn=state.voiceOn; state.voiceOn=true;
+    speak("Stop pescuit! Concursul s-a încheiat.");
+    state.voiceOn=wasOn;
+    toast("🏁 STOP PESCUIT!");
+  }
+  function beep(n, freq, gap){
+    freq=freq||880; gap=gap||0.55;
+    try{
+      var ctx=new (window.AudioContext||window.webkitAudioContext)();
+      for(var i=0;i<n;i++){
+        var o=ctx.createOscillator(), g=ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value=freq;
+        g.gain.setValueAtTime(0.4, ctx.currentTime+i*gap);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+i*gap+(gap-0.1));
+        o.start(ctx.currentTime+i*gap); o.stop(ctx.currentTime+i*gap+gap-0.05);
+      }
+    }catch(e){}
+  }
+
+  // ---------- imagine clasament (WhatsApp/Facebook) ----------
+  function shareImage(){
+    if(!state.participants.length){ toast("Nu ai participanți"); return; }
+    var logo=new Image();
+    logo.onload=function(){ drawShareImage(logo); };
+    logo.onerror=function(){ drawShareImage(null); };
+    logo.src="icon-192.png";
+  }
+  function drawShareImage(logo){
+    var W=1080, H=1440;
+    var c=document.createElement("canvas"); c.width=W; c.height=H;
+    var x=c.getContext("2d");
+    x.fillStyle="#eef4fa"; x.fillRect(0,0,W,H);
+    var gr=x.createLinearGradient(0,0,0,260);
+    gr.addColorStop(0,"#0e63b8"); gr.addColorStop(1,"#0a3c78");
+    x.fillStyle=gr; x.fillRect(0,0,W,260);
+    if(logo){ try{ x.drawImage(logo,44,56,150,150); }catch(e){} }
+    x.fillStyle="#ffffff"; x.textAlign="center";
+    x.font="bold 62px Georgia";
+    x.fillText(state.name||"Concurs pescuit", W/2+60, 125, W-320);
+    x.font="bold 34px Arial"; x.fillStyle="rgba(255,255,255,.85)";
+    x.fillText("Clasament · "+scopeLabel(rankScope)+" · "+roDate(), W/2+60, 185, W-320);
+    var y0=320;
+    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
+    if(withFish.length){
+      var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;});
+      x.fillStyle="#fbe9cf";
+      rr(x,60,y0-20,W-120,80,16); x.fill();
+      x.fillStyle="#8a5a12"; x.font="bold 36px Arial";
+      x.fillText("🐟 CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg", W/2, y0+32, W-160);
+      y0+=100;
+    }
+    var arr=sortRankS(state.participants,rankScope).slice(0,10);
+    arr.forEach(function(p,i){
+      var y=y0+i*94;
+      x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
+      rr(x,60,y,W-120,84,16); x.fill();
+      x.fillStyle="#10263c"; x.textAlign="left"; x.font="bold 40px Arial";
+      var medal = i<3 ? ["🥇","🥈","🥉"][i] : (i+1)+".";
+      x.fillText(medal, 92, y+56);
+      x.fillText(nameOf(p), 185, y+56, 560);
+      x.textAlign="right";
+      x.fillText(fmt(totalOfM(p,rankScope))+" kg", W-92, y+56);
+    });
+    x.textAlign="center"; x.fillStyle="#44586c"; x.font="bold 28px Arial";
+    x.fillText("cantar-remuslake.netlify.app", W/2, H-40);
+    c.toBlob(function(b){
+      if(!b){ toast("Nu am putut genera imaginea"); return; }
+      var f=null; try{ f=new File([b],"clasament.png",{type:"image/png"}); }catch(e){}
+      if(f && navigator.canShare && navigator.canShare({files:[f]})){
+        navigator.share({files:[f], title:state.name||"Clasament"}).catch(function(err){ if(err && err.name!=="AbortError") downloadBlob(b); });
+      } else { downloadBlob(b); }
+    },"image/png");
+  }
+  function rr(x,px,py,w,h,r){
+    x.beginPath();
+    if(x.roundRect){ x.roundRect(px,py,w,h,r); }
+    else{ x.rect(px,py,w,h); }
+  }
+  function downloadBlob(b){
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(b); a.download="clasament.png";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+    toast("Imagine salvată");
+  }
+
+  // ---------- print / diplome ----------
+  function roDate(){
+    var m=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];
+    var d=new Date(); return d.getDate()+" "+m[d.getMonth()]+" "+d.getFullYear();
+  }
+  function printRank(){
+    if(!state.participants.length){ toast("Nu ai participanți"); return; }
+    var pmap=currentPmap();
+    var h='<div class="pr-h1">'+esc(state.name||"Concurs pescuit")+'</div><div class="pr-sub">Clasament oficial · '+esc(scopeLabel(rankScope))+' · '+roDate()+'</div>';
+    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
+    if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); h+='<div class="pr-sub"><b>CMMC (cel mai mare pește):</b> '+esc(nameOf(best))+' — '+fmt(cmmcAward(best,rankScope))+' kg</div>'; }
+    h+='<div class="pr-sec">Clasament final</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Sector</th><th>Pct</th><th>Total kg</th></tr>';
+    sortRankS(state.participants,rankScope).forEach(function(p,i){
+      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(p.stand||"–")+'</td><td class="c">'+esc(p.sector||"–")+'</td><td class="c">'+pmap[p.id]+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
+    });
+    h+='</table>';
+    var secs={},order=[];
+    state.participants.forEach(function(p){var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
+    if(order.length>1){
+      order.sort(function(a,b){return a.localeCompare(b,"ro");});
+      order.forEach(function(k){
+        h+='<div class="pr-sec">Sector '+esc(k)+'</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Total kg</th></tr>';
+        sortRankS(secs[k],rankScope).forEach(function(p,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(p.stand||"–")+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>'; });
+        h+='</table>';
+      });
+    }
+    document.getElementById("printArea").innerHTML=h;
+    window.print();
+  }
+  function printDiplomas(){
+    var ranked=sortRankS(state.participants,rankScope).filter(function(p){return totalOfM(p,rankScope)>0;});
+    if(!ranked.length){ toast("Nu ai premianți încă"); return; }
+    var locs=["LOCUL I","LOCUL II","LOCUL III"], medals=["🥇","🥈","🥉"];
+    var comp=esc(state.name||"Concurs pescuit")+' · '+esc(scopeLabel(rankScope))+' · '+roDate();
+    var h="";
+    ranked.slice(0,3).forEach(function(p,i){
+      h+='<div class="dipl"><div class="dipl-frame"><div class="dipl-medal">'+medals[i]+'</div><div class="dipl-h">DIPLOMĂ</div><div class="dipl-loc">'+locs[i]+'</div><div class="dipl-name">'+esc(nameOf(p))+'</div><div class="dipl-kg">captură totală: '+fmt(totalOfM(p,rankScope))+' kg</div><div class="dipl-comp">'+comp+'</div></div></div>';
+    });
+    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
+    if(withFish.length){
+      var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;});
+      h+='<div class="dipl"><div class="dipl-frame"><div class="dipl-medal">🐟</div><div class="dipl-h">DIPLOMĂ</div><div class="dipl-loc">CMMC – CEL MAI MARE PEȘTE</div><div class="dipl-name">'+esc(nameOf(best))+'</div><div class="dipl-kg">exemplar de '+fmt(cmmcAward(best,rankScope))+' kg</div><div class="dipl-comp">'+comp+'</div></div></div>';
+    }
+    document.getElementById("printArea").innerHTML=h;
+    window.print();
+  }
+
+  // ---------- mod tabela TV ----------
+  var tvTimer=null, tvPage=0, tvWake=null;
+  function tvPages(){
+    var pages=[{k:"fin"}];
+    var secs={};
+    state.participants.forEach(function(p){ secs[p.sector||"Fără sector"]=1; });
+    var keys=Object.keys(secs);
+    if(keys.length>1){
+      keys.sort(function(a,b){return a.localeCompare(b,"ro");}).forEach(function(k){ pages.push({k:"sec", s:k}); });
+    }
+    return pages;
+  }
+  function tvRender(){
+    var pages=tvPages(); if(tvPage>=pages.length) tvPage=0;
+    var pg=pages[tvPage];
+    document.getElementById("tv-title").textContent = state.name||"Concurs pescuit";
+    var arr, sub;
+    if(pg.k==="fin"){ sub="Clasament general · "+scopeLabel(rankScope); arr=sortRankS(state.participants,rankScope); }
+    else { sub="Sector "+pg.s+" · "+scopeLabel(rankScope); arr=sortRankS(state.participants.filter(function(p){return (p.sector||"Fără sector")===pg.s;}),rankScope); }
+    document.getElementById("tv-sub").textContent=sub;
+    var out="<table><tbody>";
+    arr.slice(0,10).forEach(function(p,i){
+      var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+      out+='<tr class="'+(i===0?"p1":"")+'"><td class="pos">'+medal+'</td><td>'+esc(nameOf(p))+(p.stand?' <span style="opacity:.55;font-size:2.4vh;">· St.'+esc(p.stand)+'</span>':'')+'</td><td class="kg">'+fmt(totalOfM(p,rankScope))+' kg</td></tr>';
+    });
+    out+="</tbody></table>";
+    document.getElementById("tv-body").innerHTML=out;
+    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
+    var cm=document.getElementById("tv-cmmc");
+    if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); cm.textContent="🐟 CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg"; }
+    else cm.textContent="";
+    tvPage++;
+  }
+  function tvStart(){
+    if(!state.participants.length){ toast("Nu ai participanți de afișat"); return; }
+    document.getElementById("tv").classList.add("on");
+    tvPage=0; tvRender();
+    tvTimer=setInterval(tvRender, 8000);
+    try{ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }catch(e){}
+    if(navigator.wakeLock && navigator.wakeLock.request){
+      navigator.wakeLock.request("screen").then(function(w){ tvWake=w; }).catch(function(){});
+    }
+  }
+  function tvStop(){
+    document.getElementById("tv").classList.remove("on");
+    if(tvTimer){ clearInterval(tvTimer); tvTimer=null; }
+    if(tvWake){ try{ tvWake.release(); }catch(e){} tvWake=null; }
+    try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
+  }
+
+  // ---------- sync (export / import fisier) ----------
+  function exportData(){
+    var payload={app:"concurs-pescuit", ver:1, exportedAt:new Date().toISOString(), data:state};
+    var json=JSON.stringify(payload);
+    var d=new Date();
+    function p2(n){ return (n<10?"0":"")+n; }
+    var name="concurs-"+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"-"+p2(d.getHours())+p2(d.getMinutes())+".json";
+    var file=null;
+    try{ file=new File([json], name, {type:"application/json"}); }catch(e){}
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:"Date concurs pescuit"}).catch(function(err){ if(err && err.name!=="AbortError") downloadJson(json,name); });
+    } else { downloadJson(json,name); }
+  }
+  function downloadJson(json,name){
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+    a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+    toast("Fișier exportat");
+  }
+  function importData(input){
+    if(guard()){ input.value=""; return; }
+    var f=input.files && input.files[0]; input.value=""; if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var d=null;
+      try{ d=JSON.parse(e.target.result); }catch(err){ toast("Fișier invalid"); return; }
+      var data=(d && d.app==="concurs-pescuit" && d.data) ? d.data : d;
+      if(!data || !Array.isArray(data.participants)){ toast("Fișier invalid – nu e un export al aplicației"); return; }
+      var mode=document.getElementById("imp-mode").value;
+      if(mode==="replace"){
+        if(!confirm("Înlocuiești TOATE datele de pe acest telefon cu cele din fișier ("+data.participants.length+" participanți)?")) return;
+        state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1 };
+        normalize(); save();
+        toast("Date înlocuite: "+state.participants.length+" participanți");
+      } else {
+        var added=0, updated=0;
+        (data.sectors||[]).forEach(function(s){ if(state.sectors.indexOf(s)<0) state.sectors.push(s); });
+        (data.participants||[]).forEach(function(np){
+          var i=-1;
+          for(var k=0;k<state.participants.length;k++){ if(state.participants[k].id===np.id){ i=k; break; } }
+          if(i>=0){ state.participants[i]=np; updated++; } else { state.participants.push(np); added++; }
+        });
+        if(data.name && !state.name) state.name=data.name;
+        normalize(); save();
+        toast(added+" adăugați, "+updated+" actualizați");
+      }
+      document.getElementById("set-name").value=state.name||"";
+      document.getElementById("compName").textContent=state.name||"";
+      renderSectors(); renderList();
+    };
+    reader.readAsText(f);
+  }
+
+  function saveCompName(v){ if(isLocked()) return; state.name=v; document.getElementById("compName").textContent=v; queueSave(); }
+  function wipe(){
+    if(guard()) return;
+    if(!confirm("Ștergi toți participanții și datele? Nu se poate reveni.")) return;
+    state={ name:"", sectors:["A","B","C"], participants:[] };
+    save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
+    renderSectors(); renderList(); renderRank();
+  }
+
+  // ---------- init ----------
+  (function(){
+    load();
+    document.getElementById("set-name").value = state.name||"";
+    document.getElementById("compName").textContent = state.name||"";
+    document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
+    document.getElementById("mc-2").classList.toggle("on", (state.manche||1)===2);
+    renderSectors(); updateLockUI(); updateVoiceBtn(); renderList();
+    if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);
+    if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
+    document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
+    startTimerLoop();
+  })();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      reg.update();
+      // verifică actualizări de fiecare dată când aplicația revine în prim-plan
+      document.addEventListener('visibilitychange',function(){ if(!document.hidden) reg.update(); });
+    }).catch(function(){});
+    // când versiunea nouă preia controlul, reîncarcă pagina automat
+    var hadController=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(hadController){ location.reload(); }
+      hadController=true;
+    });
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "Cântar & Clasament – Concurs Pescuit",
+  "short_name": "Cântar",
+  "description": "Clasament pentru concursuri de pescuit: participanți, cântăriri, sectoare, CMMC, tragere la sorți.",
+  "lang": "ro",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef4fa",
+  "theme_color": "#0e63b8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
