@@ -2,6 +2,13 @@ name = "concurs-api"
 main = "index.js"
 compatibility_date = "2024-01-01"
 
-# Legăturile D1 (binding "DB") și secretul WRITE_KEY se adaugă din
-# Cloudflare Dashboard -> Workers & Pages -> concurs-api -> Settings,
-# nu aici în fișier (valorile sunt specifice contului tău Cloudflare).
+[[d1_databases]]
+binding = "DB"
+database_name = "concurs-api"
+database_id = "5f071722-0419-4209-b5fa-b249f9c06f93"
+
+[vars]
+VAPID_PUBLIC_KEY = "BJXKpO9ZN60T-rEAwHW9ItFIEUFkCq9ec2tbYzrRY6T_lFf23Quii01j0TjuBa-zongkFSe56EHMRQeTR-mFsAs"
+
+# Secretele (WRITE_KEY, VAPID_PRIVATE_JWK) NU se pun aici — se administrează
+# cu `wrangler secret put <NUME>` sau din Cloudflare Dashboard -> Settings -> Variables and Secrets.
