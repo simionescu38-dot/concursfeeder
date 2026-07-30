@@ -1,0 +1,7 @@
+name = "concurs-api"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# Legăturile D1 (binding "DB") și secretul WRITE_KEY se adaugă din
+# Cloudflare Dashboard -> Workers & Pages -> concurs-api -> Settings,
+# nu aici în fișier (valorile sunt specifice contului tău Cloudflare).
