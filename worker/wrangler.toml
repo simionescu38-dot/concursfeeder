@@ -1,0 +1,11 @@
+name = "concursremuslake"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "concursremuslake"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# WRITE_KEY is a secret, not stored here.
+# Set it with: wrangler secret put WRITE_KEY

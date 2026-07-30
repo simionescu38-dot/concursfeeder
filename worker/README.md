@@ -1,0 +1,19 @@
+# Room state API worker
+
+Cloudflare Worker backing `https://concursremuslake.simionescu38.workers.dev/`. Stores per-room JSON state in a D1 table so it can be synced across devices via a room code.
+
+## Endpoints
+
+- `GET /api/state?room=<code>` — returns `{ ok, rev, data, name }` for the room (`rev: 0, data: null` if the room doesn't exist yet).
+- `PUT /api/state?room=<code>` — upserts the room's state. Requires header `x-write-key: <WRITE_KEY>`. Body: `{ "data": { ...room state..., "name": "optional display name" } }`.
+- `GET /api/rooms` — lists the 100 most recently updated rooms (`code`, `name`, `rev`, `updated_at`).
+
+## Deploy
+
+```sh
+cd worker
+wrangler d1 create concursremuslake       # then paste the database_id into wrangler.toml
+wrangler d1 execute concursremuslake --file=schema.sql --remote
+wrangler secret put WRITE_KEY
+wrangler deploy
+```
