@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Clasament de Sezon — Pescuit</title>
+<meta name="theme-color" content="#0e63b8">
+<style>
+  :root{
+    --pine:#10263c; --teal:#0e63b8; --teal-d:#0a4a8c;
+    --amber:#e08a1e; --amber-soft:#fbe9cf;
+    --bg:#eef4fa; --card:#ffffff; --line:#b9cbdc; --muted:#44586c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--pine); font-size:16px; line-height:1.35; padding-bottom:24px;
+  }
+  .num{font-variant-numeric:tabular-nums;}
+  header{
+    background:linear-gradient(160deg,var(--teal) 0%,var(--teal-d) 100%);
+    color:#fff; padding:16px 16px 14px; position:sticky; top:0; z-index:20;
+    box-shadow:0 2px 10px rgba(8,26,46,.22);
+  }
+  header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
+  header h1{margin:2px 0 0; font-size:20px; font-weight:800; letter-spacing:-.01em;}
+  header .comp{font-size:13px; opacity:.85; margin-top:2px; min-height:16px;}
+  main{padding:14px 14px 20px; max-width:640px; margin:0 auto;}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px;}
+  .sec-title{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:800; margin:2px 0 10px;}
+
+  .summary{display:flex; gap:10px; margin-bottom:12px;}
+  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .stat .n{font-size:22px; font-weight:800;}
+  .stat .l{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
+
+  .empty{text-align:center; color:var(--muted); padding:30px 16px; font-size:14px;}
+  .empty .big{font-size:30px; margin-bottom:6px;}
+
+  .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
+  .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
+  .seg button.on{background:#fff; color:var(--teal-d); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+
+  .cmmc{background:linear-gradient(120deg,#fff5e4,#fbe9cf); border:1.5px solid #f0d29a; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
+  .cmmc .medal{font-size:26px;}
+  .cmmc .t{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#8a5a12;}
+  .cmmc .who{font-weight:800; font-size:16px;}
+  .cmmc .kg{margin-left:auto; font-size:20px; font-weight:800; color:#8a5a12;}
+
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  th,td{padding:9px 8px; text-align:left; font-size:14px;}
+  th{background:#eef4fa; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800;}
+  td{border-top:1px solid var(--line);}
+  td.pos{width:34px; font-weight:800; text-align:center;}
+  td.kg{text-align:right; font-weight:800; width:70px;}
+  td.small{color:var(--muted); font-size:12px;}
+  tr.p1 td.pos{color:#a67c12;} tr.p1{background:#fdf6e6;}
+  tr.p2 td.pos{color:#7d8686;}
+  tr.p3 td.pos{color:#a5673c;}
+
+  .hint{font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.4;}
+  .complist{margin-top:4px;}
+  .complist div{padding:6px 0; border-top:1px solid var(--line); font-size:13px;}
+  .complist div:first-child{border-top:0;}
+  .complist .cn{font-weight:700;}
+  .complist .cd{color:var(--muted); font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Sezon complet</div>
+  <h1>🏆 Clasament de sezon</h1>
+  <div class="comp" id="subline">Se încarcă concursurile…</div>
+</header>
+
+<main>
+  <div id="content">
+    <div class="empty"><div class="big">⏳</div>Se încarcă datele din toate concursurile…</div>
+  </div>
+</main>
+
+<script>
+  var API_BASE = "https://concurs-api.simionescu38.workers.dev";
+  var sortMode = "kg"; // "kg" | "pts"
+  var season = null; // computed data, filled after load
+
+  function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
+  function fmt(n){ if(!n) return "0"; var s=(Math.round(n*1000)/1000).toString(); return s.replace(".",","); }
+  function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || ""; }
+
+  function mOf(p, mi){
+    if(p.m && p.m[mi]) return p.m[mi];
+    if(mi===1 && !p.m){ return {catches:Array.isArray(p.catches)?p.catches:[], extras:Array.isArray(p.extras)?p.extras:[]}; }
+    return {catches:[], extras:[]};
+  }
+  function catchesSum(p, mi){ var s=0; (mOf(p,mi).catches||[]).forEach(function(v){ s+=(+v||0); }); return s; }
+  function extrasSum(p, mi){ var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ s+=(+v||0); }); return s; }
+  function extrasMax(p, mi){ var mx=0; (mOf(p,mi).extras||[]).forEach(function(v){ if((+v||0)>mx) mx=(+v||0); }); return mx; }
+  function totalKg(p){ return catchesSum(p,1)+catchesSum(p,2)+extrasSum(p,1)+extrasSum(p,2); }
+  function bestFish(p){ return Math.max(extrasMax(p,1), extrasMax(p,2)); }
+
+  function dateLabel(ms){
+    if(!ms) return "";
+    var d = new Date(ms);
+    return d.toLocaleDateString("ro-RO",{day:"2-digit",month:"2-digit",year:"numeric"});
+  }
+
+  async function loadSeason(){
+    var roomsRes = await fetch(API_BASE+"/api/rooms").then(function(r){return r.json();});
+    if(!roomsRes || !roomsRes.ok || !roomsRes.rooms || !roomsRes.rooms.length){
+      throw new Error("Niciun concurs găsit.");
+    }
+    var rooms = roomsRes.rooms;
+    var states = await Promise.all(rooms.map(function(r){
+      return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code))
+        .then(function(res){ return res.json(); })
+        .catch(function(){ return null; });
+    }));
+
+    var byKey = {}; // name key -> aggregated record
+    var comps = []; // list of processed competitions (for footer)
+    var seasonFish = null; // {v, name, comp}
+
+    rooms.forEach(function(r, i){
+      var res = states[i];
+      if(!res || !res.ok || !res.data) return;
+      var data = res.data;
+      var parts = Array.isArray(data.participants) ? data.participants : [];
+      if(!parts.length) return;
+
+      var compName = (data.name || r.name || r.code).trim() || r.code;
+      var compDate = data.startAt || r.updated_at && Date.parse(r.updated_at) || null;
+
+      var ranked = parts.map(function(p){
+        return {p:p, kg:totalKg(p), fish:bestFish(p)};
+      }).sort(function(a,b){ return b.kg - a.kg; });
+
+      comps.push({name:compName, date:compDate, code:r.code, n:ranked.length});
+
+      ranked.forEach(function(row, idx){
+        var nm = nameOf(row.p);
+        if(!nm) return;
+        var key = nm.toLowerCase();
+        if(!byKey[key]){
+          byKey[key] = {name:nm, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
+        }
+        var rec = byKey[key];
+        var place = idx+1;
+        rec.totalKg += row.kg;
+        rec.totalPoints += place;
+        rec.competitions += 1;
+        rec.rows.push({comp:compName, date:compDate, place:place, kg:row.kg, fish:row.fish});
+        if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = compName; }
+        if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
+          seasonFish = {v:row.fish, name:nm, comp:compName};
+        }
+      });
+    });
+
+    var list = Object.keys(byKey).map(function(k){ return byKey[k]; });
+    comps.sort(function(a,b){ return (b.date||0)-(a.date||0); });
+
+    return {list:list, comps:comps, seasonFish:seasonFish};
+  }
+
+  function renderTable(){
+    var list = season.list.slice();
+    if(sortMode==="kg"){
+      list.sort(function(a,b){ return b.totalKg - a.totalKg; });
+    } else {
+      list.sort(function(a,b){ return a.totalPoints - b.totalPoints; });
+    }
+    var rows = "";
+    list.forEach(function(rec, i){
+      var cls = i===0?"p1":i===1?"p2":i===2?"p3":"";
+      var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+      rows += '<tr class="'+cls+'">'+
+        '<td class="pos">'+medal+'</td>'+
+        '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+'</div></td>'+
+        '<td class="kg num">'+rec.totalPoints+'</td>'+
+        '<td class="kg num">'+fmt(rec.totalKg)+'</td>'+
+      '</tr>';
+    });
+    var body = document.getElementById("content");
+    var cmmcHtml = "";
+    if(season.seasonFish){
+      cmmcHtml = '<div class="cmmc"><div class="medal">🐟</div><div><div class="t">CMMC sezon — cel mai mare pește</div>'+
+        '<div class="who">'+esc(season.seasonFish.name)+' <span style="font-weight:600;color:#8a5a12;">· '+esc(season.seasonFish.comp)+'</span></div></div>'+
+        '<div class="kg num">'+fmt(season.seasonFish.v)+' kg</div></div>';
+    }
+    var compListHtml = season.comps.map(function(c){
+      return '<div><span class="cn">'+esc(c.name)+'</span> · <span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' participanți</span></div>';
+    }).join("");
+
+    body.innerHTML =
+      '<div class="summary">'+
+        '<div class="stat"><div class="n num">'+season.list.length+'</div><div class="l">Concurenți</div></div>'+
+        '<div class="stat"><div class="n num">'+season.comps.length+'</div><div class="l">Concursuri</div></div>'+
+      '</div>'+
+      cmmcHtml+
+      '<div class="seg">'+
+        '<button id="sm-kg" class="'+(sortMode==="kg"?"on":"")+'" onclick="setSort(\'kg\')">După kg</button>'+
+        '<button id="sm-pts" class="'+(sortMode==="pts"?"on":"")+'" onclick="setSort(\'pts\')">După puncte</button>'+
+      '</div>'+
+      '<table><thead><tr><th class="pos">#</th><th>Concurent</th><th class="kg">Pct</th><th class="kg">Total kg</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<p class="hint">Puncte = suma locurilor ocupate în fiecare concurs (loc 1 = 1 punct) — câștigă cine are cele mai puține. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
+      '<div class="card" style="margin-top:14px;"><div class="sec-title">Concursuri incluse</div><div class="complist">'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div></div>';
+  }
+
+  function setSort(m){ sortMode=m; renderTable(); }
+  window.setSort = setSort;
+
+  loadSeason().then(function(res){
+    season = res;
+    document.getElementById("subline").textContent = season.comps.length+" concursuri · "+season.list.length+" concurenți";
+    if(!season.list.length){
+      document.getElementById("content").innerHTML = '<div class="empty"><div class="big">🎣</div>Niciun rezultat găsit încă în concursuri.</div>';
+      return;
+    }
+    renderTable();
+  }).catch(function(err){
+    document.getElementById("subline").textContent = "Eroare la încărcare";
+    document.getElementById("content").innerHTML = '<div class="empty"><div class="big">⚠️</div>Nu s-au putut încărca datele: '+esc(err.message||String(err))+'</div>';
+  });
+</script>
+</body>
+</html>
