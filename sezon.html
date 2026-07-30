@@ -59,6 +59,9 @@
   tr.p1 td.pos{color:#a67c12;} tr.p1{background:#fdf6e6;}
   tr.p2 td.pos{color:#7d8686;}
   tr.p3 td.pos{color:#a5673c;}
+  tr.pclick{cursor:pointer;}
+  tr.pclick:active{background:#e4eef9;}
+  tr.histrow td{background:#f5f8fc; border-top:0;}
 
   .hint{font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.4;}
   .complist{margin-top:4px;}
@@ -233,18 +236,30 @@
     if(sortMode==="kg"){
       list.sort(function(a,b){ return b.totalKg - a.totalKg; });
     } else {
-      list.sort(function(a,b){ return a.totalPoints - b.totalPoints; });
+      list.sort(function(a,b){
+        var d=a.totalPoints-b.totalPoints; if(d!==0) return d;
+        return b.totalKg-a.totalKg; // la egalitate de puncte, departajează cantitatea totală mai mare
+      });
     }
     var rows = "";
     list.forEach(function(rec, i){
       var cls = i===0?"p1":i===1?"p2":i===2?"p3":"";
       var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
-      rows += '<tr class="'+cls+'">'+
+      rows += '<tr class="'+cls+' pclick" onclick="toggleHist('+i+')">'+
         '<td class="pos">'+medal+'</td>'+
-        '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+'</div></td>'+
+        '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+' · atinge pentru istoric</div></td>'+
         '<td class="kg num">'+rec.totalPoints+'</td>'+
         '<td class="kg num">'+fmt(rec.totalKg)+'</td>'+
       '</tr>';
+      var histRows = rec.rows.slice().sort(function(a,b){ return (b.date||0)-(a.date||0); }).map(function(r){
+        return '<tr><td>'+esc(r.comp)+'<div class="small" style="color:var(--muted);font-size:11px;">'+(r.date?dateLabel(r.date):'fără dată')+'</div></td>'+
+          '<td class="pos">'+r.place+'</td>'+
+          '<td class="kg num">'+fmt(r.kg)+'</td>'+
+          '<td class="kg num">'+(r.fish>0?fmt(r.fish):'–')+'</td></tr>';
+      }).join("");
+      rows += '<tr id="hist-'+i+'" class="histrow" style="display:none;"><td colspan="4" style="padding:0;border-top:0;">'+
+        '<table style="margin:0;border-radius:0;box-shadow:none;"><thead><tr><th>Concurs</th><th class="pos">Loc</th><th class="kg">Kg</th><th class="kg">Pește</th></tr></thead><tbody>'+
+        histRows+'</tbody></table></td></tr>';
     });
     var body = document.getElementById("content");
     var cmmcHtml = "";
@@ -274,6 +289,13 @@
 
   function setSort(m){ sortMode=m; renderTable(); }
   window.setSort = setSort;
+
+  function toggleHist(i){
+    var el = document.getElementById("hist-"+i);
+    if(!el) return;
+    el.style.display = (el.style.display==="none") ? "table-row" : "none";
+  }
+  window.toggleHist = toggleHist;
 
   loadSeason().then(function(res){
     season = res;
