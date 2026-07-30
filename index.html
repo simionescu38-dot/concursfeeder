@@ -258,6 +258,7 @@
   <div class="kicker">Clasament concurs</div>
   <h1>Cântar &amp; Clasament</h1>
   <div class="comp" id="compName"></div>
+  <div class="comp" id="syncBadge" style="display:none;"></div>
   <div id="timerBar"></div>
   <button id="lockBtn" onclick="toggleLock()" aria-label="Blocare editare">🔓</button>
 </header>
@@ -382,6 +383,21 @@
     </div>
 
     <div class="card lockhide">
+      <div class="sec-title">Clasament live pe alte telefoane</div>
+      <p class="hint" style="margin:0 0 10px;">Setează un cod de cameră și o cheie de scriere (o dată, pe telefonul organizatorului). De fiecare dată când cântărești, datele urcă automat în cloud. Trimite apoi linkul de mai jos celorlalți — ei văd clasamentul live, fără să poată modifica nimic.</p>
+      <label class="f">Cod cameră</label>
+      <div class="row">
+        <input id="sync-room" placeholder="ex: remus1" oninput="saveSyncRoom(this.value)">
+        <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="genRoomCode()">🎲 Cod nou</button>
+      </div>
+      <label class="f" style="margin-top:8px;">Cheie de scriere</label>
+      <input id="sync-key" type="password" autocomplete="off" placeholder="cheia primită la activare" oninput="saveSyncKey(this.value)">
+      <button class="btn btn-primary mt" onclick="shareLiveLink()">🔗 Trimite linkul live celorlalți</button>
+      <p class="hint" id="sync-status" style="margin-top:8px;"></p>
+      <p class="hint">Cheia de scriere rămâne doar pe telefonul tău — nu o pune în linkul trimis altora.</p>
+    </div>
+
+    <div class="card lockhide">
       <div class="sec-title">Anunț vocal la cântar</div>
       <button class="btn btn-ghost" id="btn-voice" onclick="toggleVoice()">🔇 Oprit – apasă ca să pornești</button>
       <p class="hint">Telefonul anunță cu voce tare fiecare cântărire și locul în clasament (ex: „Ion Popescu, 8 kilograme și 650 de grame. Locul 2 la general."). Folosește vocea telefonului, fără internet.</p>
@@ -500,7 +516,7 @@
 
   // ---------- blocare cu PIN ----------
   function pinHash(p){ var h=5381; p=""+p; for(var i=0;i<p.length;i++){ h=((h*33)^p.charCodeAt(i))>>>0; } return "h"+h; }
-  function isLocked(){ return !!(state.lock && state.pinHash); }
+  function isLocked(){ return viewerMode || !!(state.lock && state.pinHash); }
   function guard(){ if(isLocked()){ toast("🔒 Blocat – apasă lacătul de sus și introdu PIN-ul"); return true; } return false; }
   function updateLockUI(){
     document.body.classList.toggle("locked", isLocked());
@@ -533,8 +549,82 @@
 
   // ---------- persistence (localStorage) ----------
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast("Stocare plină – șterge câteva poze"); } }
-  function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); }
+  function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); queueSync(); }
   function load(){ try{ var v=localStorage.getItem(KEY); if(v){ var d=JSON.parse(v); if(d&&typeof d==="object"){ state=Object.assign(state,d); } } }catch(e){} normalize(); }
+
+  // ---------- sincronizare live (cloud) ----------
+  var API_BASE = "https://concurs-api.simionescu38.workers.dev";
+  var SYNC_ROOM_KEY = "concurs-sync-room";
+  var SYNC_WKEY_KEY = "concurs-sync-wkey";
+  var syncRoom = "", syncKey = "", syncT = null;
+  var viewerMode = false, viewerRoom = "", pollT = null, lastRev = 0;
+  function pad2(n){ return (n<10?"0":"")+n; }
+  function nowHM(){ var d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
+  function setSyncStatus(t, live){
+    var st=document.getElementById("sync-status"); if(st) st.textContent=t;
+    var b=document.getElementById("syncBadge");
+    if(b){ if(t && (live||viewerMode)){ b.textContent=t; b.style.display="block"; } else if(!viewerMode){ b.style.display="none"; } }
+  }
+  function loadSyncCfg(){
+    try{ syncRoom=(localStorage.getItem(SYNC_ROOM_KEY)||"").trim(); syncKey=localStorage.getItem(SYNC_WKEY_KEY)||""; }catch(e){}
+  }
+  function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} }
+  function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} }
+  function genRoomCode(){
+    var code=Math.random().toString(36).slice(2,7);
+    var el=document.getElementById("sync-room"); if(el) el.value=code;
+    saveSyncRoom(code); toast("Cod cameră nou: "+code);
+  }
+  function updateSyncUI(){
+    var r=document.getElementById("sync-room"), k=document.getElementById("sync-key");
+    if(r) r.value=syncRoom;
+    if(k) k.value=syncKey;
+    if(!syncRoom || !syncKey) setSyncStatus("Sincronizarea live e oprită – completează codul și cheia mai sus.");
+  }
+  function liveLink(){ return location.origin+location.pathname+"?room="+encodeURIComponent(syncRoom); }
+  function shareLiveLink(){
+    if(!syncRoom){ toast("Setează întâi un cod de cameră"); return; }
+    var link=liveLink();
+    if(navigator.share){ navigator.share({title:state.name||"Clasament live", text:"Urmărește clasamentul live:", url:link}).catch(function(){}); }
+    else copyText(link);
+  }
+  function queueSync(){
+    if(viewerMode || !syncRoom || !syncKey) return;
+    clearTimeout(syncT); syncT=setTimeout(pushState, 900);
+  }
+  function pushState(){
+    if(!syncRoom || !syncKey) return;
+    setSyncStatus("Se sincronizează…", true);
+    fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
+      method:"PUT",
+      headers:{"Content-Type":"application/json","x-write-key":syncKey},
+      body: JSON.stringify({data: state})
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if(j && j.ok) setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true);
+      else setSyncStatus("Eroare sincronizare: "+((j&&j.error)||"necunoscută"), true);
+    }).catch(function(){ setSyncStatus("Eroare sincronizare (fără internet?)", true); });
+  }
+  function startViewerMode(room){
+    viewerMode=true; viewerRoom=room;
+    updateLockUI();
+    var lb=document.querySelector(".lockbar");
+    if(lb) lb.textContent="🔴 Vizualizare live – camera "+room+". Se actualizează automat.";
+    showView("rank");
+    pullState();
+    pollT=setInterval(pullState, 4000);
+  }
+  function pullState(){
+    fetch(API_BASE+"/api/state?room="+encodeURIComponent(viewerRoom)).then(function(r){ return r.json(); }).then(function(j){
+      if(!j || !j.ok) return;
+      if(!j.data){ setSyncStatus("Se așteaptă date de la organizator…", true); return; }
+      if(j.rev===lastRev) return;
+      lastRev=j.rev;
+      state=j.data; normalize();
+      var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
+      renderSectors(); renderList(); renderRank();
+      setSyncStatus("Actualizat • "+nowHM(), true);
+    }).catch(function(){ setSyncStatus("Eroare conexiune…", true); });
+  }
   function normalize(){
     if(!state.manche) state.manche=1;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
@@ -1554,6 +1644,7 @@
   // ---------- init ----------
   (function(){
     load();
+    loadSyncCfg(); updateSyncUI();
     document.getElementById("set-name").value = state.name||"";
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
@@ -1563,6 +1654,8 @@
     if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
     document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
     startTimerLoop();
+    var roomParam=(new URLSearchParams(location.search)).get("room");
+    if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
   })();
 </script>
 <script>

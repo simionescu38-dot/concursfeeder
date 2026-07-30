@@ -1,6 +1,6 @@
 # Room state API worker
 
-Cloudflare Worker backing `https://concursremuslake.simionescu38.workers.dev/`. Stores per-room JSON state in a D1 table so it can be synced across devices via a room code.
+Cloudflare Worker backing `https://concurs-api.simionescu38.workers.dev/`. Stores per-room JSON state in a D1 table so `index.html` can sync a contest's live state across devices via a room code (see the "Clasament live pe alte telefoane" section in the app's settings).
 
 ## Endpoints
 
@@ -12,8 +12,8 @@ Cloudflare Worker backing `https://concursremuslake.simionescu38.workers.dev/`. 
 
 ```sh
 cd worker
-wrangler d1 create concursremuslake       # then paste the database_id into wrangler.toml
-wrangler d1 execute concursremuslake --file=schema.sql --remote
+wrangler d1 create concurs-api            # then paste the database_id into wrangler.toml
+wrangler d1 execute concurs-api --file=schema.sql --remote
 wrangler secret put WRITE_KEY
 wrangler deploy
 ```

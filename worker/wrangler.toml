@@ -1,10 +1,10 @@
-name = "concursremuslake"
+name = "concurs-api"
 main = "index.js"
 compatibility_date = "2024-01-01"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "concursremuslake"
+database_name = "concurs-api"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
 # WRITE_KEY is a secret, not stored here.
