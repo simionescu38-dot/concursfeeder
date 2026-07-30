@@ -194,6 +194,7 @@
     }
 
     var byKey = {}; // name key -> aggregated record
+    var byStand = {}; // stand -> aggregat pe toate locațiile
     var comps = []; // list of processed competitions (for footer)
     var seasonFish = null; // {v, name, comp}
 
@@ -222,13 +223,22 @@
         if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
           seasonFish = {v:row.fish, name:nm, comp:src.compName};
         }
+
+        var stand = (row.p.stand || "").toString().trim();
+        if(stand){
+          if(!byStand[stand]) byStand[stand] = {stand:stand, totalKg:0, uses:0};
+          byStand[stand].totalKg += row.kg;
+          byStand[stand].uses += 1;
+        }
       });
     });
 
     var list = Object.keys(byKey).map(function(k){ return byKey[k]; });
+    var standList = Object.keys(byStand).map(function(k){ return byStand[k]; })
+      .sort(function(a,b){ return b.totalKg - a.totalKg; });
     comps.sort(function(a,b){ return (b.date||0)-(a.date||0); });
 
-    return {list:list, comps:comps, seasonFish:seasonFish};
+    return {list:list, comps:comps, seasonFish:seasonFish, standList:standList};
   }
 
   function renderTable(){
@@ -272,6 +282,16 @@
       return '<div><span class="cn">'+esc(c.name)+'</span> · <span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' participanți</span></div>';
     }).join("");
 
+    var standRows = season.standList.slice(0,15).map(function(s,i){
+      var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+      return '<tr><td class="pos">'+medal+'</td><td>Stand '+esc(s.stand)+'</td><td class="kg num">'+s.uses+'</td><td class="kg num">'+fmt(s.totalKg)+'</td></tr>';
+    }).join("");
+    var standHtml = season.standList.length
+      ? '<div class="card" style="margin-top:14px;"><div class="sec-title">Cel mai productiv stand (toate locațiile)</div>'+
+        '<table><thead><tr><th class="pos">#</th><th>Stand</th><th class="kg">Cântăriri</th><th class="kg">Total kg</th></tr></thead><tbody>'+standRows+'</tbody></table>'+
+        '<p class="hint">Suma kg prinse de pe fiecare număr de stand, indiferent de concurs sau locație — arată ce standuri sunt constant productive.</p></div>'
+      : '';
+
     body.innerHTML =
       '<div class="summary">'+
         '<div class="stat"><div class="n num">'+season.list.length+'</div><div class="l">Concurenți</div></div>'+
@@ -284,6 +304,7 @@
       '</div>'+
       '<table><thead><tr><th class="pos">#</th><th>Concurent</th><th class="kg">Pct</th><th class="kg">Total kg</th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<p class="hint">Puncte = suma locurilor ocupate în fiecare concurs (loc 1 = 1 punct) — câștigă cine are cele mai puține. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
+      standHtml+
       '<div class="card" style="margin-top:14px;"><div class="sec-title">Concursuri incluse</div><div class="complist">'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div></div>';
   }
 
