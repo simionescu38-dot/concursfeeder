@@ -1246,7 +1246,6 @@
     if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă — '+esc(scopeLabel(rankScope))+'.</div>';
     var totalC=0; all.forEach(function(c){ totalC+=c.v; });
     allEx.forEach(function(c){ totalC+=c.v; });
-    var withCatch={}; all.forEach(function(c){ withCatch[c.p.id]=1; });
     var cmmcBig=null; allEx.forEach(function(c){ if(!cmmcBig||c.v>cmmcBig.v) cmmcBig=c; });
     var html='<p class="hint" style="margin:0 0 10px;">'+esc(scopeLabel(rankScope))+'</p>'+
     '<div class="summary">'+
@@ -1255,7 +1254,6 @@
     '</div>'+
     '<div class="summary">'+
       '<div class="stat"><div class="n num">'+fmt(totalC/Math.max(1,state.participants.length))+'</div><div class="l">Medie kg / participant</div></div>'+
-      '<div class="stat"><div class="n num">'+Object.keys(withCatch).length+'/'+state.participants.length+'</div><div class="l">Au prins pește</div></div>'+
     '</div>'+
     '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>';
     var secs={};
