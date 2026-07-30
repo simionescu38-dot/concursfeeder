@@ -368,8 +368,8 @@
     <div class="card">
       <div class="sec-title">Cum se calculează</div>
       <p class="hint">
-        <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra + CMMC.</b> CMMC premiază și cel mai mare exemplar.
-        La egalitate de total, departajează CMMC-ul mai mare. Datele se salvează automat.
+        <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra.</b> CMMC (cel mai mare pește) se calculează automat din peștii extra, în tab-ul Statistici.
+        La egalitate de total, departajează cantitatea mai mare. Datele se salvează automat.
       </p>
       <p class="hint"><b>Concurs pe 2 zile (manșe):</b> în tab-ul Participanți, sus, alegi „Manșa 1" sau „Manșa 2" — tot ce cântărești merge în manșa activă. În tab-ul Clasamente alegi ce vrei să vezi: Manșa 1, Manșa 2 sau <b>General</b> (suma celor două zile). La „General" + „După puncte", clasamentul e suma locurilor din fiecare manșă — câștigă cine are cele mai puține puncte, exact ca la concursurile oficiale.</p>
     </div>
@@ -949,7 +949,8 @@
     return arr.slice().sort(function(a,b){
       var d=totalOfM(b,mi)-totalOfM(a,mi);
       if(Math.abs(d)>1e-9) return d;
-      var c=cmmcOfM(b,mi)-cmmcOfM(a,mi); if(Math.abs(c)>1e-9) return c;
+      // la egalitate de total, departajează cantitatea (capturile brute, fără pești extra)
+      var c=cantOfM(b,mi)-cantOfM(a,mi); if(Math.abs(c)>1e-9) return c;
       return (a.nume+a.prenume).localeCompare(b.nume+b.prenume,"ro");
     });
   }
@@ -998,9 +999,10 @@
   function sortByPointsS(arr,pmap,mi){
     return arr.slice().sort(function(a,b){
       var d=pmap[a.id]-pmap[b.id]; if(d!==0) return d;
-      // la egalitate de puncte, câștigă cantitatea totală de pește (cantitate + pești extra + CMMC)
+      // la egalitate de puncte, câștigă cantitatea totală de pește (cantitate + pești extra)
       var t=totalOfM(b,mi)-totalOfM(a,mi); if(Math.abs(t)>1e-9) return t;
-      var c=cmmcOfM(b,mi)-cmmcOfM(a,mi); if(Math.abs(c)>1e-9) return c;
+      // la egalitate de total, departajează cantitatea (capturile brute, fără pești extra)
+      var c=cantOfM(b,mi)-cantOfM(a,mi); if(Math.abs(c)>1e-9) return c;
       return (a.nume+a.prenume).localeCompare(b.nume+b.prenume,"ro");
     });
   }
@@ -1039,8 +1041,8 @@
     var pmap=currentPmap();
     if(rankMode==="fin" && finMethod==="pct"){
       var pctHint = rankScope==='total'
-        ? 'Punctele sunt suma locurilor din sector obținute în Manșa 1 și Manșa 2 (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra + CMMC).'
-        : 'Punctele vin din locul din sector (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra + CMMC).';
+        ? 'Punctele sunt suma locurilor din sector obținute în Manșa 1 și Manșa 2 (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra); dacă și aceasta e egală, câștigă cantitatea (fără pești extra).'
+        : 'Punctele vin din locul din sector (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra); dacă și aceasta e egală, câștigă cantitatea (fără pești extra).';
       body.innerHTML='<p class="hint" style="margin:0 0 10px;">'+pctHint+'</p>'+
         '<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
         rankRows(sortByPointsS(state.participants,pmap,rankScope),{pmap:pmap,showSector:true,mi:rankScope})+'</tbody></table>';
