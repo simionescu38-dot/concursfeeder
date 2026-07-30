@@ -7,13 +7,18 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
 ## Endpoints
 
 - `GET /api/state?room=<code>` — returnează `{ ok, rev, data, name }` pentru cameră (`rev: 0, data: null` dacă nu există încă).
-- `PUT /api/state?room=<code>` — creează/actualizează starea camerei. Necesită header-ul `x-write-key: <WRITE_KEY>`. Body: `{ "data": { ...starea completă..., "name": "nume opțional" } }`.
+- `PUT /api/state?room=<code>` — creează/actualizează starea camerei. Necesită header-ul `x-write-key: <WRITE_KEY>`. Body: `{ "data": { ...starea completă..., "name": "nume opțional" } }`. Dacă se schimbă liderul concursului față de starea anterioară, trimite automat o notificare push (pop-up + sunet) tuturor telefoanelor abonate la acea cameră.
 - `GET /api/rooms` — listează ultimele 100 camere actualizate (`code`, `name`, `rev`, `updated_at`).
+- `POST /api/subscribe?room=<code>` — înregistrează un abonament de notificări push pentru cameră. Body: `{ "subscription": {...obiectul PushSubscription din browser...} }`.
+- `POST /api/unsubscribe` — șterge un abonament. Body: `{ "endpoint": "..." }`.
 
 ## Configurare în Cloudflare Dashboard (Worker `concurs-api`)
 
-1. **Baza de date D1** — Workers & Pages → `concurs-api` → Settings → Bindings → Add binding → D1 database. Variable name: `DB`. Dacă nu există încă baza de date, o creezi din Workers & Pages → D1 → Create database, apoi rulezi conținutul din `schema.sql` (D1 → baza ta → Console).
+1. **Baza de date D1** — Workers & Pages → `concurs-api` → Settings → Bindings → Add binding → D1 database. Variable name: `DB`. Dacă nu există încă baza de date, o creezi din Workers & Pages → D1 → Create database, apoi rulezi conținutul din `schema.sql` (D1 → baza ta → Console). Dacă baza există deja de dinainte, rulează doar blocul nou (`push_subs`) din `schema.sql`.
 2. **Cheia de scriere** — Settings → Variables and Secrets → Add → tip „Secret", nume `WRITE_KEY`, valoare aleasă de tine (o pui apoi și în aplicație, la „Cheie de scriere").
+3. **Notificări push (VAPID)** — Settings → Variables and Secrets → Add, de două ori (cheile sunt generate separat, în afara acestui repo — nu se pun niciodată în Git):
+   - Secret `VAPID_PRIVATE_JWK` — cheia privată (JSON).
+   - Variable `VAPID_PUBLIC_KEY` — cheia publică (base64url). Aceeași valoare trebuie copiată și în `index.html`, la constanta `VAPID_PUBLIC_KEY`.
 
 ## Notă: proiectul „concursiasi"
 

@@ -403,6 +403,12 @@
       <p class="hint">Cheia de scriere rămâne doar pe telefonul tău — nu o pune în linkul trimis altora.</p>
     </div>
 
+    <div class="card">
+      <div class="sec-title">Notificări live (doar Android/Chrome)</div>
+      <button class="btn btn-primary" id="btn-push" onclick="togglePush()">🔕 Oprite – apasă ca să pornești</button>
+      <p class="hint">Primești un pop-up cu sunet pe telefon când apare un nou lider în concurs — chiar dacă aplicația e închisă. Are nevoie de un cod de cameră setat mai sus (sincronizare live).</p>
+    </div>
+
     <div class="card lockhide">
       <div class="sec-title">Anunț vocal la cântar</div>
       <button class="btn btn-ghost" id="btn-voice" onclick="toggleVoice()">🔇 Oprit – apasă ca să pornești</button>
@@ -560,6 +566,7 @@
 
   // ---------- sincronizare live (cloud) ----------
   var API_BASE = "https://concurs-api.simionescu38.workers.dev";
+  var VAPID_PUBLIC_KEY = "BJXKpO9ZN60T-rEAwHW9ItFIEUFkCq9ec2tbYzrRY6T_lFf23Quii01j0TjuBa-zongkFSe56EHMRQeTR-mFsAs";
   var SYNC_ROOM_KEY = "concurs-sync-room";
   var SYNC_WKEY_KEY = "concurs-sync-wkey";
   var syncRoom = "", syncKey = "", syncT = null;
@@ -631,6 +638,61 @@
       setSyncStatus("Actualizat • "+nowHM(), true);
     }).catch(function(){ setSyncStatus("Eroare conexiune…", true); });
   }
+
+  // ---------- notificări push (pop-up + sunet, chiar cu aplicația închisă — doar Android/Chrome) ----------
+  function pushRoom(){ return syncRoom || viewerRoom; }
+  function urlBase64ToUint8Array(base64String){
+    var padding="=".repeat((4-base64String.length%4)%4);
+    var base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+    var rawData=atob(base64);
+    var out=new Uint8Array(rawData.length);
+    for(var i=0;i<rawData.length;i++) out[i]=rawData.charCodeAt(i);
+    return out;
+  }
+  function updatePushBtn(){
+    var b=document.getElementById("btn-push");
+    if(!b) return;
+    if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+      b.textContent="Indisponibil pe acest telefon/browser";
+      b.disabled=true;
+      return;
+    }
+    b.textContent = state.pushOn ? "🔔 Pornite – apasă ca să oprești" : "🔕 Oprite – apasă ca să pornești";
+  }
+  function togglePush(){ if(state.pushOn) disablePush(); else enablePush(); }
+  function enablePush(){
+    if(!("serviceWorker" in navigator) || !("PushManager" in window)){ toast("Telefonul/browserul nu suportă notificări push"); return; }
+    var room=pushRoom();
+    if(!room){ toast("Setează întâi un cod de cameră (sincronizare live) mai jos"); return; }
+    Notification.requestPermission().then(function(perm){
+      if(perm!=="granted"){ toast("Permisiune refuzată pentru notificări"); return; }
+      navigator.serviceWorker.ready.then(function(reg){
+        return reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+      }).then(function(sub){
+        return fetch(API_BASE+"/api/subscribe?room="+encodeURIComponent(room), {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({subscription: sub.toJSON()})
+        });
+      }).then(function(){
+        state.pushOn=true; save(); updatePushBtn();
+        toast("Notificări live pornite 🔔");
+      }).catch(function(){ toast("Nu am putut activa notificările"); });
+    });
+  }
+  function disablePush(){
+    if(!("serviceWorker" in navigator)){ state.pushOn=false; save(); updatePushBtn(); return; }
+    navigator.serviceWorker.ready.then(function(reg){ return reg.pushManager.getSubscription(); }).then(function(sub){
+      if(!sub){ return; }
+      return fetch(API_BASE+"/api/unsubscribe", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({endpoint: sub.endpoint})
+      }).then(function(){ return sub.unsubscribe(); });
+    }).catch(function(){}).then(function(){
+      state.pushOn=false; save(); updatePushBtn();
+      toast("Notificări live oprite");
+    });
+  }
+
   function normalize(){
     if(!state.manche) state.manche=1;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
@@ -1637,7 +1699,7 @@
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
     document.getElementById("mc-2").classList.toggle("on", (state.manche||1)===2);
-    renderSectors(); updateLockUI(); updateVoiceBtn(); renderList();
+    renderSectors(); updateLockUI(); updateVoiceBtn(); updatePushBtn(); renderList();
     if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);
     if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
     document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;

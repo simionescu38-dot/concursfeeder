@@ -7,3 +7,13 @@ CREATE TABLE IF NOT EXISTS rooms (
 );
 
 CREATE INDEX IF NOT EXISTS idx_rooms_updated_at ON rooms (updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint TEXT PRIMARY KEY,
+  room TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subs_room ON push_subs (room);
