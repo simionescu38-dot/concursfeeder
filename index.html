@@ -1257,18 +1257,6 @@
       '<div class="stat"><div class="n num">'+Object.keys(withCatch).length+'/'+state.participants.length+'</div><div class="l">Au prins pește</div></div>'+
     '</div>'+
     '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>';
-    var hours={}, timed=0;
-    all.forEach(function(c){ if(c.t){ timed++; var h=new Date(c.t).getHours(); if(!hours[h]) hours[h]={n:0,kg:0}; hours[h].n++; hours[h].kg+=c.v; } });
-    if(timed){
-      var keys=Object.keys(hours).map(Number).sort(function(a,b){return a-b;});
-      var maxkg=0; keys.forEach(function(h){ if(hours[h].kg>maxkg) maxkg=hours[h].kg; });
-      html+='<div class="card"><div class="sec-title">Pe ore (kg cântărite)</div>';
-      keys.forEach(function(h){
-        var w=maxkg?Math.max(4, Math.round(hours[h].kg/maxkg*100)):4;
-        html+='<div class="hb-row"><span class="hb-l num">'+("0"+h).slice(-2)+':00</span><div class="hb"><div class="hb-f" style="width:'+w+'%;"></div></div><span class="hb-v num">'+fmt(hours[h].kg)+' kg · '+hours[h].n+' capturi</span></div>';
-      });
-      html+='<p class="hint">Ora se înregistrează automat la fiecare apăsare pe „+" la cântar.</p></div>';
-    }
     var secs={};
     state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,rankScope); });
     var sk=Object.keys(secs).sort(function(a,b){return a.localeCompare(b,"ro");});
