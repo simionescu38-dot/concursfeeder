@@ -1234,17 +1234,19 @@
   }
   function statsHtml(){
     var all=[];
+    var allEx=[];
     var scopes = rankScope==='total' ? [1,2] : [rankScope];
     state.participants.forEach(function(p){
       scopes.forEach(function(mi){
         var m=mOf(p,mi);
         (m.catches||[]).forEach(function(v,i){ all.push({v:+v||0, t:(m.catchTimes||[])[i]||null, p:p}); });
+        (m.extras||[]).forEach(function(v){ allEx.push({v:+v||0, p:p}); });
       });
     });
     if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă — '+esc(scopeLabel(rankScope))+'.</div>';
     var totalC=0; all.forEach(function(c){ totalC+=c.v; });
-    var big=all[0]; all.forEach(function(c){ if(c.v>big.v) big=c; });
     var withCatch={}; all.forEach(function(c){ withCatch[c.p.id]=1; });
+    var cmmcBig=null; allEx.forEach(function(c){ if(!cmmcBig||c.v>cmmcBig.v) cmmcBig=c; });
     var html='<p class="hint" style="margin:0 0 10px;">'+esc(scopeLabel(rankScope))+'</p>'+
     '<div class="summary">'+
       '<div class="stat"><div class="n num">'+all.length+'</div><div class="l">Capturi cântărite</div></div>'+
@@ -1254,7 +1256,7 @@
       '<div class="stat"><div class="n num">'+fmt(totalC/Math.max(1,state.participants.length))+'</div><div class="l">Medie kg / participant</div></div>'+
       '<div class="stat"><div class="n num">'+Object.keys(withCatch).length+'/'+state.participants.length+'</div><div class="l">Au prins pește</div></div>'+
     '</div>'+
-    '<div class="card"><div class="sec-title">Cea mai mare captură individuală</div><div style="font-weight:800;font-size:16px;">'+fmt(big.v)+' kg — '+esc(nameOf(big.p))+(big.t?(' <span style="color:var(--muted);font-size:12px;font-weight:700;">cântărită la '+hhmm(big.t)+'</span>'):'')+'</div></div>';
+    '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>';
     var hours={}, timed=0;
     all.forEach(function(c){ if(c.t){ timed++; var h=new Date(c.t).getHours(); if(!hours[h]) hours[h]={n:0,kg:0}; hours[h].n++; hours[h].kg+=c.v; } });
     if(timed){
