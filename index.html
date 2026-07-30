@@ -232,14 +232,6 @@
   .pr-t th{background:#eee;}
   .pr-t td.c{text-align:center;}
   .pr-t td.r{text-align:right; font-weight:bold;}
-  .dipl{page-break-after:always; display:flex; align-items:center; justify-content:center; height:96vh;}
-  .dipl-frame{border:6px double #b8860b; padding:44pt 30pt; text-align:center; width:86%; font-family:Georgia,serif;}
-  .dipl-medal{font-size:42pt;}
-  .dipl-h{font-size:34pt; letter-spacing:.35em; margin:10pt 0; font-weight:bold;}
-  .dipl-loc{font-size:15pt; letter-spacing:.2em; color:#b8860b; font-weight:bold; margin-bottom:16pt;}
-  .dipl-name{font-size:26pt; font-style:italic; margin-bottom:10pt;}
-  .dipl-kg{font-size:13pt; color:#333; margin-bottom:20pt;}
-  .dipl-comp{font-size:12pt; color:#555; border-top:1px solid #b8860b; display:inline-block; padding-top:8pt;}
 
   /* vizualizare poze mai vechi la captură */
   #photoView{position:fixed; inset:0; z-index:210; display:none; align-items:center; justify-content:center; flex-direction:column; background:rgba(8,26,46,.94); cursor:pointer; padding:16px;}
@@ -312,10 +304,7 @@
     <div id="rankBody"></div>
     <button class="btn btn-ghost mt" onclick="copyRank()">⧉ Copiază clasamentul</button>
     <button class="btn btn-primary mt" onclick="tvStart()">📺 Mod Tabelă (ecran mare)</button>
-    <div class="row mt">
-      <button class="btn btn-ghost" onclick="printRank()">🖨 Print / PDF</button>
-      <button class="btn btn-ghost" onclick="printDiplomas()">🏆 Diplome</button>
-    </div>
+    <button class="btn btn-ghost mt" onclick="printRank()">🖨 Print / PDF</button>
     <button class="btn btn-ghost mt" onclick="shareImage()">🖼 Imagine pentru WhatsApp / Facebook</button>
   </section>
 
@@ -1535,24 +1524,6 @@
     document.getElementById("printArea").innerHTML=h;
     window.print();
   }
-  function printDiplomas(){
-    var ranked=sortRankS(state.participants,rankScope).filter(function(p){return totalOfM(p,rankScope)>0;});
-    if(!ranked.length){ toast("Nu ai premianți încă"); return; }
-    var locs=["LOCUL I","LOCUL II","LOCUL III"], medals=["🥇","🥈","🥉"];
-    var comp=esc(state.name||"Concurs pescuit")+' · '+esc(scopeLabel(rankScope))+' · '+roDate();
-    var h="";
-    ranked.slice(0,3).forEach(function(p,i){
-      h+='<div class="dipl"><div class="dipl-frame"><div class="dipl-medal">'+medals[i]+'</div><div class="dipl-h">DIPLOMĂ</div><div class="dipl-loc">'+locs[i]+'</div><div class="dipl-name">'+esc(nameOf(p))+'</div><div class="dipl-kg">captură totală: '+fmt(totalOfM(p,rankScope))+' kg</div><div class="dipl-comp">'+comp+'</div></div></div>';
-    });
-    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
-    if(withFish.length){
-      var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;});
-      h+='<div class="dipl"><div class="dipl-frame"><div class="dipl-medal">🐟</div><div class="dipl-h">DIPLOMĂ</div><div class="dipl-loc">CMMC – CEL MAI MARE PEȘTE</div><div class="dipl-name">'+esc(nameOf(best))+'</div><div class="dipl-kg">exemplar de '+fmt(cmmcAward(best,rankScope))+' kg</div><div class="dipl-comp">'+comp+'</div></div></div>';
-    }
-    document.getElementById("printArea").innerHTML=h;
-    window.print();
-  }
-
   // ---------- mod tabela TV ----------
   var tvTimer=null, tvPage=0, tvWake=null;
   function tvPages(){
