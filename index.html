@@ -883,16 +883,7 @@
           '<button class="del" onclick="delParticipant(\''+p.id+'\')">×</button>')+
         '</div>';
       }
-      var metrics;
-      if(L){
-        metrics='<div class="metrics">'+
-          '<div class="metric" style="max-width:200px;"><label>CMMC kg</label><div class="ro num">'+fmt(cmmcOf(p))+'</div></div>'+
-        '</div>';
-      } else {
-        metrics='<div class="metrics">'+
-          '<div class="metric" style="max-width:200px;"><label>CMMC kg</label><input inputmode="decimal" value="'+esc(cmmcRaw(p))+'" oninput="updField(\''+p.id+'\',\'cmmc\',this.value)"></div>'+
-        '</div>';
-      }
+      var metrics='';
       html+='<div class="p">'+
         head+
         '<div class="catchbox">'+
