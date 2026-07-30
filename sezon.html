@@ -48,6 +48,8 @@
   .cmmc .t{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#8a5a12;}
   .cmmc .who{font-weight:800; font-size:16px;}
   .cmmc .kg{margin-left:auto; font-size:20px; font-weight:800; color:#8a5a12;}
+  .cmmc.loyal{background:linear-gradient(120deg,#e8f5e9,#d4ecd8); border-color:#b9dcc0;}
+  .cmmc.loyal .t, .cmmc.loyal .kg{color:#2f6b3c;}
 
   table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
   th,td{padding:9px 8px; text-align:left; font-size:14px;}
@@ -238,7 +240,11 @@
       .sort(function(a,b){ return b.totalKg - a.totalKg; });
     comps.sort(function(a,b){ return (b.date||0)-(a.date||0); });
 
-    return {list:list, comps:comps, seasonFish:seasonFish, standList:standList};
+    var maxComp = 0;
+    list.forEach(function(r){ if(r.competitions>maxComp) maxComp=r.competitions; });
+    var mostLoyal = list.filter(function(r){ return r.competitions===maxComp; });
+
+    return {list:list, comps:comps, seasonFish:seasonFish, standList:standList, mostLoyal:mostLoyal};
   }
 
   function renderTable(){
@@ -278,6 +284,13 @@
         '<div class="who">'+esc(season.seasonFish.name)+' <span style="font-weight:600;color:#8a5a12;">· '+esc(season.seasonFish.comp)+'</span></div></div>'+
         '<div class="kg num">'+fmt(season.seasonFish.v)+' kg</div></div>';
     }
+    var loyalHtml = "";
+    if(season.mostLoyal && season.mostLoyal.length && season.comps.length>1){
+      var loyalNames = season.mostLoyal.map(function(r){ return esc(r.name); }).join(", ");
+      loyalHtml = '<div class="cmmc loyal"><div class="medal">🎯</div><div><div class="t">Cel mai fidel participant</div>'+
+        '<div class="who">'+loyalNames+'</div></div>'+
+        '<div class="kg num">'+season.mostLoyal[0].competitions+' concursuri</div></div>';
+    }
     var compListHtml = season.comps.map(function(c){
       return '<div><span class="cn">'+esc(c.name)+'</span> · <span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' participanți</span></div>';
     }).join("");
@@ -298,6 +311,7 @@
         '<div class="stat"><div class="n num">'+season.comps.length+'</div><div class="l">Concursuri</div></div>'+
       '</div>'+
       cmmcHtml+
+      loyalHtml+
       '<div class="seg">'+
         '<button id="sm-kg" class="'+(sortMode==="kg"?"on":"")+'" onclick="setSort(\'kg\')">După kg</button>'+
         '<button id="sm-pts" class="'+(sortMode==="pts"?"on":"")+'" onclick="setSort(\'pts\')">După puncte</button>'+
