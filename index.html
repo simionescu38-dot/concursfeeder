@@ -240,8 +240,7 @@
   .dipl-kg{font-size:13pt; color:#333; margin-bottom:20pt;}
   .dipl-comp{font-size:12pt; color:#555; border-top:1px solid #b8860b; display:inline-block; padding-top:8pt;}
 
-  /* poza la captura */
-  .catch-cam{flex:0 0 46px; border:0; border-radius:10px; background:#e4eef9; color:var(--teal-d); font-size:19px; cursor:pointer;}
+  /* vizualizare poze mai vechi la captură */
   #photoView{position:fixed; inset:0; z-index:210; display:none; align-items:center; justify-content:center; flex-direction:column; background:rgba(8,26,46,.94); cursor:pointer; padding:16px;}
   #photoView.on{display:flex;}
   #photoView img{max-width:94vw; max-height:72vh; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
@@ -822,29 +821,6 @@
     el.value=""; el.focus();
   }
   function addCatch(id){ if(guard()) return; addCatchCore(id, null); }
-  function pickCatchPhoto(id){
-    if(guard()) return;
-    var el=document.getElementById("catch-"+id);
-    if(!el || num(el.value)<=0){ toast("Scrie întâi greutatea, apoi apasă 📷"); return; }
-    var f=document.getElementById("cph-"+id); if(f) f.click();
-  }
-  function onCatchPhoto(id, input){
-    var f=input.files && input.files[0]; input.value=""; if(!f) return;
-    var reader=new FileReader();
-    reader.onload=function(e){
-      var img=new Image();
-      img.onload=function(){
-        var max=480, w=img.width, h=img.height;
-        if(w>=h && w>max){ h=Math.round(h*max/w); w=max; } else if(h>w && h>max){ w=Math.round(w*max/h); h=max; }
-        var c=document.createElement("canvas"); c.width=w; c.height=h;
-        c.getContext("2d").drawImage(img,0,0,w,h);
-        var data=null; try{ data=c.toDataURL("image/jpeg",0.55); }catch(err){}
-        addCatchCore(id, data);
-      };
-      img.src=e.target.result;
-    };
-    reader.readAsDataURL(f);
-  }
   function showCatchPhoto(id, idx){
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var m=mOf(p, state.manche||1);
@@ -958,10 +934,8 @@
           '<label class="mlabel">'+(L?'Capturi (kg)':'Cantitate — adaugă fiecare captură (kg)')+'</label>'+
           (L?'':'<div class="catch-row">'+
             '<input id="catch-'+p.id+'" class="catch-in" inputmode="decimal" placeholder="ex: 8,65" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addCatch(\''+p.id+'\');}">'+
-            '<button class="catch-cam" onclick="pickCatchPhoto(\''+p.id+'\')">📷</button>'+
             '<button class="catch-add" onclick="addCatch(\''+p.id+'\')">+</button>'+
-          '</div>'+
-          '<input type="file" accept="image/*" capture="environment" id="cph-'+p.id+'" style="display:none;" onchange="onCatchPhoto(\''+p.id+'\',this)">')+
+          '</div>')+
           '<div class="chips-c" id="chips-'+p.id+'">'+chipsHtml(p)+'</div>'+
         '</div>'+
         '<div class="catchbox">'+
