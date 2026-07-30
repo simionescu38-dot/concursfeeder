@@ -1290,9 +1290,13 @@
   function speak(txt){
     if(!state.voiceOn || !window.speechSynthesis) return;
     try{
-      var u=new SpeechSynthesisUtterance(txt); u.lang="ro-RO"; u.rate=1;
+      var u=new SpeechSynthesisUtterance(txt); u.lang="ro-RO"; u.rate=1; u.pitch=0.8;
       var vs=speechSynthesis.getVoices();
-      for(var i=0;i<vs.length;i++){ if((vs[i].lang||"").toLowerCase().indexOf("ro")===0){ u.voice=vs[i]; break; } }
+      var ro=[]; for(var i=0;i<vs.length;i++){ if((vs[i].lang||"").toLowerCase().indexOf("ro")===0) ro.push(vs[i]); }
+      var chosen=null;
+      for(var j=0;j<ro.length;j++){ var n=(ro[j].name||"").toLowerCase(); if(n.indexOf("male")!==-1 && n.indexOf("female")===-1){ chosen=ro[j]; break; } }
+      if(!chosen && ro.length) chosen=ro[ro.length-1];
+      if(chosen) u.voice=chosen;
       speechSynthesis.cancel(); speechSynthesis.speak(u);
     }catch(e){}
   }
