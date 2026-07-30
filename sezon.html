@@ -84,6 +84,10 @@
 
 <script>
   var API_BASE = "https://concurs-api.simionescu38.workers.dev";
+  // concursuri ținute în afara sincronizării live (ex: exportate manual dintr-o alta instalare a aplicației)
+  var ARCHIVE_FILES = [
+    "arhiva/2026-07-29-braila-de-miercuri.json"
+  ];
   var sortMode = "kg"; // "kg" | "pts"
   var season = null; // computed data, filled after load
 
@@ -91,6 +95,30 @@
   function fmt(n){ if(!n) return "0"; var s=(Math.round(n*1000)/1000).toString(); return s.replace(".",","); }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || ""; }
+  function normKey(nm){
+    var ZW = [0x200B,0x200C,0x200D,0x200E,0x200F,0xFEFF,0x2060];
+    var out = "";
+    for (var i=0;i<nm.length;i++){
+      var c = nm.charCodeAt(i);
+      if (ZW.indexOf(c)!==-1) continue;            // caractere invizibile (zero-width, BOM)
+      if (c>=0xD800 && c<=0xDFFF) continue;         // jumătăți de surrogate pair (emoji din planuri superioare, ex: 🎣)
+      if (c>=0x2600 && c<=0x27BF) continue;         // simboluri/emoji din BMP (dingbats)
+      out += nm[i];
+    }
+    out = out.replace(/\s+/g, " ").trim().toLowerCase();
+    // pliază diacriticele românești, ca "Săndel"/"Sandel" să se potrivească
+    var DIA = {
+      "ă":"a", "â":"a", "î":"i",
+      "ș":"s", "ş":"s",
+      "ț":"t", "ţ":"t"
+    };
+    var folded = "";
+    for (var j=0;j<out.length;j++){
+      var ch = out[j];
+      folded += DIA[ch] || ch;
+    }
+    return folded;
+  }
 
   function mOf(p, mi){
     if(p.m && p.m[mi]) return p.m[mi];
@@ -109,42 +137,75 @@
     return d.toLocaleDateString("ro-RO",{day:"2-digit",month:"2-digit",year:"numeric"});
   }
 
-  async function loadSeason(){
-    var roomsRes = await fetch(API_BASE+"/api/rooms").then(function(r){return r.json();});
-    if(!roomsRes || !roomsRes.ok || !roomsRes.rooms || !roomsRes.rooms.length){
-      throw new Error("Niciun concurs găsit.");
-    }
-    var rooms = roomsRes.rooms;
+  async function fetchLiveSources(){
+    var roomsRes = await fetch(API_BASE+"/api/rooms").then(function(r){return r.json();}).catch(function(){ return null; });
+    var rooms = (roomsRes && roomsRes.ok && roomsRes.rooms) ? roomsRes.rooms : [];
     var states = await Promise.all(rooms.map(function(r){
       return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code))
         .then(function(res){ return res.json(); })
         .catch(function(){ return null; });
     }));
-
-    var byKey = {}; // name key -> aggregated record
-    var comps = []; // list of processed competitions (for footer)
-    var seasonFish = null; // {v, name, comp}
-
+    var out = [];
     rooms.forEach(function(r, i){
       var res = states[i];
       if(!res || !res.ok || !res.data) return;
       var data = res.data;
       var parts = Array.isArray(data.participants) ? data.participants : [];
       if(!parts.length) return;
+      out.push({
+        compName: (data.name || r.name || r.code).trim() || r.code,
+        compDate: data.startAt || (r.updated_at && Date.parse(r.updated_at)) || null,
+        code: r.code,
+        parts: parts
+      });
+    });
+    return out;
+  }
 
-      var compName = (data.name || r.name || r.code).trim() || r.code;
-      var compDate = data.startAt || r.updated_at && Date.parse(r.updated_at) || null;
+  async function fetchArchiveSources(){
+    var results = await Promise.all(ARCHIVE_FILES.map(function(path){
+      return fetch(path).then(function(r){return r.json();}).catch(function(){ return null; });
+    }));
+    var out = [];
+    results.forEach(function(exp, i){
+      if(!exp || !exp.data) return;
+      var data = exp.data;
+      var parts = Array.isArray(data.participants) ? data.participants : [];
+      if(!parts.length) return;
+      out.push({
+        compName: (data.name || ARCHIVE_FILES[i]).trim() || ARCHIVE_FILES[i],
+        compDate: data.startAt || (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
+        code: "arhiva:"+ARCHIVE_FILES[i],
+        parts: parts
+      });
+    });
+    return out;
+  }
 
-      var ranked = parts.map(function(p){
+  async function loadSeason(){
+    var liveSources = await fetchLiveSources();
+    var archiveSources = await fetchArchiveSources();
+    var sources = liveSources.concat(archiveSources);
+    if(!sources.length){
+      throw new Error("Niciun concurs găsit.");
+    }
+
+    var byKey = {}; // name key -> aggregated record
+    var comps = []; // list of processed competitions (for footer)
+    var seasonFish = null; // {v, name, comp}
+
+    sources.forEach(function(src){
+      var ranked = src.parts.map(function(p){
         return {p:p, kg:totalKg(p), fish:bestFish(p)};
       }).sort(function(a,b){ return b.kg - a.kg; });
 
-      comps.push({name:compName, date:compDate, code:r.code, n:ranked.length});
+      comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length});
 
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
         if(!nm) return;
-        var key = nm.toLowerCase();
+        var key = normKey(nm);
+        if(!key) return;
         if(!byKey[key]){
           byKey[key] = {name:nm, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
         }
@@ -153,10 +214,10 @@
         rec.totalKg += row.kg;
         rec.totalPoints += place;
         rec.competitions += 1;
-        rec.rows.push({comp:compName, date:compDate, place:place, kg:row.kg, fish:row.fish});
-        if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = compName; }
+        rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish});
+        if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = src.compName; }
         if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
-          seasonFish = {v:row.fish, name:nm, comp:compName};
+          seasonFish = {v:row.fish, name:nm, comp:src.compName};
         }
       });
     });
