@@ -1245,6 +1245,7 @@
     });
     if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă — '+esc(scopeLabel(rankScope))+'.</div>';
     var totalC=0; all.forEach(function(c){ totalC+=c.v; });
+    allEx.forEach(function(c){ totalC+=c.v; });
     var withCatch={}; all.forEach(function(c){ withCatch[c.p.id]=1; });
     var cmmcBig=null; allEx.forEach(function(c){ if(!cmmcBig||c.v>cmmcBig.v) cmmcBig=c; });
     var html='<p class="hint" style="margin:0 0 10px;">'+esc(scopeLabel(rankScope))+'</p>'+
