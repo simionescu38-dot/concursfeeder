@@ -500,7 +500,7 @@
 
   // ---------- helpers ----------
   function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
-  function fmt(n){ if(!n) return "0"; var s=(Math.round(n*1000)/1000).toString(); return s.replace(".",","); }
+  function fmt(n){ if(!n) return "0"; return (Math.round(n*1000)/1000).toFixed(3).replace(".",","); }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
