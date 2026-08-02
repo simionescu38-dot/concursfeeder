@@ -643,19 +643,33 @@
     });
   }
   window.addEventListener("online", function(){ if(syncRoom && syncKey && !viewerMode) pushState(); });
-  function archiveToSeason(){
-    if(!syncKey){ toast("Setează întâi cheia de scriere (Clasament live)"); return; }
-    if(!state.participants.length){ toast("Nu ai niciun participant de arhivat"); return; }
+  var ARCHIVE_ID_KEY = "concurs-archive-id";
+  var currentArchiveId = "";
+  function loadArchiveId(){ try{ currentArchiveId = localStorage.getItem(ARCHIVE_ID_KEY)||""; }catch(e){} }
+  function saveArchiveId(id){ currentArchiveId = id||""; try{ if(id) localStorage.setItem(ARCHIVE_ID_KEY, id); else localStorage.removeItem(ARCHIVE_ID_KEY); }catch(e){} }
+  function archiveToSeason(cb){
+    if(!syncKey){ toast("Setează întâi cheia de scriere (Clasament live)"); if(cb) cb(false); return; }
+    if(!state.participants.length){ toast("Nu ai niciun participant de arhivat"); if(cb) cb(false); return; }
     var st=document.getElementById("archive-status");
     if(st) st.textContent="Se arhivează…";
-    fetch(API_BASE+"/api/archive"+(syncRoom?("?room="+encodeURIComponent(syncRoom)):""), {
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-write-key":syncKey},
-      body: JSON.stringify({data: state})
-    }).then(function(r){ return r.json(); }).then(function(j){
-      if(j && j.ok){ toast("Concurs arhivat în sezon"); if(st) st.textContent="Arhivat • "+nowHM()+" — vezi-l în Clasamentul de sezon."; }
-      else { toast("Eroare la arhivare"); if(st) st.textContent="Eroare: "+((j&&j.error)||"necunoscută"); }
-    }).catch(function(){ toast("Eroare de rețea la arhivare"); if(st) st.textContent="Eroare de rețea — încearcă din nou."; });
+    var doPost=function(){
+      fetch(API_BASE+"/api/archive"+(syncRoom?("?room="+encodeURIComponent(syncRoom)):""), {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-write-key":syncKey},
+        body: JSON.stringify({data: state})
+      }).then(function(r){ return r.json(); }).then(function(j){
+        if(j && j.ok){ saveArchiveId(j.id); toast("Concurs arhivat în sezon"); if(st) st.textContent="Arhivat • "+nowHM()+" — vezi-l în Clasamentul de sezon."; }
+        else { toast("Eroare la arhivare"); if(st) st.textContent="Eroare: "+((j&&j.error)||"necunoscută"); }
+        if(cb) cb(!!(j&&j.ok));
+      }).catch(function(){ toast("Eroare de rețea la arhivare"); if(st) st.textContent="Eroare de rețea — încearcă din nou."; if(cb) cb(false); });
+    };
+    if(currentArchiveId){
+      // rearhivăm același concurs (nu a fost resetat între timp) — înlocuim arhiva veche, nu adăugăm una nouă
+      fetch(API_BASE+"/api/archive?id="+encodeURIComponent(currentArchiveId), { method:"DELETE", headers:{"x-write-key":syncKey} })
+        .catch(function(){}).then(doPost);
+    } else {
+      doPost();
+    }
   }
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;
@@ -1705,7 +1719,7 @@
       ? "Ștergi toți participanții și datele? Concursul curent se arhivează automat în sezon înainte, deci rezultatele rămân. Nu se poate reveni."
       : "Ștergi toți participanții și datele? Nu se poate reveni.";
     if(!confirm(msg)) return;
-    if(willArchive) archiveToSeason();
+    if(willArchive) archiveToSeason(function(){ saveArchiveId(""); });
     state={ name:"", sectors:["A","B","C"], participants:[] };
     save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
     renderSectors(); renderList(); renderRank();
@@ -1714,7 +1728,7 @@
   // ---------- init ----------
   (function(){
     load();
-    loadSyncCfg(); updateSyncUI();
+    loadSyncCfg(); updateSyncUI(); loadArchiveId();
     document.getElementById("set-name").value = state.name||"";
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
