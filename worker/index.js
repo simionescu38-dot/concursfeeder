@@ -183,8 +183,19 @@ export default {
         const name = (data.name || "").toString().slice(0, 200);
         const now = new Date().toISOString();
 
-        const prevRow = await env.DB.prepare("SELECT data FROM rooms WHERE code=?").bind(room).first();
+        const prevRow = await env.DB.prepare("SELECT data, rev FROM rooms WHERE code=?").bind(room).first();
         const prevLeader = prevRow ? computeLeader(JSON.parse(prevRow.data)) : null;
+
+        if (prevRow) {
+          await env.DB.prepare(
+            "INSERT INTO room_history (id,room,rev,data,saved_at) VALUES (?,?,?,?,?)"
+          ).bind(crypto.randomUUID(), room, prevRow.rev, prevRow.data, now).run();
+          // păstrează doar ultimele 40 de versiuni pe cameră, ca istoricul să nu crească nelimitat
+          await env.DB.prepare(
+            "DELETE FROM room_history WHERE room=? AND id NOT IN (" +
+            "SELECT id FROM room_history WHERE room=? ORDER BY saved_at DESC LIMIT 40)"
+          ).bind(room, room).run();
+        }
 
         await env.DB.prepare(
           "INSERT INTO rooms (code,name,data,rev,updated_at) VALUES (?,?,?,1,?) " +
@@ -200,6 +211,52 @@ export default {
         return json({ ok: true, rev: row.rev });
       }
       return json({ ok: false, error: "method" }, 405);
+    }
+
+    if (url.pathname === "/api/history" && req.method === "GET") {
+      const room = (url.searchParams.get("room") || "").trim().toLowerCase();
+      if (!room) return json({ ok: false, error: "missing room" }, 400);
+      const rs = await env.DB.prepare(
+        "SELECT id, rev, saved_at, data FROM room_history WHERE room=? ORDER BY saved_at DESC"
+      ).bind(room).all();
+      const versions = (rs.results || []).map((r) => {
+        let name = "", count = 0;
+        try {
+          const d = JSON.parse(r.data);
+          name = d.name || "";
+          count = Array.isArray(d.participants) ? d.participants.length : 0;
+        } catch (e) { /* ignoră rânduri corupte */ }
+        return { id: r.id, rev: r.rev, saved_at: r.saved_at, name, participants: count };
+      });
+      return json({ ok: true, versions });
+    }
+
+    if (url.pathname === "/api/restore" && req.method === "POST") {
+      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+        return json({ ok: false, error: "forbidden" }, 403);
+      const room = (url.searchParams.get("room") || "").trim().toLowerCase();
+      const id = (url.searchParams.get("id") || "").trim();
+      if (!room || !id) return json({ ok: false, error: "missing room or id" }, 400);
+      const histRow = await env.DB.prepare("SELECT data FROM room_history WHERE id=? AND room=?").bind(id, room).first();
+      if (!histRow) return json({ ok: false, error: "not found" }, 404);
+      const now = new Date().toISOString();
+
+      // salvează starea curentă înainte de restaurare, ca restaurarea însăși să fie reversibilă
+      const curRow = await env.DB.prepare("SELECT data, rev FROM rooms WHERE code=?").bind(room).first();
+      if (curRow) {
+        await env.DB.prepare(
+          "INSERT INTO room_history (id,room,rev,data,saved_at) VALUES (?,?,?,?,?)"
+        ).bind(crypto.randomUUID(), room, curRow.rev, curRow.data, now).run();
+      }
+
+      const data = JSON.parse(histRow.data);
+      const name = (data.name || "").toString().slice(0, 200);
+      await env.DB.prepare(
+        "INSERT INTO rooms (code,name,data,rev,updated_at) VALUES (?,?,?,1,?) " +
+        "ON CONFLICT(code) DO UPDATE SET data=excluded.data, name=excluded.name, rev=rooms.rev+1, updated_at=excluded.updated_at"
+      ).bind(room, name, histRow.data, now).run();
+      const row = await env.DB.prepare("SELECT rev FROM rooms WHERE code=?").bind(room).first();
+      return json({ ok: true, rev: row.rev });
     }
 
     if (url.pathname === "/api/rooms" && req.method === "GET") {

@@ -580,7 +580,7 @@
   var VAPID_PUBLIC_KEY = "BJXKpO9ZN60T-rEAwHW9ItFIEUFkCq9ec2tbYzrRY6T_lFf23Quii01j0TjuBa-zongkFSe56EHMRQeTR-mFsAs";
   var SYNC_ROOM_KEY = "concurs-sync-room";
   var SYNC_WKEY_KEY = "concurs-sync-wkey";
-  var syncRoom = "", syncKey = "", syncT = null;
+  var syncRoom = "", syncKey = "", syncT = null, syncPaused = false;
   var syncRetryT = null, syncRetryDelay = 3000;
   var viewerMode = false, viewerRoom = "", pollT = null, lastRev = 0;
   function pad2(n){ return (n<10?"0":"")+n; }
@@ -593,8 +593,8 @@
   function loadSyncCfg(){
     try{ syncRoom=(localStorage.getItem(SYNC_ROOM_KEY)||"").trim(); syncKey=localStorage.getItem(SYNC_WKEY_KEY)||""; }catch(e){}
   }
-  function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} updateLiveQr(); }
-  function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} }
+  function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} syncPaused=false; updateLiveQr(); }
+  function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} syncPaused=false; }
   function genRoomCode(){
     var code=Math.random().toString(36).slice(2,7);
     var el=document.getElementById("sync-room"); if(el) el.value=code;
@@ -622,8 +622,23 @@
     else copyText(link);
   }
   function queueSync(){
-    if(viewerMode || !syncRoom || !syncKey) return;
+    if(viewerMode || syncPaused || !syncRoom || !syncKey) return;
     clearTimeout(syncT); syncT=setTimeout(pushState, 900);
+  }
+  function checkRoomMismatch(){
+    if(!syncRoom || !syncKey || viewerMode) return;
+    fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom)).then(function(r){ return r.json(); }).then(function(j){
+      if(!j || !j.ok || !j.data) return;
+      var remoteN=(j.data.participants||[]).length, localN=state.participants.length;
+      if(remoteN>0 && remoteN>localN){
+        var remoteName=j.data.name||"concurs fără nume";
+        var ok=confirm(
+          "Camera live „"+syncRoom+"\" are deja alte date: „"+remoteName+"\" cu "+remoteN+" participanți, dar pe telefon ai doar "+localN+".\n\n"+
+          "Dacă lucrezi acum, riști să suprascrii datele din cameră. Apasă OK doar dacă ești sigur că vrei să continui așa, sau Anulează și schimbă codul de cameră din Setări."
+        );
+        if(!ok){ syncPaused=true; setSyncStatus("Sincronizare oprită automat — camera live avea alte date. Verifică în Setări.", true); }
+      }
+    }).catch(function(){});
   }
   function pushState(){
     if(!syncRoom || !syncKey) return;
@@ -1728,7 +1743,7 @@
   // ---------- init ----------
   (function(){
     load();
-    loadSyncCfg(); updateSyncUI(); loadArchiveId();
+    loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
     document.getElementById("set-name").value = state.name||"";
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
