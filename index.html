@@ -565,6 +565,7 @@
   var SYNC_ROOM_KEY = "concurs-sync-room";
   var SYNC_WKEY_KEY = "concurs-sync-wkey";
   var syncRoom = "", syncKey = "", syncT = null;
+  var syncRetryT = null, syncRetryDelay = 3000;
   var viewerMode = false, viewerRoom = "", pollT = null, lastRev = 0;
   function pad2(n){ return (n<10?"0":"")+n; }
   function nowHM(){ var d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
@@ -602,16 +603,22 @@
   }
   function pushState(){
     if(!syncRoom || !syncKey) return;
+    clearTimeout(syncRetryT);
     setSyncStatus("Se sincronizează…", true);
     fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
       method:"PUT",
       headers:{"Content-Type":"application/json","x-write-key":syncKey},
       body: JSON.stringify({data: state})
     }).then(function(r){ return r.json(); }).then(function(j){
-      if(j && j.ok) setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true);
+      if(j && j.ok){ syncRetryDelay=3000; setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
       else setSyncStatus("Eroare sincronizare: "+((j&&j.error)||"necunoscută"), true);
-    }).catch(function(){ setSyncStatus("Eroare sincronizare (fără internet?)", true); });
+    }).catch(function(){
+      setSyncStatus("Fără semnal – reîncerc automat…", true);
+      syncRetryT = setTimeout(pushState, syncRetryDelay);
+      syncRetryDelay = Math.min(syncRetryDelay*2, 30000);
+    });
   }
+  window.addEventListener("online", function(){ if(syncRoom && syncKey && !viewerMode) pushState(); });
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;
     updateLockUI();
