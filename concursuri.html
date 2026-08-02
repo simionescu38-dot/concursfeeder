@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Concursuri live – Cântar &amp; Clasament</title>
+<meta name="theme-color" content="#0e63b8">
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{
+    --pine:#10263c; --teal:#0e63b8; --teal-d:#0a4a8c;
+    --bg:#eef4fa; --card:#ffffff; --line:#b9cbdc; --muted:#44586c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--pine); font-size:16px; line-height:1.35;
+    padding-bottom:40px;
+  }
+  header{
+    background:linear-gradient(160deg,var(--teal) 0%,var(--teal-d) 100%);
+    color:#fff; padding:20px 16px 18px;
+  }
+  header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
+  header h1{margin:2px 0 6px; font-size:22px; font-weight:800; letter-spacing:-.01em;}
+  header p{margin:0; font-size:13px; opacity:.85;}
+  main{max-width:520px; margin:0 auto; padding:16px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:14px 16px; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .card .name{font-weight:800; font-size:16px;}
+  .card .meta{font-size:12px; color:var(--muted); margin-top:2px;}
+  .card a{
+    flex:0 0 auto; background:var(--teal); color:#fff; text-decoration:none;
+    font-weight:700; font-size:13px; padding:9px 14px; border-radius:999px; white-space:nowrap;
+  }
+  .empty, .err{text-align:center; color:var(--muted); padding:40px 16px; font-size:14px;}
+  .footer-link{
+    display:block; text-align:center; margin-top:20px; font-size:13px; color:var(--teal-d); font-weight:700; text-decoration:none;
+  }
+  .status{text-align:center; font-size:12px; color:var(--muted); margin-top:18px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Cântar &amp; Clasament</div>
+  <h1>Concursuri live</h1>
+  <p>Toate camerele active de clasament live — apasă pe unul ca să-l vezi, fără cod.</p>
+</header>
+
+<main>
+  <div id="list"></div>
+  <a class="footer-link" href="index.html">🎣 Organizezi un concurs? Deschide aplicația</a>
+  <div class="status" id="status"></div>
+</main>
+
+<script>
+var API_BASE = "https://concurs-api.simionescu38.workers.dev";
+
+function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+
+function timeAgo(iso){
+  try{
+    var s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime())/1000));
+    if(s<60) return "chiar acum";
+    var m = Math.floor(s/60); if(m<60) return "acum "+m+" min";
+    var h = Math.floor(m/60); if(h<24) return "acum "+h+" "+(h===1?"oră":"ore");
+    var d = Math.floor(h/24); return "acum "+d+" "+(d===1?"zi":"zile");
+  }catch(e){ return ""; }
+}
+
+function render(rooms){
+  var el = document.getElementById("list");
+  if(!rooms.length){ el.innerHTML = '<div class="empty">Niciun concurs live momentan.<br>Revino mai târziu.</div>'; return; }
+  el.innerHTML = rooms.map(function(r){
+    return '<div class="card">'+
+      '<div><div class="name">'+esc(r.name || "Concurs fără nume")+'</div>'+
+      '<div class="meta">actualizat '+timeAgo(r.updated_at)+'</div></div>'+
+      '<a href="index.html?room='+encodeURIComponent(r.code)+'">Vezi live →</a>'+
+    '</div>';
+  }).join("");
+}
+
+function load(){
+  fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).then(function(j){
+    if(!j || !j.ok) throw new Error("bad response");
+    render(j.rooms || []);
+    document.getElementById("status").textContent = "Actualizat • " + new Date().toLocaleTimeString("ro-RO",{hour:"2-digit",minute:"2-digit"});
+  }).catch(function(){
+    document.getElementById("list").innerHTML = '<div class="err">Nu am putut încărca lista de concursuri. Verifică conexiunea la internet.</div>';
+  });
+}
+
+load();
+setInterval(load, 20000);
+</script>
+
+</body>
+</html>
