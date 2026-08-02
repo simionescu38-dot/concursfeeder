@@ -371,7 +371,11 @@
         '<button class="btn btn-ghost" onclick="shareSeasonImage()">🖼 Imagine WhatsApp</button>'+
       '</div>'+
       standHtml+
-      '<div class="card" style="margin-top:14px;"><div class="sec-title">Concursuri incluse</div><div class="complist">'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div></div>';
+      '<div class="card" style="margin-top:14px;"><div class="sec-title">Concursuri incluse</div><div class="complist">'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div></div>'+
+      '<div class="card" style="margin-top:14px;"><div class="sec-title">Backup</div>'+
+        '<button class="btn btn-ghost" onclick="downloadSeasonBackup()">⇩ Descarcă backup sezon (JSON)</button>'+
+        '<p class="hint">Salvează pe telefon toate concursurile arhivate (din cloud și din cele adăugate manual în repo) — o plasă de siguranță, în caz că se întâmplă ceva cu baza de date.</p>'+
+      '</div>';
   }
 
   function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1b2d;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
@@ -463,6 +467,27 @@
         navigator.share({files:[f], title:"Clasament de sezon"}).catch(function(err){ if(err && err.name!=="AbortError") downloadBlob(b,"sezon.png"); });
       } else { downloadBlob(b,"sezon.png"); }
     },"image/png");
+  }
+
+  function downloadSeasonBackup(){
+    toast("Se pregătește backup-ul…");
+    Promise.all([
+      fetch(API_BASE+"/api/archive").then(function(r){return r.json();}).catch(function(){return {ok:false, archives:[]};}),
+      Promise.all(ARCHIVE_FILES.map(function(path){ return fetch(path).then(function(r){return r.json();}).catch(function(){return null;}); }))
+    ]).then(function(results){
+      var apiArchives = (results[0] && results[0].ok) ? results[0].archives : [];
+      var gitFiles = results[1].filter(Boolean);
+      var backup = { exportedAt: new Date().toISOString(), apiArchives: apiArchives, gitArchiveFiles: gitFiles };
+      var blob = new Blob([JSON.stringify(backup, null, 2)], {type:"application/json"});
+      var d = new Date();
+      var pad2 = function(n){ return (n<10?"0":"")+n; };
+      var name = "backup-sezon-"+d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+".json";
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+      toast("Backup descărcat ("+apiArchives.length+" concursuri din cloud)");
+    }).catch(function(){ toast("Eroare la generarea backup-ului"); });
   }
 
   function setSort(m){ sortMode=m; renderTable(); }
