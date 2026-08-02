@@ -72,6 +72,27 @@
   .complist div:first-child{border-top:0;}
   .complist .cn{font-weight:700;}
   .complist .cd{color:var(--muted); font-size:12px;}
+
+  .row{display:flex; gap:8px;}
+  .row>*{flex:1; min-width:0;}
+  .mt{margin-top:10px;}
+  button.btn{border:0; border-radius:12px; padding:12px 14px; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit; width:100%; transition:transform .1s ease, filter .15s ease;}
+  button.btn:active{transform:scale(.98);}
+  .btn-ghost{background:var(--teal-soft); color:var(--teal-d); border:1.5px solid var(--line);}
+
+  #printArea{display:none;}
+  @media print{
+    body>*:not(#printArea){display:none !important;}
+    #printArea{display:block !important;}
+  }
+  .pr-h1{font-family:Georgia,serif; font-size:22pt; text-align:center; margin:0 0 4pt;}
+  .pr-sub{text-align:center; font-size:11pt; color:#444; margin:0 0 10pt;}
+  .pr-sec{font-size:13pt; font-weight:bold; margin:12pt 0 6pt; font-family:Georgia,serif;}
+  .pr-t{width:100%; border-collapse:collapse; margin-bottom:12pt;}
+  .pr-t th,.pr-t td{border:1px solid #999; padding:4pt 7pt; font-size:11pt; text-align:left;}
+  .pr-t th{background:#eee;}
+  .pr-t td.c{text-align:center;}
+  .pr-t td.r{text-align:right; font-weight:bold;}
 </style>
 </head>
 <body>
@@ -87,6 +108,8 @@
     <div class="empty"><div class="big">⏳</div>Se încarcă datele din toate concursurile…</div>
   </div>
 </main>
+
+<div id="printArea"></div>
 
 <script>
   var API_BASE = "https://concurs-api.simionescu38.workers.dev";
@@ -342,8 +365,104 @@
       '</div>'+
       '<table><thead><tr><th class="pos">#</th><th>Concurent</th><th class="kg">Pct</th><th class="kg">Total kg</th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<p class="hint">Puncte = suma locurilor ocupate în fiecare concurs (loc 1 = 1 punct) — câștigă cine are cele mai puține. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
+      '<button class="btn btn-ghost mt" onclick="copySeasonText()">⧉ Copiază clasamentul</button>'+
+      '<div class="row mt">'+
+        '<button class="btn btn-ghost" onclick="printSeason()">🖨 Print / PDF</button>'+
+        '<button class="btn btn-ghost" onclick="shareSeasonImage()">🖼 Imagine WhatsApp</button>'+
+      '</div>'+
       standHtml+
       '<div class="card" style="margin-top:14px;"><div class="sec-title">Concursuri incluse</div><div class="complist">'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div></div>';
+  }
+
+  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1b2d;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
+  function fallbackCopy(txt){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Clasament copiat");}catch(e){toast("Nu am putut copia");} document.body.removeChild(ta); }
+  function sortLabel(){ return sortMode==="kg" ? "După kg" : "După puncte"; }
+  function currentSeasonSorted(){
+    var list = season.list.slice();
+    if(sortMode==="kg"){ list.sort(function(a,b){ return b.totalKg - a.totalKg; }); }
+    else { list.sort(function(a,b){ var d=a.totalPoints-b.totalPoints; if(d!==0) return d; return b.totalKg-a.totalKg; }); }
+    return list;
+  }
+
+  function copySeasonText(){
+    var list = currentSeasonSorted();
+    var lines=["Clasament de sezon — "+sortLabel(), ""];
+    if(season.seasonFish) lines.push("CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg ("+season.seasonFish.comp+")");
+    lines.push("");
+    list.forEach(function(rec,i){ lines.push((i+1)+". "+rec.name+" — "+rec.totalPoints+" pct, "+fmt(rec.totalKg)+" kg ("+rec.competitions+" concursuri)"); });
+    var txt=lines.join("\n");
+    try{ navigator.clipboard.writeText(txt).then(function(){toast("Clasament copiat");},function(){fallbackCopy(txt);}); }
+    catch(e){ fallbackCopy(txt); }
+  }
+
+  function printSeason(){
+    var list = currentSeasonSorted();
+    var h='<div class="pr-h1">Clasament de sezon</div><div class="pr-sub">'+esc(sortLabel())+' · '+season.comps.length+' concursuri · '+roDate()+'</div>';
+    if(season.seasonFish) h+='<div class="pr-sub"><b>CMMC sezon:</b> '+esc(season.seasonFish.name)+' — '+fmt(season.seasonFish.v)+' kg</div>';
+    h+='<div class="pr-sec">Clasament general</div><table class="pr-t"><tr><th>Loc</th><th>Concurent</th><th>Concursuri</th><th>Pct</th><th>Total kg</th></tr>';
+    list.forEach(function(rec,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(rec.name)+'</td><td class="c">'+rec.competitions+'</td><td class="c">'+rec.totalPoints+'</td><td class="r">'+fmt(rec.totalKg)+'</td></tr>'; });
+    h+='</table>';
+    document.getElementById("printArea").innerHTML=h;
+    window.print();
+  }
+
+  function roDate(){
+    var m=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];
+    var d=new Date(); return d.getDate()+" "+m[d.getMonth()]+" "+d.getFullYear();
+  }
+  function rr(x,px,py,w,h,r){ x.beginPath(); if(x.roundRect){ x.roundRect(px,py,w,h,r); } else { x.rect(px,py,w,h); } }
+  function downloadBlob(b,name){ var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500); toast("Imagine salvată"); }
+
+  function shareSeasonImage(){
+    if(!season || !season.list.length){ toast("Niciun rezultat de sezon"); return; }
+    var logo=new Image();
+    logo.onload=function(){ drawSeasonImage(logo); };
+    logo.onerror=function(){ drawSeasonImage(null); };
+    logo.src="icon-192.png";
+  }
+  function drawSeasonImage(logo){
+    var W=1080, H=1440;
+    var c=document.createElement("canvas"); c.width=W; c.height=H;
+    var x=c.getContext("2d");
+    x.fillStyle="#f2f6fb"; x.fillRect(0,0,W,H);
+    var gr=x.createLinearGradient(0,0,0,260);
+    gr.addColorStop(0,"#1c6fd9"); gr.addColorStop(1,"#0f4fa8");
+    x.fillStyle=gr; x.fillRect(0,0,W,260);
+    if(logo){ try{ x.drawImage(logo,44,56,150,150); }catch(e){} }
+    x.fillStyle="#ffffff"; x.textAlign="center";
+    x.font="bold 58px Georgia";
+    x.fillText("Clasament de sezon", W/2+60, 120, W-320);
+    x.font="bold 32px Arial"; x.fillStyle="rgba(255,255,255,.85)";
+    x.fillText(sortLabel()+" · "+season.comps.length+" concursuri · "+roDate(), W/2+60, 180, W-320);
+    var y0=320;
+    if(season.seasonFish){
+      x.fillStyle="#fdecd2";
+      rr(x,60,y0-20,W-120,80,16); x.fill();
+      x.fillStyle="#8a5a12"; x.font="bold 34px Arial";
+      x.fillText("🐟 CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg", W/2, y0+32, W-160);
+      y0+=100;
+    }
+    var arr=currentSeasonSorted().slice(0,10);
+    arr.forEach(function(rec,i){
+      var y=y0+i*94;
+      x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
+      rr(x,60,y,W-120,84,16); x.fill();
+      x.fillStyle="#0f1b2d"; x.textAlign="left"; x.font="bold 38px Arial";
+      var medal = i<3 ? ["🥇","🥈","🥉"][i] : (i+1)+".";
+      x.fillText(medal, 92, y+56);
+      x.fillText(rec.name, 185, y+56, 560);
+      x.textAlign="right";
+      x.fillText(fmt(rec.totalKg)+" kg", W-92, y+56);
+    });
+    x.textAlign="center"; x.fillStyle="#5c7189"; x.font="bold 26px Arial";
+    x.fillText("Clasament de sezon — "+roDate(), W/2, H-40);
+    c.toBlob(function(b){
+      if(!b){ toast("Nu am putut genera imaginea"); return; }
+      var f=null; try{ f=new File([b],"sezon.png",{type:"image/png"}); }catch(e){}
+      if(f && navigator.canShare && navigator.canShare({files:[f]})){
+        navigator.share({files:[f], title:"Clasament de sezon"}).catch(function(err){ if(err && err.name!=="AbortError") downloadBlob(b,"sezon.png"); });
+      } else { downloadBlob(b,"sezon.png"); }
+    },"image/png");
   }
 
   function setSort(m){ sortMode=m; renderTable(); }

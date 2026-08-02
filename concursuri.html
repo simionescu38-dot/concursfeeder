@@ -33,6 +33,7 @@
     padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow-sm);
     display:flex; align-items:center; justify-content:space-between; gap:12px;
   }
+  .card .qr{flex:0 0 auto; width:52px; height:52px; border-radius:8px; background:#fff;}
   .card .name{font-weight:800; font-size:16px;}
   .card .meta{font-size:12px; color:var(--muted); margin-top:2px;}
   .card a{
@@ -80,8 +81,11 @@ function render(rooms){
   var el = document.getElementById("list");
   if(!rooms.length){ el.innerHTML = '<div class="empty">Niciun concurs live momentan.<br>Revino mai târziu.</div>'; return; }
   el.innerHTML = rooms.map(function(r){
+    var link = location.href.replace(/concursuri\.html.*$/,"")+"index.html?room="+encodeURIComponent(r.code);
+    var qrSrc = "https://api.qrserver.com/v1/create-qr-code/?size=104x104&margin=0&data="+encodeURIComponent(link);
     return '<div class="card">'+
-      '<div><div class="name">'+esc(r.name || "Concurs fără nume")+'</div>'+
+      '<img class="qr" src="'+qrSrc+'" alt="Cod QR" loading="lazy">'+
+      '<div style="flex:1; min-width:0;"><div class="name">'+esc(r.name || "Concurs fără nume")+'</div>'+
       '<div class="meta">actualizat '+timeAgo(r.updated_at)+'</div></div>'+
       '<a href="index.html?room='+encodeURIComponent(r.code)+'">Vezi live →</a>'+
     '</div>';
