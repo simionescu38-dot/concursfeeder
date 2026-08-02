@@ -413,6 +413,13 @@
       </div>
     </div>
 
+    <div class="card lockhide">
+      <div class="sec-title">Istoric cameră</div>
+      <p class="hint" style="margin:0 0 10px;">Ultimele versiuni salvate automat ale camerei live (la fiecare suprascriere) — dacă s-a suprascris ceva din greșeală, poți reveni la o versiune anterioară.</p>
+      <button class="btn btn-ghost" onclick="loadRoomHistory()">🕘 Vezi istoricul camerei</button>
+      <div id="room-history-list" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card">
       <div class="sec-title">Notificări live (doar Android/Chrome)</div>
       <button class="btn btn-primary" id="btn-push" onclick="togglePush()">🔕 Oprite – apasă ca să pornești</button>
@@ -639,6 +646,46 @@
         if(!ok){ syncPaused=true; setSyncStatus("Sincronizare oprită automat — camera live avea alte date. Verifică în Setări.", true); }
       }
     }).catch(function(){});
+  }
+  function fmtHistDate(iso){
+    try{
+      var d=new Date(iso);
+      return d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear()+" "+pad2(d.getHours())+":"+pad2(d.getMinutes());
+    }catch(e){ return ""; }
+  }
+  function loadRoomHistory(){
+    if(!syncRoom){ toast("Setează întâi un cod de cameră"); return; }
+    var el=document.getElementById("room-history-list");
+    el.innerHTML='<p class="hint">Se încarcă…</p>';
+    fetch(API_BASE+"/api/history?room="+encodeURIComponent(syncRoom)).then(function(r){ return r.json(); }).then(function(j){
+      if(!j || !j.ok){ el.innerHTML='<p class="hint">Eroare la încărcare.</p>'; return; }
+      if(!j.versions.length){ el.innerHTML='<p class="hint">Niciun istoric încă — apare automat după prima suprascriere a camerei.</p>'; return; }
+      el.innerHTML = j.versions.map(function(v){
+        return '<div class="row" style="align-items:center; margin-bottom:8px;">'+
+          '<div style="flex:1;"><b>'+esc(v.name||"fără nume")+'</b><div class="hint" style="margin:2px 0 0;">'+fmtHistDate(v.saved_at)+' · '+v.participants+' participanți</div></div>'+
+          '<button class="btn btn-ghost" style="flex:0 0 auto; padding:8px 12px;" onclick="restoreRoomHistory(\''+v.id+'\')">Restaurează</button>'+
+        '</div>';
+      }).join("");
+    }).catch(function(){ el.innerHTML='<p class="hint">Eroare de rețea.</p>'; });
+  }
+  function restoreRoomHistory(id){
+    if(!syncKey){ toast("Setează întâi cheia de scriere"); return; }
+    if(!confirm("Sigur restaurezi camera live la această versiune? Starea curentă se salvează automat în istoric înainte, deci poți reveni oricând și la ea.")) return;
+    fetch(API_BASE+"/api/restore?room="+encodeURIComponent(syncRoom)+"&id="+encodeURIComponent(id), { method:"POST", headers:{"x-write-key":syncKey} })
+      .then(function(r){ return r.json(); }).then(function(j){
+        if(!j || !j.ok){ toast("Eroare la restaurare: "+((j&&j.error)||"necunoscută")); return; }
+        return fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom)).then(function(r){ return r.json(); }).then(function(sj){
+          if(sj && sj.ok && sj.data){
+            state=sj.data; normalize();
+            var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
+            var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
+            renderSectors(); renderList(); renderRank();
+            save();
+          }
+          toast("Camera a fost restaurată");
+          loadRoomHistory();
+        });
+      }).catch(function(){ toast("Eroare de rețea la restaurare"); });
   }
   function pushState(){
     if(!syncRoom || !syncKey) return;
