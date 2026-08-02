@@ -219,9 +219,9 @@
   #leader{position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
     flex-direction:column; background:rgba(8,26,46,.92); color:#fff; text-align:center; padding:20px; cursor:pointer;}
   #leader.on{display:flex;}
-  #leader .lh{font-size:30px; font-weight:800; color:#e7b53c; letter-spacing:.06em;}
+  #leader .lh{font-size:30px; font-weight:800; color:var(--gold); letter-spacing:.06em;}
   #leader .ln{font-size:38px; font-weight:800; margin:12px 0 6px;}
-  #leader .lk{font-size:20px; font-weight:700; color:#9cc6ee;}
+  #leader .lk{font-size:20px; font-weight:700; color:#7fb2f0;}
   .cf{position:fixed; top:-16px; width:9px; height:15px; z-index:201; border-radius:2px; animation:cffall linear forwards; pointer-events:none;}
   @keyframes cffall{ to{ transform:translateY(112vh) rotate(720deg); } }
 
@@ -1301,7 +1301,7 @@
   }
   function hideLeader(){ document.getElementById("leader").classList.remove("on"); }
   function confettiBurst(){
-    var colors=["#e7b53c","#ffffff","#0e63b8","#e08a1e","#9cc6ee"];
+    var colors=["#eab308","#ffffff","#1c6fd9","#f2971d","#7fb2f0"];
     for(var i=0;i<90;i++){
       var c=document.createElement("div"); c.className="cf";
       c.style.left=(Math.random()*100)+"vw";
