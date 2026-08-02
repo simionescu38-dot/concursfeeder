@@ -289,6 +289,7 @@
       <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
     </div>
 
+    <input id="search-part" placeholder="🔎 Caută după nume sau stand…" oninput="renderList()" style="margin-bottom:12px;">
     <div id="list"></div>
   </section>
 
@@ -874,6 +875,8 @@
     if(guard()) return;
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var m=mOf(p, state.manche||1);
+    var v=m.catches[idx];
+    if(!confirm("Ștergi captura de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
     m.catches.splice(idx,1);
     m.catchTimes.splice(idx,1);
     m.catchPhotos.splice(idx,1);
@@ -899,7 +902,10 @@
   function removeExtra(id,idx){
     if(guard()) return;
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
-    mOf(p, state.manche||1).extras.splice(idx,1); queueSave(); refreshCard(id);
+    var m=mOf(p, state.manche||1);
+    var v=m.extras[idx];
+    if(!confirm("Ștergi peștele extra de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
+    m.extras.splice(idx,1); queueSave(); refreshCard(id);
   }
   function extrasChipsHtml(p){
     var m=mOf(p, state.manche||1);
@@ -942,10 +948,23 @@
       list.innerHTML='<div class="empty"><div class="big">🎣</div>Niciun participant încă.<br>Adaugă primul stand mai sus.</div>';
       return;
     }
+    var searchEl=document.getElementById("search-part");
+    var q=searchEl?searchEl.value.trim().toLowerCase():"";
+    var visible=state.participants;
+    if(q){
+      visible=state.participants.filter(function(p){
+        var hay=((p.prenume||"")+" "+(p.nume||"")+" "+(p.stand||"")).toLowerCase();
+        return hay.indexOf(q)!==-1;
+      });
+      if(!visible.length){
+        list.innerHTML='<div class="empty"><div class="big">🔎</div>Niciun participant găsit pentru „'+esc(searchEl.value.trim())+'".</div>';
+        return;
+      }
+    }
     var html="";
     var L=isLocked();
     if(L) editingId=null;
-    state.participants.forEach(function(p){
+    visible.forEach(function(p){
       var full=(esc(p.prenume)+" "+esc(p.nume)).trim() || "—";
       var head;
       if(editingId===p.id){

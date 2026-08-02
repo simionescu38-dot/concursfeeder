@@ -41,6 +41,11 @@
     font-weight:700; font-size:13px; padding:9px 14px; border-radius:999px; white-space:nowrap;
     box-shadow:0 4px 12px -4px rgba(15,79,168,.5);
   }
+  .card.flash{animation:flashUpdate 1.8s ease;}
+  @keyframes flashUpdate{
+    0%{box-shadow:0 0 0 3px var(--teal), var(--shadow-sm); background:var(--teal-soft);}
+    100%{box-shadow:var(--shadow-sm); background:var(--card);}
+  }
   .empty, .err{text-align:center; color:var(--muted); padding:40px 16px; font-size:14px;}
   .footer-link{
     display:block; text-align:center; margin-top:20px; font-size:13px; color:var(--teal-d); font-weight:700; text-decoration:none;
@@ -77,19 +82,26 @@ function timeAgo(iso){
   }catch(e){ return ""; }
 }
 
+var prevRooms = null; // null until after the first successful load — avoids flashing everything on first open
+
 function render(rooms){
   var el = document.getElementById("list");
-  if(!rooms.length){ el.innerHTML = '<div class="empty">Niciun concurs live momentan.<br>Revino mai târziu.</div>'; return; }
+  if(!rooms.length){ el.innerHTML = '<div class="empty">Niciun concurs live momentan.<br>Revino mai târziu.</div>'; prevRooms = {}; return; }
+  var prevMap = prevRooms || {};
   el.innerHTML = rooms.map(function(r){
     var link = location.href.replace(/concursuri\.html.*$/,"")+"index.html?room="+encodeURIComponent(r.code);
     var qrSrc = "https://api.qrserver.com/v1/create-qr-code/?size=104x104&margin=0&data="+encodeURIComponent(link);
-    return '<div class="card">'+
+    var changed = prevRooms!==null && prevMap[r.code]!==r.updated_at;
+    return '<div class="card'+(changed?' flash':'')+'">'+
       '<img class="qr" src="'+qrSrc+'" alt="Cod QR" loading="lazy">'+
       '<div style="flex:1; min-width:0;"><div class="name">'+esc(r.name || "Concurs fără nume")+'</div>'+
-      '<div class="meta">actualizat '+timeAgo(r.updated_at)+'</div></div>'+
+      '<div class="meta">actualizat '+timeAgo(r.updated_at)+(changed?' · <b style="color:var(--teal-d);">tocmai acum</b>':'')+'</div></div>'+
       '<a href="index.html?room='+encodeURIComponent(r.code)+'">Vezi live →</a>'+
     '</div>';
   }).join("");
+  var newMap = {};
+  rooms.forEach(function(r){ newMap[r.code]=r.updated_at; });
+  prevRooms = newMap;
 }
 
 function load(){
