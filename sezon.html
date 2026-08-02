@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Clasament de Sezon — Pescuit</title>
-<meta name="theme-color" content="#0e63b8">
+<meta name="theme-color" content="#1c6fd9">
 <style>
   :root{
-    --pine:#10263c; --teal:#0e63b8; --teal-d:#0a4a8c;
-    --amber:#e08a1e; --amber-soft:#fbe9cf;
-    --bg:#eef4fa; --card:#ffffff; --line:#b9cbdc; --muted:#44586c;
+    --pine:#0f1b2d; --teal:#1c6fd9; --teal-d:#0f4fa8; --teal-soft:#e8f0fd;
+    --amber:#f2971d; --amber-soft:#fdecd2;
+    --bg:#f2f6fb; --card:#ffffff; --line:#dde6f0; --muted:#5c7189;
+    --shadow-sm:0 1px 2px rgba(15,31,51,.05);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -19,27 +20,27 @@
   }
   .num{font-variant-numeric:tabular-nums;}
   header{
-    background:linear-gradient(160deg,var(--teal) 0%,var(--teal-d) 100%);
+    background:linear-gradient(135deg,var(--teal) 0%,var(--teal-d) 100%);
     color:#fff; padding:16px 16px 14px; position:sticky; top:0; z-index:20;
-    box-shadow:0 2px 10px rgba(8,26,46,.22);
+    box-shadow:0 4px 20px -6px rgba(15,49,98,.35);
   }
   header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
   header h1{margin:2px 0 0; font-size:20px; font-weight:800; letter-spacing:-.01em;}
   header .comp{font-size:13px; opacity:.85; margin-top:2px; min-height:16px;}
   main{padding:14px 14px 20px; max-width:640px; margin:0 auto;}
 
-  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; box-shadow:var(--shadow-sm);}
   .sec-title{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:800; margin:2px 0 10px;}
 
   .summary{display:flex; gap:10px; margin-bottom:12px;}
-  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow-sm);}
   .stat .n{font-size:22px; font-weight:800;}
   .stat .l{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
 
   .empty{text-align:center; color:var(--muted); padding:30px 16px; font-size:14px;}
   .empty .big{font-size:30px; margin-bottom:6px;}
 
-  .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
+  .seg{display:flex; background:var(--teal-soft); border-radius:12px; padding:4px; margin-bottom:14px;}
   .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
   .seg button.on{background:#fff; color:var(--teal-d); box-shadow:0 1px 3px rgba(0,0,0,.08);}
 
@@ -51,9 +52,9 @@
   .cmmc.loyal{background:linear-gradient(120deg,#e8f5e9,#d4ecd8); border-color:#b9dcc0;}
   .cmmc.loyal .t, .cmmc.loyal .kg{color:#2f6b3c;}
 
-  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow-sm);}
   th,td{padding:9px 8px; text-align:left; font-size:14px;}
-  th{background:#eef4fa; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800;}
+  th{background:var(--teal-soft); font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800;}
   td{border-top:1px solid var(--line);}
   td.pos{width:34px; font-weight:800; text-align:center;}
   td.kg{text-align:right; font-weight:800; width:70px;}
@@ -62,7 +63,7 @@
   tr.p2 td.pos{color:#7d8686;}
   tr.p3 td.pos{color:#a5673c;}
   tr.pclick{cursor:pointer;}
-  tr.pclick:active{background:#e4eef9;}
+  tr.pclick:active{background:var(--teal-soft);}
   tr.histrow td{background:#f5f8fc; border-top:0;}
 
   .hint{font-size:12px; color:var(--muted); margin:6px 0 0; line-height:1.4;}

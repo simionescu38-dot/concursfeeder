@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Concursuri live – Cântar &amp; Clasament</title>
-<meta name="theme-color" content="#0e63b8">
+<meta name="theme-color" content="#1c6fd9">
 <link rel="icon" href="icon-192.png">
 <style>
   :root{
-    --pine:#10263c; --teal:#0e63b8; --teal-d:#0a4a8c;
-    --bg:#eef4fa; --card:#ffffff; --line:#b9cbdc; --muted:#44586c;
+    --pine:#0f1b2d; --teal:#1c6fd9; --teal-d:#0f4fa8; --teal-soft:#e8f0fd;
+    --bg:#f2f6fb; --card:#ffffff; --line:#dde6f0; --muted:#5c7189;
+    --shadow-sm:0 1px 2px rgba(15,31,51,.05);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -19,23 +20,25 @@
     padding-bottom:40px;
   }
   header{
-    background:linear-gradient(160deg,var(--teal) 0%,var(--teal-d) 100%);
+    background:linear-gradient(135deg,var(--teal) 0%,var(--teal-d) 100%);
     color:#fff; padding:20px 16px 18px;
+    box-shadow:0 4px 20px -6px rgba(15,49,98,.35);
   }
   header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
   header h1{margin:2px 0 6px; font-size:22px; font-weight:800; letter-spacing:-.01em;}
   header p{margin:0; font-size:13px; opacity:.85;}
   main{max-width:520px; margin:0 auto; padding:16px;}
   .card{
-    background:var(--card); border:1px solid var(--line); border-radius:14px;
-    padding:14px 16px; margin-bottom:12px;
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow-sm);
     display:flex; align-items:center; justify-content:space-between; gap:12px;
   }
   .card .name{font-weight:800; font-size:16px;}
   .card .meta{font-size:12px; color:var(--muted); margin-top:2px;}
   .card a{
-    flex:0 0 auto; background:var(--teal); color:#fff; text-decoration:none;
+    flex:0 0 auto; background:linear-gradient(135deg,var(--teal) 0%,var(--teal-d) 100%); color:#fff; text-decoration:none;
     font-weight:700; font-size:13px; padding:9px 14px; border-radius:999px; white-space:nowrap;
+    box-shadow:0 4px 12px -4px rgba(15,79,168,.5);
   }
   .empty, .err{text-align:center; color:var(--muted); padding:40px 16px; font-size:14px;}
   .footer-link{
