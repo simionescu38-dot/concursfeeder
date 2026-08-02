@@ -27,3 +27,13 @@ CREATE TABLE IF NOT EXISTS season_archive (
 );
 
 CREATE INDEX IF NOT EXISTS idx_season_archive_archived_at ON season_archive (archived_at DESC);
+
+CREATE TABLE IF NOT EXISTS room_history (
+  id TEXT PRIMARY KEY,
+  room TEXT NOT NULL,
+  rev INTEGER NOT NULL,
+  data TEXT NOT NULL,
+  saved_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_history_room_saved ON room_history (room, saved_at DESC);
