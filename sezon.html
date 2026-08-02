@@ -167,7 +167,7 @@
     return out;
   }
 
-  async function fetchArchiveSources(){
+  async function fetchArchiveFiles(){
     var results = await Promise.all(ARCHIVE_FILES.map(function(path){
       return fetch(path).then(function(r){return r.json();}).catch(function(){ return null; });
     }));
@@ -185,6 +185,29 @@
       });
     });
     return out;
+  }
+
+  async function fetchArchiveApi(){
+    var res = await fetch(API_BASE+"/api/archive").then(function(r){return r.json();}).catch(function(){ return null; });
+    var list = (res && res.ok && res.archives) ? res.archives : [];
+    var out = [];
+    list.forEach(function(a){
+      var data = a.data || {};
+      var parts = Array.isArray(data.participants) ? data.participants : [];
+      if(!parts.length) return;
+      out.push({
+        compName: (data.name || a.name || a.id).trim() || a.id,
+        compDate: data.startAt || (a.archived_at && Date.parse(a.archived_at)) || null,
+        code: "arhiva-api:"+a.id,
+        parts: parts
+      });
+    });
+    return out;
+  }
+
+  async function fetchArchiveSources(){
+    var results = await Promise.all([fetchArchiveFiles(), fetchArchiveApi()]);
+    return results[0].concat(results[1]);
   }
 
   async function loadSeason(){

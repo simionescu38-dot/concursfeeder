@@ -17,3 +17,13 @@ CREATE TABLE IF NOT EXISTS push_subs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_push_subs_room ON push_subs (room);
+
+CREATE TABLE IF NOT EXISTS season_archive (
+  id TEXT PRIMARY KEY,
+  room TEXT,
+  name TEXT,
+  data TEXT NOT NULL,
+  archived_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_season_archive_archived_at ON season_archive (archived_at DESC);

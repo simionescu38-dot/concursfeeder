@@ -314,6 +314,8 @@
       <div class="sec-title">Sezon</div>
       <a class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;" href="sezon.html">🏆 Clasament de sezon (toate concursurile)</a>
       <p class="hint">Combină automat rezultatele din toate concursurile sincronizate și arată clasamentul pe tot sezonul.</p>
+      <button class="btn btn-ghost mt lockhide" onclick="archiveToSeason()">📦 Arhivează concursul curent în sezon</button>
+      <p class="hint" id="archive-status">La final de concurs, apasă aici o singură dată — rămâne permanent în clasamentul de sezon, chiar dacă refolosești camera live pentru concursul următor.</p>
     </div>
 
     <div class="card">
@@ -619,6 +621,20 @@
     });
   }
   window.addEventListener("online", function(){ if(syncRoom && syncKey && !viewerMode) pushState(); });
+  function archiveToSeason(){
+    if(!syncKey){ toast("Setează întâi cheia de scriere (Clasament live)"); return; }
+    if(!state.participants.length){ toast("Nu ai niciun participant de arhivat"); return; }
+    var st=document.getElementById("archive-status");
+    if(st) st.textContent="Se arhivează…";
+    fetch(API_BASE+"/api/archive"+(syncRoom?("?room="+encodeURIComponent(syncRoom)):""), {
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-write-key":syncKey},
+      body: JSON.stringify({data: state})
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if(j && j.ok){ toast("Concurs arhivat în sezon"); if(st) st.textContent="Arhivat • "+nowHM()+" — vezi-l în Clasamentul de sezon."; }
+      else { toast("Eroare la arhivare"); if(st) st.textContent="Eroare: "+((j&&j.error)||"necunoscută"); }
+    }).catch(function(){ toast("Eroare de rețea la arhivare"); if(st) st.textContent="Eroare de rețea — încearcă din nou."; });
+  }
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;
     updateLockUI();
