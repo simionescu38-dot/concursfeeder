@@ -444,6 +444,7 @@
 
     <div class="card lockhide">
       <div class="sec-title">Reset</div>
+      <p class="hint" style="margin:0 0 10px;">Dacă ai cheia de scriere setată (Clasament live), concursul curent se arhivează automat în sezon chiar înainte de ștergere — nu mai trebuie să apeși separat „Arhivează".</p>
       <button class="btn btn-danger" onclick="wipe()">Șterge toate datele</button>
     </div>
   </section>
@@ -1660,7 +1661,12 @@
   function saveCompName(v){ if(isLocked()) return; state.name=v; document.getElementById("compName").textContent=v; queueSave(); }
   function wipe(){
     if(guard()) return;
-    if(!confirm("Ștergi toți participanții și datele? Nu se poate reveni.")) return;
+    var willArchive = state.participants.length>0 && !!syncKey;
+    var msg = willArchive
+      ? "Ștergi toți participanții și datele? Concursul curent se arhivează automat în sezon înainte, deci rezultatele rămân. Nu se poate reveni."
+      : "Ștergi toți participanții și datele? Nu se poate reveni.";
+    if(!confirm(msg)) return;
+    if(willArchive) archiveToSeason();
     state={ name:"", sectors:["A","B","C"], participants:[] };
     save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
     renderSectors(); renderList(); renderRank();
