@@ -1,6 +1,6 @@
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET,PUT,POST,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, x-write-key",
 };
 function json(o, s = 200) {
@@ -205,6 +205,44 @@ export default {
     if (url.pathname === "/api/rooms" && req.method === "GET") {
       const rs = await env.DB.prepare("SELECT code,name,rev,updated_at FROM rooms ORDER BY updated_at DESC LIMIT 100").all();
       return json({ ok: true, rooms: rs.results || [] });
+    }
+
+    if (url.pathname === "/api/archive") {
+      if (req.method === "POST") {
+        if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+          return json({ ok: false, error: "forbidden" }, 403);
+        let body;
+        try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+        const data = body && body.data;
+        if (!data || typeof data !== "object") return json({ ok: false, error: "no data" }, 400);
+        const room = (url.searchParams.get("room") || "").trim().toLowerCase();
+        const name = (data.name || "").toString().slice(0, 200);
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await env.DB.prepare(
+          "INSERT INTO season_archive (id,room,name,data,archived_at) VALUES (?,?,?,?,?)"
+        ).bind(id, room, name, JSON.stringify(data), now).run();
+        return json({ ok: true, id });
+      }
+
+      if (req.method === "GET") {
+        const rs = await env.DB.prepare("SELECT id,room,name,data,archived_at FROM season_archive ORDER BY archived_at DESC LIMIT 300").all();
+        const archives = (rs.results || []).map((r) => ({
+          id: r.id, room: r.room, name: r.name, archived_at: r.archived_at, data: JSON.parse(r.data),
+        }));
+        return json({ ok: true, archives });
+      }
+
+      if (req.method === "DELETE") {
+        if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+          return json({ ok: false, error: "forbidden" }, 403);
+        const id = (url.searchParams.get("id") || "").trim();
+        if (!id) return json({ ok: false, error: "missing id" }, 400);
+        await env.DB.prepare("DELETE FROM season_archive WHERE id=?").bind(id).run();
+        return json({ ok: true });
+      }
+
+      return json({ ok: false, error: "method" }, 405);
     }
 
     if (url.pathname === "/api/subscribe" && req.method === "POST") {
