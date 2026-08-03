@@ -343,9 +343,11 @@ export default {
       const id = (url.searchParams.get("id") || "").trim();
       if (!id) return json({ ok: false, error: "missing id" }, 400);
       const token = req.headers.get("x-manage-token") || "";
+      const writeKey = req.headers.get("x-write-key") || "";
+      const isAdmin = !!writeKey && writeKey === env.WRITE_KEY;
       const row = await env.DB.prepare("SELECT manage_token FROM events WHERE id=?").bind(id).first();
       if (!row) return json({ ok: false, error: "not found" }, 404);
-      if (!token || token !== row.manage_token) return json({ ok: false, error: "forbidden" }, 403);
+      if (!isAdmin && (!token || token !== row.manage_token)) return json({ ok: false, error: "forbidden" }, 403);
 
       if (req.method === "PUT") {
         let body;

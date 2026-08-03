@@ -522,6 +522,13 @@
     </div>
 
     <div class="card lockhide">
+      <div class="sec-title">Moderare calendar regional</div>
+      <p class="hint" style="margin:0 0 10px;">Poți șterge orice concurs programat de altcineva (nu doar pe-ale tale), folosind cheia de scriere de mai sus — util dacă apare ceva greșit sau abuziv în calendarul public.</p>
+      <button class="btn btn-ghost" onclick="loadModEvents()">🔎 Încarcă toate concursurile programate</button>
+      <div id="mod-events-list" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="card lockhide">
       <div class="sec-title">Istoric cameră</div>
       <p class="hint" style="margin:0 0 10px;">Ultimele versiuni salvate automat ale camerei live (la fiecare suprascriere) — dacă s-a suprascris ceva din greșeală, poți reveni la o versiune anterioară.</p>
       <button class="btn btn-ghost" onclick="loadRoomHistory()">🕘 Vezi istoricul camerei</button>
@@ -943,6 +950,34 @@
       renderEventsList();
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca concursurile programate.</p>'; });
   }
+
+  // ---------- moderare calendar regional (orice eveniment, cu cheia de scriere) ----------
+  function loadModEvents(){
+    var el=document.getElementById("mod-events-list"); if(!el) return;
+    if(!syncKey){ toast("Setează întâi cheia de scriere mai sus"); return; }
+    el.innerHTML='<p class="hint">Se încarcă…</p>';
+    fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).then(function(j){
+      if(!j || !j.ok) throw new Error("bad response");
+      var events=j.events||[];
+      if(!events.length){ el.innerHTML='<p class="hint">Niciun concurs programat.</p>'; return; }
+      el.innerHTML = events.map(function(e){
+        return '<div class="row" style="align-items:center; margin-bottom:8px;">'+
+          '<div style="flex:1;"><b>'+esc(e.name)+'</b><div class="hint" style="margin:2px 0 0;">'+esc(e.location)+' · '+dateLabelCal(e.event_date)+(e.organizer?' · '+esc(e.organizer):'')+'</div></div>'+
+          '<button class="btn btn-danger" style="flex:0 0 auto; padding:8px 12px;" onclick="modDeleteEvent(\''+e.id+'\')">Șterge</button>'+
+        '</div>';
+      }).join("");
+    }).catch(function(){ el.innerHTML='<p class="hint">Eroare la încărcare.</p>'; });
+  }
+  function modDeleteEvent(id){
+    if(!syncKey){ toast("Setează întâi cheia de scriere mai sus"); return; }
+    if(!confirm("Ștergi acest concurs (postat eventual de altcineva)? Nu se poate reveni.")) return;
+    fetch(API_BASE+"/api/events/edit?id="+encodeURIComponent(id), { method:"DELETE", headers:{"x-write-key":syncKey} })
+      .then(function(r){ return r.json(); }).then(function(j){
+        if(!j || !j.ok){ toast("Eroare: "+((j&&j.error)||"necunoscută")); return; }
+        removeEventToken(id); toast("Concurs șters"); loadModEvents();
+      }).catch(function(){ toast("Eroare de rețea"); });
+  }
+
   function setSyncStatus(t, live){
     var st=document.getElementById("sync-status"); if(st) st.textContent=t;
     var b=document.getElementById("syncBadge");

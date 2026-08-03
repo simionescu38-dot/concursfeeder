@@ -18,8 +18,8 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
 - `POST /api/restore?room=<code>&id=<historyId>` — restaurează camera la o versiune din istoric. Necesită `x-write-key`. Salvează și starea curentă în istoric înainte (restaurarea e la rândul ei reversibilă).
 - `GET /api/events` — listă publică de concursuri programate (viitoare), sortate după dată: `{ ok, events: [{ id, name, location, event_date, type, fee, slots_total, slots_taken, organizer, contact, created_at }] }`.
 - `POST /api/events` — publică un concurs nou. **Fără cheie** — oricine poate adăuga (calendar regional, nu doar concursurile tale). Body: `{ name, location, eventDate, type, fee, slotsTotal, organizer, contact }` (`name`, `location`, `eventDate` obligatorii). Răspunde `{ ok, id, manageToken }` — `manageToken`-ul se generează o singură dată, la creare, și nu se poate recupera ulterior; aplicația îl salvează local, pe telefonul celui care a publicat anunțul.
-- `PUT /api/events/edit?id=<id>` — editează un concurs programat. Necesită header-ul `x-manage-token` egal cu token-ul primit la creare (nu `x-write-key` — oricine publică, dar doar el poate edita ce a publicat). Body: aceleași câmpuri ca la creare, plus opțional `slotsTaken`.
-- `DELETE /api/events/edit?id=<id>` — șterge un concurs programat. Necesită `x-manage-token`.
+- `PUT /api/events/edit?id=<id>` — editează un concurs programat. Necesită **fie** header-ul `x-manage-token` egal cu token-ul primit la creare (oricine publică, dar doar el poate edita ce a publicat), **fie** `x-write-key: <WRITE_KEY>` (moderare — administratorul poate edita orice eveniment, nu doar pe-ale lui). Body: aceleași câmpuri ca la creare, plus opțional `slotsTaken`.
+- `DELETE /api/events/edit?id=<id>` — șterge un concurs programat. Necesită `x-manage-token` **sau** `x-write-key` (moderare).
 
 ## Configurare în Cloudflare Dashboard (Worker `concurs-api`)
 
