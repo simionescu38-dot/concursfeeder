@@ -151,6 +151,15 @@
   .empty{text-align:center; color:var(--muted); padding:30px 16px; font-size:14px;}
   .empty .big{font-size:30px; margin-bottom:6px;}
 
+  /* Acasă – ecran de bun venit */
+  .hero{text-align:center; padding:12vh 8px 24px; display:flex; flex-direction:column; align-items:center;}
+  .hero-emoji{font-size:44px; margin-bottom:10px;}
+  .hero-title{margin:0; font-size:28px; font-weight:800; letter-spacing:-.01em; color:var(--pine);}
+  .hero-tag{margin:6px 0 0; font-size:14px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-d);}
+  .hero-desc{margin:14px 0 30px; font-size:15px; line-height:1.5; color:var(--muted); max-width:340px;}
+  .hero-cta{max-width:340px;}
+  .btn-link{border:0; background:none; margin-top:14px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;}
+
   /* toggle */
   .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
   .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
@@ -264,8 +273,20 @@
 </header>
 
 <main>
-  <!-- PARTICIPANȚI -->
+  <!-- ACASĂ -->
   <section class="view active" id="view-part">
+    <div class="hero">
+      <div class="hero-emoji">🎣</div>
+      <h2 class="hero-title">Feeder Moldova Iași</h2>
+      <p class="hero-tag">Cântar &amp; Clasament live</p>
+      <p class="hero-desc">Urmărește în timp real clasamentul concursurilor de pescuit, direct din telefon.</p>
+      <button class="btn btn-primary hero-cta" onclick="showView('rank')">🏆 Vezi clasamentele</button>
+      <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
+    </div>
+  </section>
+
+  <!-- CÂNTAR -->
+  <section class="view" id="view-cantar">
     <div class="lockbar">🔒 Mod vizualizare – doar organizatorul poate modifica (lacătul de sus + PIN).</div>
     <div class="seg">
       <button id="mc-1" class="on" onclick="setManche(1)">🎣 Manșa 1</button>
@@ -495,6 +516,7 @@
 
 <nav class="tabs">
   <button id="tab-part" class="on" onclick="showView('part')"><span class="ic">🏠</span>Acasă</button>
+  <button id="tab-cantar" onclick="showView('cantar')"><span class="ic">🎣</span>Cântar</button>
   <button id="tab-cal" onclick="showView('cal')"><span class="ic">📅</span>Calendar</button>
   <button id="tab-rank" onclick="showView('rank')"><span class="ic">🏆</span>Clasament</button>
   <button id="tab-set" onclick="showView('set')"><span class="ic">👤</span>Contul meu</button>
@@ -1327,7 +1349,7 @@
     document.getElementById("imp-text").value="";
     document.getElementById("imp-preview").innerHTML="";
     queueSave(); renderSectors(); renderList(); toast(arr.length+" participanți adăugați");
-    showView("part");
+    showView("cantar");
   }
 
   function sectorRanges(N, secs){
@@ -1363,7 +1385,7 @@
     var seq=state.participants.slice().sort(function(a,b){return a.ordine-b.ordine;});
     seq.forEach(function(p,k){ var s=stands[k]; p.stand=String(s); p.sector=sectorForStand(s, ranges); });
     queueSave(); renderList(); toast("Tragere făcută – ordine + standuri");
-    showView("part");
+    showView("cantar");
   }
   function copyText(txt){ try{ navigator.clipboard.writeText(txt).then(function(){toast("Copiat");},function(){fallbackCopy(txt);}); }catch(e){ fallbackCopy(txt); } }
   function copyDraw(){
