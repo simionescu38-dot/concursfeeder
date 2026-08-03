@@ -73,6 +73,13 @@
   .complist .cn{font-weight:700;}
   .complist .cd{color:var(--muted); font-size:12px;}
 
+  .comp-card{border-top:1px solid var(--line); padding:10px 0;}
+  .comp-card:first-child{border-top:0;}
+  .comp-card-h{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px;}
+  .comp-card-h .cn{font-weight:800; font-size:14px;}
+  .comp-card-h .cd{font-size:11px; color:var(--muted); font-weight:700; white-space:nowrap;}
+  .comp-podium-row{display:flex; justify-content:space-between; font-size:13px; padding:2px 0;}
+
   .row{display:flex; gap:8px;}
   .row>*{flex:1; min-width:0;}
   .mt{margin-top:10px;}
@@ -252,7 +259,10 @@
         return {p:p, kg:totalKg(p), fish:bestFish(p)};
       }).sort(function(a,b){ return b.kg - a.kg; });
 
-      comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length});
+      var top3 = ranked.filter(function(row){ return nameOf(row.p); }).slice(0,3).map(function(row){
+        return {name:nameOf(row.p), kg:row.kg};
+      });
+      comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length, top3:top3});
 
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
@@ -339,7 +349,13 @@
         '<div class="kg num">'+season.mostLoyal[0].competitions+' concursuri</div></div>';
     }
     var compListHtml = season.comps.map(function(c){
-      return '<div><span class="cn">'+esc(c.name)+'</span> · <span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' participanți</span></div>';
+      var podium = (c.top3||[]).map(function(t,i){
+        var medal = i===0?"🥇":i===1?"🥈":"🥉";
+        return '<div class="comp-podium-row"><span>'+medal+' '+esc(t.name)+'</span><span class="kg num">'+fmt(t.kg)+' kg</span></div>';
+      }).join("");
+      return '<div class="comp-card"><div class="comp-card-h"><span class="cn">'+esc(c.name)+'</span><span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' particip.</span></div>'+
+        (podium || '<p class="hint" style="margin:0;">Fără rezultate cu nume.</p>')+
+      '</div>';
     }).join("");
 
     var standRows = season.standList.slice(0,15).map(function(s,i){
@@ -371,7 +387,7 @@
         '<button class="btn btn-ghost" onclick="shareSeasonImage()">🖼 Imagine WhatsApp</button>'+
       '</div>'+
       standHtml+
-      '<div class="card" style="margin-top:14px;"><div class="sec-title">Concursuri incluse</div><div class="complist">'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div></div>'+
+      '<div class="card" style="margin-top:14px;"><div class="sec-title">Istoric concursuri</div>'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div>'+
       '<div class="card" style="margin-top:14px;"><div class="sec-title">Backup</div>'+
         '<button class="btn btn-ghost" onclick="downloadSeasonBackup()">⇩ Descarcă backup sezon (JSON)</button>'+
         '<p class="hint">Salvează pe telefon toate concursurile arhivate (din cloud și din cele adăugate manual în repo) — o plasă de siguranță, în caz că se întâmplă ceva cu baza de date.</p>'+

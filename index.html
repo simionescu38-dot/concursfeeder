@@ -160,6 +160,13 @@
   .hero-cta{max-width:340px;}
   .btn-link{border:0; background:none; margin-top:14px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;}
 
+  /* Calendar – listă de evenimente live */
+  .evt{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--line);}
+  .evt:first-child{border-top:0;}
+  .evt .nm{font-weight:800; font-size:14px;}
+  .evt .meta{font-size:11px; color:var(--muted); font-weight:700; margin-top:2px;}
+  .evt .go{flex:0 0 auto; background:var(--teal-soft); color:var(--teal-d); font-weight:800; font-size:12px; padding:6px 10px; border-radius:999px; text-decoration:none; white-space:nowrap;}
+
   /* toggle */
   .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
   .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
@@ -318,7 +325,8 @@
   <section class="view" id="view-cal">
     <div class="card">
       <div class="sec-title">Concursuri live acum</div>
-      <a class="btn btn-ghost" style="display:block;text-align:center;text-decoration:none;" href="concursuri.html">🔎 Vezi toate concursurile live</a>
+      <div id="cal-live-list"><p class="hint">Se încarcă…</p></div>
+      <a class="btn btn-ghost mt" style="display:block;text-align:center;text-decoration:none;" href="concursuri.html">🔎 Vezi toate concursurile live</a>
       <p class="hint">Pagină publică cu toate camerele active chiar acum — oricine poate deschide clasamentul live al oricărui concurs, fără cod.</p>
     </div>
 
@@ -618,6 +626,30 @@
   var viewerMode = false, viewerRoom = "", pollT = null, lastRev = 0;
   function pad2(n){ return (n<10?"0":"")+n; }
   function nowHM(){ var d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
+
+  // ---------- Calendar – listă de evenimente live (tab Calendar) ----------
+  function timeAgoCal(iso){
+    try{
+      var s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime())/1000));
+      if(s<60) return "chiar acum";
+      var m = Math.floor(s/60); if(m<60) return "acum "+m+" min";
+      var h = Math.floor(m/60); if(h<24) return "acum "+h+" "+(h===1?"oră":"ore");
+      var d = Math.floor(h/24); return "acum "+d+" "+(d===1?"zi":"zile");
+    }catch(e){ return ""; }
+  }
+  function loadCalendarLive(){
+    var el=document.getElementById("cal-live-list"); if(!el) return;
+    fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).then(function(j){
+      if(!j || !j.ok) throw new Error("bad response");
+      var rooms=j.rooms||[];
+      if(!rooms.length){ el.innerHTML='<p class="hint">Niciun concurs live momentan.</p>'; return; }
+      el.innerHTML = rooms.map(function(r){
+        return '<div class="evt"><div><div class="nm">'+esc(r.name||"Concurs fără nume")+'</div>'+
+          '<div class="meta">🔴 live · actualizat '+timeAgoCal(r.updated_at)+'</div></div>'+
+          '<a class="go" href="index.html?room='+encodeURIComponent(r.code)+'">Vezi →</a></div>';
+      }).join("");
+    }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca lista de concursuri live.</p>'; });
+  }
   function setSyncStatus(t, live){
     var st=document.getElementById("sync-status"); if(st) st.textContent=t;
     var b=document.getElementById("syncBadge");
@@ -878,6 +910,7 @@
     document.getElementById("tab-"+v).classList.add("on");
     if(v==="rank") renderRank();
     if(v==="set") previewDraw();
+    if(v==="cal") loadCalendarLive();
     window.scrollTo(0,0);
   }
   function setManche(mi){
