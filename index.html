@@ -182,6 +182,11 @@
   .sched .edit-btn{background:var(--teal-soft); color:var(--teal-d);}
   .sched .del-btn{background:#f4eae8; color:#b23b2e;}
 
+  .filter-chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:8px; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
+  .filter-chips::-webkit-scrollbar{display:none;}
+  .filter-chips button{flex:0 0 auto; border:1.5px solid var(--line); background:#fff; color:var(--muted); font-weight:800; font-size:12px; padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit; white-space:nowrap;}
+  .filter-chips button.on{background:var(--teal); border-color:var(--teal); color:#fff;}
+
   /* toggle */
   .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
   .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
@@ -302,6 +307,8 @@
       <h2 class="hero-title">Feeder Moldova Iași</h2>
       <p class="hero-tag">Cântar &amp; Clasament live</p>
       <p class="hero-desc">Urmărește în timp real clasamentul concursurilor de pescuit, direct din telefon.</p>
+      <div class="summary" id="hero-stats" style="width:100%; max-width:340px;"></div>
+      <div id="hero-spotlight" style="width:100%; max-width:340px;"></div>
       <button class="btn btn-primary hero-cta" onclick="showView('rank')">🏆 Vezi clasamentele</button>
       <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
     </div>
@@ -340,6 +347,7 @@
   <section class="view" id="view-cal">
     <div class="card">
       <div class="sec-title">Concursuri programate</div>
+      <div class="filter-chips" id="ev-type-filter"></div>
       <div id="cal-events-list"><p class="hint">Se încarcă…</p></div>
       <button class="btn btn-primary mt" id="btn-toggle-event-form" onclick="toggleEventForm()">+ Adaugă un concurs</button>
       <div id="event-form" style="display:none; margin-top:12px;">
@@ -707,6 +715,105 @@
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca lista de concursuri live.</p>'; });
   }
 
+  // ---------- Acasă – statistici regionale + cel mai mare pește (din concursurile live acum) ----------
+  var heroFish = null;
+  function renderHeroStats(stats){
+    var el=document.getElementById("hero-stats"); if(!el) return;
+    el.innerHTML =
+      '<div class="stat"><div class="n num">'+stats.upcoming+'</div><div class="l">Programate</div></div>'+
+      '<div class="stat"><div class="n num">'+stats.live+'</div><div class="l">Live acum</div></div>'+
+      '<div class="stat"><div class="n num">'+stats.organizers+'</div><div class="l">Organizatori</div></div>';
+  }
+  function renderHeroSpotlight(fish){
+    var el=document.getElementById("hero-spotlight"); if(!el) return;
+    if(!fish){ el.innerHTML=""; return; }
+    el.innerHTML = '<div class="cmmc"><div class="medal">🐟</div><div><div class="t">Cel mai mare pește – acum</div>'+
+      '<div class="who">'+esc(fish.name)+' <span style="font-weight:600;color:#8a5a12;">· '+esc(fish.comp)+'</span></div></div>'+
+      '<div class="kg num">'+fmt(fish.kg)+' kg</div></div>'+
+      '<button class="btn btn-ghost mt" onclick="downloadFishSpotlight()">🖼 Descarcă imagine</button>';
+  }
+  function loadAcasaRegional(){
+    Promise.all([
+      fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).catch(function(){ return null; }),
+      fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).catch(function(){ return null; })
+    ]).then(function(results){
+      var evJ=results[0], roomJ=results[1];
+      var events = (evJ && evJ.ok) ? (evJ.events||[]) : [];
+      var rooms = (roomJ && roomJ.ok) ? (roomJ.rooms||[]) : [];
+      var orgSet={};
+      events.forEach(function(e){ if(e.organizer) orgSet[e.organizer.trim().toLowerCase()]=1; });
+      renderHeroStats({upcoming:events.length, live:rooms.length, organizers:Object.keys(orgSet).length});
+
+      if(!rooms.length){ heroFish=null; renderHeroSpotlight(null); return; }
+      Promise.all(rooms.map(function(r){
+        return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code)).then(function(res){ return res.json(); }).catch(function(){ return null; });
+      })).then(function(states){
+        var best=null;
+        states.forEach(function(res, i){
+          if(!res || !res.ok || !res.data) return;
+          var compName = res.data.name || rooms[i].name || rooms[i].code;
+          (res.data.participants||[]).forEach(function(p){
+            [1,2].forEach(function(mi){
+              var m = p.m && p.m[mi]; if(!m) return;
+              (m.extras||[]).forEach(function(v){
+                var kg = +v||0;
+                if(kg>0 && (!best || kg>best.kg)){
+                  best = {kg:kg, name: ((p.prenume||"")+" "+(p.nume||"")).trim()||"—", comp: compName};
+                }
+              });
+            });
+          });
+        });
+        heroFish=best; renderHeroSpotlight(best);
+      });
+    });
+  }
+  function downloadFishSpotlight(){
+    if(!heroFish){ toast("Niciun pește de partajat momentan"); return; }
+    var logo=new Image();
+    logo.onload=function(){ drawFishSpotlight(logo); };
+    logo.onerror=function(){ drawFishSpotlight(null); };
+    logo.src="icon-192.png";
+  }
+  function drawFishSpotlight(logo){
+    var W=1080, H=1080;
+    var c=document.createElement("canvas"); c.width=W; c.height=H;
+    var x=c.getContext("2d");
+    var bg=x.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,"#1c6fd9"); bg.addColorStop(1,"#0f4fa8");
+    x.fillStyle=bg; x.fillRect(0,0,W,H);
+    if(logo){ try{ x.drawImage(logo,44,50,120,120); }catch(e){} }
+    x.textAlign="center"; x.fillStyle="rgba(255,255,255,.85)"; x.font="bold 30px Arial";
+    x.fillText("FEEDER MOLDOVA IAȘI", W/2, 260);
+    x.font="bold 40px Arial"; x.fillStyle="#ffd700";
+    x.fillText("🐟 CEL MAI MARE PEȘTE", W/2, 420);
+    x.font="bold 90px Georgia"; x.fillStyle="#ffffff";
+    x.fillText(heroFish.name, W/2, 560, W-140);
+    x.font="bold 140px Arial"; x.fillStyle="#ffd700";
+    x.fillText(fmt(heroFish.kg)+" kg", W/2, 740);
+    x.font="bold 32px Arial"; x.fillStyle="rgba(255,255,255,.8)";
+    x.fillText(heroFish.comp, W/2, 820, W-160);
+    x.font="bold 26px Arial"; x.fillStyle="rgba(255,255,255,.5)";
+    x.fillText(roDateCal(), W/2, H-50);
+    c.toBlob(function(b){
+      if(!b){ toast("Nu am putut genera imaginea"); return; }
+      var f=null; try{ f=new File([b],"peste.png",{type:"image/png"}); }catch(e){}
+      if(f && navigator.canShare && navigator.canShare({files:[f]})){
+        navigator.share({files:[f], title:"Cel mai mare pește"}).catch(function(err){ if(err && err.name!=="AbortError") downloadFishBlob(b); });
+      } else { downloadFishBlob(b); }
+    }, "image/png");
+  }
+  function downloadFishBlob(b){
+    var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download="peste.png";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+    toast("Imagine salvată");
+  }
+  function roDateCal(){
+    var m=["ianuarie","februarie","martie","aprilie","mai","iunie","iulie","august","septembrie","octombrie","noiembrie","decembrie"];
+    var d=new Date(); return d.getDate()+" "+m[d.getMonth()]+" "+d.getFullYear();
+  }
+
   // ---------- Calendar – concursuri programate (publice, fără cont) ----------
   var EVENT_TOKENS_KEY = "concurs-event-tokens";
   function eventTokens(){ try{ return JSON.parse(localStorage.getItem(EVENT_TOKENS_KEY)||"{}"); }catch(e){ return {}; } }
@@ -794,27 +901,46 @@
         removeEventToken(id); toast("Concurs șters"); loadEvents();
       }).catch(function(){ toast("Eroare de rețea"); });
   }
+  var EVENT_TYPES = ["Individual","Pe sectoare","Echipe","Tandem","Feeder","Method Feeder","Junior"];
+  var eventTypeFilter = "";
+  function renderTypeFilterChips(){
+    var wrap=document.getElementById("ev-type-filter"); if(!wrap) return;
+    var chips = ['<button class="'+(eventTypeFilter===""?"on":"")+'" onclick="setEventTypeFilter(\'\')">Toate</button>'];
+    EVENT_TYPES.forEach(function(t){
+      chips.push('<button class="'+(eventTypeFilter===t?"on":"")+'" onclick="setEventTypeFilter(\''+t+'\')">'+t+'</button>');
+    });
+    wrap.innerHTML = chips.join("");
+  }
+  function setEventTypeFilter(t){ eventTypeFilter=t; renderTypeFilterChips(); renderEventsList(); }
+
+  function renderEventsList(){
+    var el=document.getElementById("cal-events-list"); if(!el) return;
+    var list = eventTypeFilter ? eventsCache.filter(function(e){ return e.type===eventTypeFilter; }) : eventsCache;
+    if(!list.length){ el.innerHTML='<p class="hint">'+(eventsCache.length?"Niciun concurs de tipul ăsta programat.":"Niciun concurs programat momentan.")+'</p>'; return; }
+    var mine = eventTokens();
+    el.innerHTML = list.map(function(e){
+      var tags = "";
+      if(e.type) tags += '<span class="tag">'+esc(e.type)+'</span>';
+      if(e.fee) tags += '<span class="tag">'+esc(e.fee)+'</span>';
+      if(e.slots_total) tags += '<span class="tag">'+(e.slots_taken||0)+'/'+e.slots_total+' locuri</span>';
+      var contactBtn = e.contact ? '<a class="go" href="tel:'+esc(e.contact.replace(/\s+/g,""))+'">📞 '+esc(e.contact)+'</a>' : '';
+      var ownBtns = mine[e.id] ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')">Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">Șterge</button>' : '';
+      return '<div class="sched">'+
+        '<div class="sched-h"><span class="nm">'+esc(e.name)+'</span><span class="dt">'+dateLabelCal(e.event_date)+'</span></div>'+
+        '<div class="loc">📍 '+esc(e.location)+(e.organizer?' · '+esc(e.organizer):'')+'</div>'+
+        (tags?'<div class="tags">'+tags+'</div>':'')+
+        (contactBtn||ownBtns?'<div class="actions">'+contactBtn+ownBtns+'</div>':'')+
+      '</div>';
+    }).join("");
+  }
+
   function loadEvents(){
     var el=document.getElementById("cal-events-list"); if(!el) return;
+    renderTypeFilterChips();
     fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).then(function(j){
       if(!j || !j.ok) throw new Error("bad response");
       eventsCache = j.events||[];
-      if(!eventsCache.length){ el.innerHTML='<p class="hint">Niciun concurs programat momentan.</p>'; return; }
-      var mine = eventTokens();
-      el.innerHTML = eventsCache.map(function(e){
-        var tags = "";
-        if(e.type) tags += '<span class="tag">'+esc(e.type)+'</span>';
-        if(e.fee) tags += '<span class="tag">'+esc(e.fee)+'</span>';
-        if(e.slots_total) tags += '<span class="tag">'+(e.slots_taken||0)+'/'+e.slots_total+' locuri</span>';
-        var contactBtn = e.contact ? '<a class="go" href="tel:'+esc(e.contact.replace(/\s+/g,""))+'">📞 '+esc(e.contact)+'</a>' : '';
-        var ownBtns = mine[e.id] ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')">Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">Șterge</button>' : '';
-        return '<div class="sched">'+
-          '<div class="sched-h"><span class="nm">'+esc(e.name)+'</span><span class="dt">'+dateLabelCal(e.event_date)+'</span></div>'+
-          '<div class="loc">📍 '+esc(e.location)+(e.organizer?' · '+esc(e.organizer):'')+'</div>'+
-          (tags?'<div class="tags">'+tags+'</div>':'')+
-          (contactBtn||ownBtns?'<div class="actions">'+contactBtn+ownBtns+'</div>':'')+
-        '</div>';
-      }).join("");
+      renderEventsList();
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca concursurile programate.</p>'; });
   }
   function setSyncStatus(t, live){
@@ -1078,6 +1204,7 @@
     if(v==="rank") renderRank();
     if(v==="set") previewDraw();
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
+    if(v==="part") loadAcasaRegional();
     window.scrollTo(0,0);
   }
   function setManche(mi){
@@ -2028,6 +2155,7 @@
     startTimerLoop();
     var roomParam=(new URLSearchParams(location.search)).get("room");
     if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
+    else loadAcasaRegional();
   })();
 </script>
 <script>
