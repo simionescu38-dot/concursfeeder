@@ -1,7 +1,7 @@
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, x-write-key",
+  "Access-Control-Allow-Headers": "Content-Type, x-write-key, x-manage-token",
 };
 function json(o, s = 200) {
   return new Response(JSON.stringify(o), {
@@ -296,6 +296,78 @@ export default {
         const id = (url.searchParams.get("id") || "").trim();
         if (!id) return json({ ok: false, error: "missing id" }, 400);
         await env.DB.prepare("DELETE FROM season_archive WHERE id=?").bind(id).run();
+        return json({ ok: true });
+      }
+
+      return json({ ok: false, error: "method" }, 405);
+    }
+
+    if (url.pathname === "/api/events") {
+      if (req.method === "GET") {
+        const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
+        const rs = await env.DB.prepare(
+          "SELECT id,name,location,event_date,type,fee,slots_total,slots_taken,organizer,contact,created_at " +
+          "FROM events WHERE event_date >= ? ORDER BY event_date ASC LIMIT 200"
+        ).bind(cutoff).all();
+        return json({ ok: true, events: rs.results || [] });
+      }
+
+      if (req.method === "POST") {
+        let body;
+        try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+        const name = ((body && body.name) || "").toString().trim().slice(0, 200);
+        const location = ((body && body.location) || "").toString().trim().slice(0, 200);
+        const eventDate = ((body && body.eventDate) || "").toString().trim().slice(0, 20);
+        if (!name || !location || !eventDate) return json({ ok: false, error: "name, location și eventDate sunt obligatorii" }, 400);
+        const type = ((body && body.type) || "").toString().trim().slice(0, 60);
+        const fee = ((body && body.fee) || "").toString().trim().slice(0, 60);
+        const slotsTotal = body && body.slotsTotal ? Math.max(0, parseInt(body.slotsTotal, 10) || 0) : null;
+        const organizer = ((body && body.organizer) || "").toString().trim().slice(0, 120);
+        const contact = ((body && body.contact) || "").toString().trim().slice(0, 120);
+
+        const id = crypto.randomUUID();
+        const manageToken = crypto.randomUUID().replace(/-/g, "");
+        const now = new Date().toISOString();
+        await env.DB.prepare(
+          "INSERT INTO events (id,name,location,event_date,type,fee,slots_total,slots_taken,organizer,contact,manage_token,created_at) " +
+          "VALUES (?,?,?,?,?,?,?,0,?,?,?,?)"
+        ).bind(id, name, location, eventDate, type, fee, slotsTotal, organizer, contact, manageToken, now).run();
+
+        return json({ ok: true, id, manageToken });
+      }
+
+      return json({ ok: false, error: "method" }, 405);
+    }
+
+    if (url.pathname === "/api/events/edit") {
+      const id = (url.searchParams.get("id") || "").trim();
+      if (!id) return json({ ok: false, error: "missing id" }, 400);
+      const token = req.headers.get("x-manage-token") || "";
+      const row = await env.DB.prepare("SELECT manage_token FROM events WHERE id=?").bind(id).first();
+      if (!row) return json({ ok: false, error: "not found" }, 404);
+      if (!token || token !== row.manage_token) return json({ ok: false, error: "forbidden" }, 403);
+
+      if (req.method === "PUT") {
+        let body;
+        try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+        const name = ((body && body.name) || "").toString().trim().slice(0, 200);
+        const location = ((body && body.location) || "").toString().trim().slice(0, 200);
+        const eventDate = ((body && body.eventDate) || "").toString().trim().slice(0, 20);
+        if (!name || !location || !eventDate) return json({ ok: false, error: "name, location și eventDate sunt obligatorii" }, 400);
+        const type = ((body && body.type) || "").toString().trim().slice(0, 60);
+        const fee = ((body && body.fee) || "").toString().trim().slice(0, 60);
+        const slotsTotal = body && body.slotsTotal ? Math.max(0, parseInt(body.slotsTotal, 10) || 0) : null;
+        const slotsTaken = body && body.slotsTaken ? Math.max(0, parseInt(body.slotsTaken, 10) || 0) : 0;
+        const organizer = ((body && body.organizer) || "").toString().trim().slice(0, 120);
+        const contact = ((body && body.contact) || "").toString().trim().slice(0, 120);
+        await env.DB.prepare(
+          "UPDATE events SET name=?, location=?, event_date=?, type=?, fee=?, slots_total=?, slots_taken=?, organizer=?, contact=? WHERE id=?"
+        ).bind(name, location, eventDate, type, fee, slotsTotal, slotsTaken, organizer, contact, id).run();
+        return json({ ok: true });
+      }
+
+      if (req.method === "DELETE") {
+        await env.DB.prepare("DELETE FROM events WHERE id=?").bind(id).run();
         return json({ ok: true });
       }
 

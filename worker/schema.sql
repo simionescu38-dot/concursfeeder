@@ -37,3 +37,22 @@ CREATE TABLE IF NOT EXISTS room_history (
 );
 
 CREATE INDEX IF NOT EXISTS idx_room_history_room_saved ON room_history (room, saved_at DESC);
+
+-- concursuri programate (calendar regional) — publicare publică, fără cont;
+-- editarea/ștergerea necesită manage_token-ul generat la creare (deținut doar de creator)
+CREATE TABLE IF NOT EXISTS events (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  location TEXT NOT NULL,
+  event_date TEXT NOT NULL,
+  type TEXT,
+  fee TEXT,
+  slots_total INTEGER,
+  slots_taken INTEGER NOT NULL DEFAULT 0,
+  organizer TEXT,
+  contact TEXT,
+  manage_token TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_date ON events (event_date);
