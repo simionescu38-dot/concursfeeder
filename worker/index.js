@@ -422,11 +422,10 @@ export default {
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model: "claude-opus-5",
+            model: "claude-haiku-4-5",
             max_tokens: 1024,
             thinking: { type: "disabled" },
             output_config: {
-              effort: "low",
               format: {
                 type: "json_schema",
                 schema: {
@@ -454,9 +453,12 @@ export default {
           }),
         });
       } catch (e) {
-        return json({ ok: false, error: "ai request failed" }, 502);
+        return json({ ok: false, error: "ai request failed", detail: String(e) }, 502);
       }
-      if (!aiRes.ok) return json({ ok: false, error: "ai request failed" }, 502);
+      if (!aiRes.ok) {
+        const detail = await aiRes.text().catch(() => "");
+        return json({ ok: false, error: "ai request failed", status: aiRes.status, detail: detail.slice(0, 500) }, 502);
+      }
 
       const aiJson = await aiRes.json();
       if (aiJson.stop_reason === "refusal") return json({ ok: true, weight: null });
