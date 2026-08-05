@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Clasament de Sezon — Pescuit</title>
-<meta name="theme-color" content="#1c6fd9">
+<meta name="theme-color" content="#2f8ae6">
 <style>
   :root{
-    --pine:#0f1b2d; --teal:#1c6fd9; --teal-d:#0f4fa8; --teal-soft:#e8f0fd;
-    --amber:#f2971d; --amber-soft:#fdecd2;
-    --bg:#f2f6fb; --card:#ffffff; --line:#dde6f0; --muted:#5c7189;
-    --shadow-sm:0 1px 2px rgba(15,31,51,.05);
+    --pine:#eef3fa; --teal:#2f8ae6; --teal-d:#0f4fa8; --teal-soft:#17395c;
+    --amber:#ffa733; --amber-soft:#3d2a12;
+    --bg:#0a1220; --card:#131f30; --line:#26374d; --muted:#93a9c2;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -42,7 +42,7 @@
 
   .seg{display:flex; background:var(--teal-soft); border-radius:12px; padding:4px; margin-bottom:14px;}
   .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
-  .seg button.on{background:#fff; color:var(--teal-d); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .seg button.on{background:var(--card); color:var(--teal); box-shadow:0 1px 3px rgba(0,0,0,.3);}
 
   .cmmc{background:linear-gradient(120deg,#fff5e4,#fbe9cf); border:1.5px solid #f0d29a; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
   .cmmc .medal{font-size:26px;}
@@ -394,7 +394,7 @@
       '</div>';
   }
 
-  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1b2d;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
+  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e3654;border:1px solid #2f4d6e;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.45);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
   function fallbackCopy(txt){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Clasament copiat");}catch(e){toast("Nu am putut copia");} document.body.removeChild(ta); }
   function sortLabel(){ return sortMode==="kg" ? "După kg" : "După puncte"; }
   function currentSeasonSorted(){
