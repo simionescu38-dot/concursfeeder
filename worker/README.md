@@ -20,6 +20,7 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
 - `POST /api/events` — publică un concurs nou. **Fără cheie** — oricine poate adăuga (calendar regional, nu doar concursurile tale). Body: `{ name, location, eventDate, type, fee, slotsTotal, organizer, contact }` (`name`, `location`, `eventDate` obligatorii). Răspunde `{ ok, id, manageToken }` — `manageToken`-ul se generează o singură dată, la creare, și nu se poate recupera ulterior; aplicația îl salvează local, pe telefonul celui care a publicat anunțul.
 - `PUT /api/events/edit?id=<id>` — editează un concurs programat. Necesită **fie** header-ul `x-manage-token` egal cu token-ul primit la creare (oricine publică, dar doar el poate edita ce a publicat), **fie** `x-write-key: <WRITE_KEY>` (moderare — administratorul poate edita orice eveniment, nu doar pe-ale lui). Body: aceleași câmpuri ca la creare, plus opțional `slotsTaken`.
 - `DELETE /api/events/edit?id=<id>` — șterge un concurs programat. Necesită `x-manage-token` **sau** `x-write-key` (moderare).
+- `POST /api/read-scale` — citește greutatea de pe o poză a afișajului unui cântar digital (folosit de fluxul de Share din WhatsApp — vezi `checkForSharedImage()` în `index.html`). **Fără cheie** — apelat direct din browser. Body: `{ "image": "data:image/jpeg;base64,..." }`. Răspunde `{ ok, weight }` (`weight` e `null` dacă afișajul nu s-a putut citi). Necesită secretul `ANTHROPIC_API_KEY`; fără el, răspunde `501`.
 
 ## Configurare în Cloudflare Dashboard (Worker `concurs-api`)
 
@@ -28,6 +29,7 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
 3. **Notificări push (VAPID)** — Settings → Variables and Secrets → Add, de două ori (cheile sunt generate separat, în afara acestui repo — nu se pun niciodată în Git):
    - Secret `VAPID_PRIVATE_JWK` — cheia privată (JSON).
    - Variable `VAPID_PUBLIC_KEY` — cheia publică (base64url). Aceeași valoare trebuie copiată și în `index.html`, la constanta `VAPID_PUBLIC_KEY`.
+4. **Citire cântar (Share din WhatsApp)** — Settings → Variables and Secrets → Add → tip „Secret", nume `ANTHROPIC_API_KEY`, valoare = o cheie API de la [console.anthropic.com](https://console.anthropic.com) (cont separat, plată per-folosire — costul per poză citită e sub un cent). Fără acest secret, `/api/read-scale` răspunde `501` și aplicația cere greutatea manual.
 
 ## Notă: proiectul „concursiasi"
 

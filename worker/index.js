@@ -401,6 +401,72 @@ export default {
       return json({ ok: true });
     }
 
+    // citește greutatea de pe afișajul unui cântar dintr-o poză (folosit de
+    // fluxul de Share din WhatsApp — vezi checkForSharedImage() în index.html)
+    if (url.pathname === "/api/read-scale" && req.method === "POST") {
+      if (!env.ANTHROPIC_API_KEY) return json({ ok: false, error: "not configured" }, 501);
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+      const dataUrl = (body && body.image) || "";
+      const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+      if (!m) return json({ ok: false, error: "bad image" }, 400);
+      const [, mediaType, data] = m;
+
+      let aiRes;
+      try {
+        aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-opus-5",
+            max_tokens: 1024,
+            thinking: { type: "disabled" },
+            output_config: {
+              effort: "low",
+              format: {
+                type: "json_schema",
+                schema: {
+                  type: "object",
+                  properties: {
+                    weight_kg: { anyOf: [{ type: "number" }, { type: "null" }] },
+                  },
+                  required: ["weight_kg"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            messages: [
+              {
+                role: "user",
+                content: [
+                  { type: "image", source: { type: "base64", media_type: mediaType, data } },
+                  {
+                    type: "text",
+                    text: "Aceasta e o poză cu afișajul unui cântar digital de pescuit. Citește greutatea afișată, în kilograme. Dacă afișajul nu se poate citi clar, întoarce null.",
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+      } catch (e) {
+        return json({ ok: false, error: "ai request failed" }, 502);
+      }
+      if (!aiRes.ok) return json({ ok: false, error: "ai request failed" }, 502);
+
+      const aiJson = await aiRes.json();
+      if (aiJson.stop_reason === "refusal") return json({ ok: true, weight: null });
+      const textBlock = (aiJson.content || []).find((b) => b.type === "text");
+      if (!textBlock) return json({ ok: true, weight: null });
+      let parsed;
+      try { parsed = JSON.parse(textBlock.text); } catch (e) { return json({ ok: true, weight: null }); }
+      return json({ ok: true, weight: parsed.weight_kg });
+    }
+
     return json({ ok: false, error: "not found" }, 404);
   },
 };
