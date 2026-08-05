@@ -651,6 +651,14 @@
 
   // ---------- blocare cu PIN ----------
   async function pinHashSecure(pin) { try { const pinStr = String(pin || "").trim(); const encoder = new TextEncoder(); const data = encoder.encode(pinStr); const hashBuffer = await crypto.subtle.digest("SHA-256", data); const hashArray = Array.from(new Uint8Array(hashBuffer)); const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join(""); return "h" + hashHex; } catch(err) { var h = 5381; var p = "" + pin; for(var i = 0; i < p.length; i++) { h = ((h * 33) ^ p.charCodeAt(i)) >>> 0; } return "h" + h; } } function pinHash(p){ var h=5381; p=""+p; for(var i=0;i<p.length;i++){ h=((h*33)^p.charCodeAt(i))>>>0; } return "h"+h; }
+  async function verifyPin(input){
+    if(!state.pinHash) return false;
+    var secure = await pinHashSecure(input);
+    if(secure===state.pinHash) return true;
+    // legacy DJB2 hash from before the SHA-256 migration — accept once, then upgrade
+    if(pinHash(input)===state.pinHash){ state.pinHash=secure; save(); return true; }
+    return false;
+  }
   function isLocked(){ return viewerMode || !!(state.lock && state.pinHash); }
   function guard(){ if(isLocked()){ toast("🔒 Blocat – apasă lacătul de sus și introdu PIN-ul"); return true; } return false; }
   function updateLockUI(){
@@ -660,23 +668,23 @@
     if(st) st.innerHTML = state.pinHash ? (isLocked()?"Stare: <b>blocată</b> 🔒 – doar vizualizare.":"Stare: <b>deblocată</b> – PIN setat. Apasă lacătul din dreapta-sus ca să blochezi.") : "Niciun PIN setat – oricine are telefonul poate modifica datele.";
     var rm=document.getElementById("btn-removepin"); if(rm) rm.style.display = state.pinHash ? "block" : "none";
   }
-  function setPin(){
+  async function setPin(){
     var v=document.getElementById("in-pin").value.trim();
     if(!/^\d{4,6}$/.test(v)){ toast("PIN-ul trebuie să aibă 4–6 cifre"); return; }
-    state.pinHash=pinHash(v); state.lock=true;
+    state.pinHash=await pinHashSecure(v); state.lock=true;
     document.getElementById("in-pin").value="";
     save(); updateLockUI(); renderList(); toast("PIN setat – aplicația e blocată 🔒");
   }
-  function removePin(){
+  async function removePin(){
     var v=prompt("PIN-ul actual:"); if(v===null) return;
-    if(pinHash(v.trim())!==state.pinHash){ toast("PIN greșit"); return; }
+    if(!(await verifyPin(v.trim()))){ toast("PIN greșit"); return; }
     state.pinHash=""; state.lock=false; save(); updateLockUI(); renderList(); toast("PIN scos – aplicația e deschisă");
   }
-  function toggleLock(){
+  async function toggleLock(){
     if(!state.pinHash){ showView('set'); toast("Setează întâi un PIN, mai jos"); return; }
     if(isLocked()){
       var v=prompt("PIN:"); if(v===null) return;
-      if(pinHash(v.trim())!==state.pinHash){ toast("PIN greșit"); return; }
+      if(!(await verifyPin(v.trim()))){ toast("PIN greșit"); return; }
       state.lock=false; toast("Deblocat – poți edita");
     } else { state.lock=true; toast("Blocat 🔒 – doar vizualizare"); }
     save(); updateLockUI(); renderList();
