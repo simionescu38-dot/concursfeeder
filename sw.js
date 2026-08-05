@@ -1,8 +1,9 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v30";
+var CACHE = "concurs-pescuit-v31";
 var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+var SHARE_KEY = "https://shared-scale-image.local/poza";
 
 self.addEventListener("install", function (e) {
   e.waitUntil(
@@ -50,7 +51,28 @@ self.addEventListener("notificationclick", function (e) {
   );
 });
 
+// Web Share Target: WhatsApp (sau orice altă aplicație) trimite poza aici
+// printr-un POST multipart, GitHub Pages nefiind capabil de POST server-side —
+// SW-ul o extrage, o pune în cache sub o cheie fixă, apoi redirecționează spre
+// index.html?shared=1, care preia poza din cache la încărcare.
 self.addEventListener("fetch", function (e) {
+  var reqUrl = new URL(e.request.url);
+  if (e.request.method === "POST" && /\/index\.html$/.test(reqUrl.pathname)) {
+    e.respondWith(
+      e.request.formData()
+        .then(function (fd) {
+          var file = fd.get("poza");
+          if (!file) return Response.redirect("./index.html", 303);
+          return caches.open(CACHE).then(function (c) {
+            return c.put(SHARE_KEY, new Response(file)).then(function () {
+              return Response.redirect("./index.html?shared=1", 303);
+            });
+          });
+        })
+        .catch(function () { return Response.redirect("./index.html", 303); })
+    );
+    return;
+  }
   if (e.request.method !== "GET") return;
   e.respondWith(
     caches.match(e.request).then(function (cached) {

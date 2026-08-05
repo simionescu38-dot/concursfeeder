@@ -283,6 +283,19 @@
   #photoView img{max-width:94vw; max-height:72vh; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
   #photoCap{color:#fff; font-weight:800; font-size:17px; margin-top:14px; text-align:center;}
 
+  /* poză primită prin Share din alte aplicații (ex: WhatsApp) */
+  #shareView{position:fixed; inset:0; z-index:220; display:none; align-items:flex-end; justify-content:center; background:rgba(8,26,46,.72);}
+  #shareView.on{display:flex;}
+  #shareView .share-card{background:var(--card); width:100%; max-width:520px; max-height:88vh; overflow:auto; border-radius:20px 20px 0 0; padding:16px 16px 20px;}
+  #shareView img{width:100%; max-height:34vh; object-fit:contain; border-radius:12px; background:#0b1626; margin-bottom:10px;}
+  .share-plist{max-height:180px; overflow:auto; border:1px solid var(--line); border-radius:12px; margin-top:6px;}
+  .share-prow{display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--line); cursor:pointer;}
+  .share-prow:last-child{border-bottom:none;}
+  .share-prow.on{background:var(--teal-soft);}
+  .share-prow small{color:var(--muted); display:block; font-size:11px;}
+  .share-actions{display:flex; gap:10px; margin-top:14px;}
+  .share-actions .btn{flex:1;}
+
   /* cronometru */
   #timerBar{margin-top:8px; background:rgba(255,255,255,.16); border-radius:10px; padding:6px 12px; font-weight:800; font-size:14px; display:none; font-variant-numeric:tabular-nums;}
   .tv-timer{font-size:3.2vh; font-weight:800; color:#e7b53c; font-variant-numeric:tabular-nums;}
@@ -591,6 +604,24 @@
 <div id="photoView" onclick="this.classList.remove('on')">
   <img id="photoImg" alt="Poza capturii">
   <div id="photoCap"></div>
+</div>
+
+<!-- poză primită prin Share (ex: din WhatsApp) -->
+<div id="shareView">
+  <div class="share-card">
+    <div class="sec-title">📸 Poză primită</div>
+    <img id="share-img" alt="Poza cântarului">
+    <div id="share-status" class="hint">Se citește greutatea…</div>
+    <label class="mlabel mt">Greutate (kg)</label>
+    <input id="share-weight" inputmode="decimal" placeholder="ex: 2,350" oninput="updateShareConfirmState()">
+    <label class="mlabel mt">Participant</label>
+    <input id="share-search" placeholder="🔎 Caută după nume sau stand…" oninput="renderShareParticipants()">
+    <div id="share-plist" class="share-plist"></div>
+    <div class="share-actions">
+      <button class="btn btn-ghost" onclick="closeShareModal()">Anulează</button>
+      <button class="btn btn-primary" id="share-confirm" onclick="confirmShareCatch()" disabled>Adaugă captura</button>
+    </div>
+  </div>
 </div>
 
 <nav class="tabs">
@@ -1277,28 +1308,136 @@
     h+='<span class="chip-sum">= '+fmt(cantOf(p))+' kg</span>';
     return h;
   }
+  function addCatchValue(id, v, photo){
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return false;
+    var m=mOf(p, state.manche||1);
+    if(!(v>0)) return false;
+    var prevLeader=leaderId();
+    var vr=Math.round(v*1000)/1000;
+    m.catches.push(vr);
+    m.catchTimes.push(Date.now());
+    m.catchPhotos.push(photo||null);
+    queueSave(); refreshCard(id);
+    var newLeader=leaderId();
+    var isLeaderNow = (prevLeader && newLeader===p.id && newLeader!==prevLeader);
+    var loc=1; var sorted=sortRankS(state.participants, state.manche||1);
+    for(var i=0;i<sorted.length;i++){ if(sorted[i].id===p.id){ loc=i+1; break; } }
+    announceCatch(p, vr, loc, isLeaderNow);
+    if(isLeaderNow){ showNewLeader(p); }
+    return true;
+  }
   function addCatchCore(id, photo){
     var el=document.getElementById("catch-"+id); if(!el) return;
     var v=num(el.value);
-    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
-    var m=mOf(p, state.manche||1);
-    if(v>0){
-      var prevLeader=leaderId();
-      var vr=Math.round(v*1000)/1000;
-      m.catches.push(vr);
-      m.catchTimes.push(Date.now());
-      m.catchPhotos.push(photo||null);
-      queueSave(); refreshCard(id);
-      var newLeader=leaderId();
-      var isLeaderNow = (prevLeader && newLeader===p.id && newLeader!==prevLeader);
-      var loc=1; var sorted=sortRankS(state.participants, state.manche||1);
-      for(var i=0;i<sorted.length;i++){ if(sorted[i].id===p.id){ loc=i+1; break; } }
-      announceCatch(p, vr, loc, isLeaderNow);
-      if(isLeaderNow){ showNewLeader(p); }
-    }
+    addCatchValue(id, v, photo);
     el.value=""; el.focus();
   }
   function addCatch(id){ if(guard()) return; addCatchCore(id, null); }
+
+  // ---------- poză primită prin Share (ex: din WhatsApp) ----------
+  var SHARE_KEY = "https://shared-scale-image.local/poza";
+  var shareSelectedId = null, sharePhotoDataUrl = null;
+
+  function blobToDataUrl(blob){
+    return new Promise(function(resolve, reject){
+      var r = new FileReader();
+      r.onload = function(){ resolve(r.result); };
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
+  async function checkForSharedImage(){
+    if(location.search.indexOf("shared=1")===-1) return;
+    history.replaceState(null, "", location.pathname);
+    if(!("caches" in window)) return;
+    try{
+      var names = await caches.keys();
+      for(var i=0;i<names.length;i++){
+        var c = await caches.open(names[i]);
+        var res = await c.match(SHARE_KEY);
+        if(res){
+          await c.delete(SHARE_KEY);
+          var blob = await res.blob();
+          openShareModal(blob);
+          return;
+        }
+      }
+    }catch(e){}
+  }
+  function openShareModal(blob){
+    if(isLocked()){ toast("🔒 Blocat – deblochează întâi ca să adaugi din poză"); return; }
+    var url = URL.createObjectURL(blob);
+    document.getElementById("share-img").src = url;
+    document.getElementById("share-weight").value = "";
+    document.getElementById("share-status").textContent = "Se citește greutatea…";
+    document.getElementById("share-search").value = "";
+    shareSelectedId = null; sharePhotoDataUrl = null;
+    document.getElementById("shareView").classList.add("on");
+    renderShareParticipants();
+    updateShareConfirmState();
+    blobToDataUrl(blob).then(function(dataUrl){
+      sharePhotoDataUrl = dataUrl;
+      readScaleFromImage(dataUrl);
+    });
+  }
+  function closeShareModal(){
+    document.getElementById("shareView").classList.remove("on");
+    var img = document.getElementById("share-img");
+    if(img.src && img.src.indexOf("blob:")===0) URL.revokeObjectURL(img.src);
+    img.src=""; sharePhotoDataUrl=null; shareSelectedId=null;
+  }
+  function renderShareParticipants(){
+    var q=(document.getElementById("share-search").value||"").trim().toLowerCase();
+    var box=document.getElementById("share-plist");
+    var list=state.participants.filter(function(p){
+      if(!q) return true;
+      return (nameOf(p)+" "+(p.stand||"")).toLowerCase().indexOf(q)!==-1;
+    });
+    if(!list.length){ box.innerHTML='<div class="share-prow"><span class="hint">Niciun participant găsit.</span></div>'; return; }
+    box.innerHTML=list.map(function(p){
+      var on=p.id===shareSelectedId?" on":"";
+      return '<div class="share-prow'+on+'" onclick="selectShareParticipant(\''+p.id+'\')">'+
+        '<span>'+esc(nameOf(p))+'<small>'+(p.stand?("Stand "+esc(p.stand)+(p.sector?(" · Sector "+esc(p.sector)):"")):"")+'</small></span>'+
+        (on?"<b>✓</b>":"")+
+        '</div>';
+    }).join("");
+  }
+  function selectShareParticipant(id){
+    shareSelectedId=id; renderShareParticipants(); updateShareConfirmState();
+  }
+  function updateShareConfirmState(){
+    var v=num(document.getElementById("share-weight").value);
+    document.getElementById("share-confirm").disabled = !(v>0 && shareSelectedId);
+  }
+  function readScaleFromImage(dataUrl){
+    var statusEl=document.getElementById("share-status");
+    fetch(API_BASE+"/api/read-scale", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ image: dataUrl })
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if(j && j.ok && j.weight){
+        document.getElementById("share-weight").value=String(j.weight).replace(".", ",");
+        statusEl.textContent="Citit automat — verifică și corectează dacă e nevoie.";
+      } else {
+        statusEl.textContent="Nu am putut citi automat — introdu greutatea manual.";
+      }
+      updateShareConfirmState();
+    }).catch(function(){
+      statusEl.textContent="Nu am putut citi automat — introdu greutatea manual.";
+    });
+  }
+  function confirmShareCatch(){
+    if(guard()) return;
+    var v=num(document.getElementById("share-weight").value);
+    if(!(v>0) || !shareSelectedId) return;
+    var p=state.participants.find(function(x){return x.id===shareSelectedId;});
+    if(addCatchValue(shareSelectedId, v, sharePhotoDataUrl)){
+      toast("Adăugat: "+(p?nameOf(p):"")+" — "+fmt(v)+" kg");
+      closeShareModal();
+      showView("cantar");
+    }
+  }
+
   function showCatchPhoto(id, idx){
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var m=mOf(p, state.manche||1);
@@ -2164,6 +2303,7 @@
     var roomParam=(new URLSearchParams(location.search)).get("room");
     if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
     else loadAcasaRegional();
+    checkForSharedImage();
   })();
 </script>
 <script>
