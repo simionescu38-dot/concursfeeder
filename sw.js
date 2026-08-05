@@ -1,8 +1,8 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v30";
-var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+var CACHE = "concurs-pescuit-v31";
+var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./sezon.html", "./concursuri.html"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(
