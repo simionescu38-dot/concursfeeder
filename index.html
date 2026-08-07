@@ -618,7 +618,7 @@
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
   // ---------- manșe (concurs pe 2 zile) ----------
-  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], cmmc:""}; }
+  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[]}; }
   function ensureManche(p){
     if(!p.m) p.m={};
     if(!p.m[1]) p.m[1]=emptyManche();
@@ -646,8 +646,6 @@
   // ---------- versiuni "manșa activă" (cântărire live, tab Participanți) ----------
   function cantOf(p){ return cantOfM(p, state.manche||1); }
   function extraOf(p){ return extraOfM(p, state.manche||1); }
-  function cmmcOf(p){ return cmmcOfM(p, state.manche||1); }
-  function cmmcRaw(p){ return mOf(p, state.manche||1).cmmc || ""; }
   function totalOf(p){ return totalOfM(p, state.manche||1); }
 
   // ---------- blocare cu PIN ----------
@@ -1183,7 +1181,7 @@
         if(p.catchPhotos.length>p.catches.length) p.catchPhotos.length=p.catches.length;
         if(!Array.isArray(p.extras)){ var ev=num(p.extra); p.extras = ev>0 ? [ev] : []; }
         p.m = {
-          1: {catches:p.catches, catchTimes:p.catchTimes, catchPhotos:p.catchPhotos, extras:p.extras, cmmc:p.cmmc||""},
+          1: {catches:p.catches, catchTimes:p.catchTimes, catchPhotos:p.catchPhotos, extras:p.extras},
           2: emptyManche()
         };
       }
@@ -1199,7 +1197,7 @@
         while(m.catchPhotos.length<m.catches.length) m.catchPhotos.push(null);
         if(m.catchPhotos.length>m.catches.length) m.catchPhotos.length=m.catches.length;
         if(!Array.isArray(m.extras)) m.extras=[];
-        if(m.cmmc===undefined) m.cmmc="";
+        delete m.cmmc; // câmp vechi: CMMC se calculează acum din extras
       });
     });
   }
@@ -1239,18 +1237,6 @@
     document.getElementById("in-nume").value="";
     queueSave(); renderList();
     document.getElementById("in-stand").focus();
-  }
-
-  function updField(id, field, val){
-    if(isLocked()) return;
-    var p=state.participants.find(function(x){return x.id===id;});
-    if(!p) return;
-    if(field==='cmmc'){ mOf(p, state.manche||1).cmmc = val; } else { p[field]=val; }
-    // update just the total line for this card
-    var tot=document.getElementById("tot-"+id);
-    if(tot) tot.innerHTML = fmt(totalOf(p))+' <small>kg</small>';
-    document.getElementById("st-total").textContent = fmt(sumAll());
-    queueSave();
   }
 
   function delParticipant(id){
