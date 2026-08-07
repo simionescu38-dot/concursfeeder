@@ -1,7 +1,7 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v37";
+var CACHE = "concurs-pescuit-v38";
 var ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png", "./sezon.html", "./concursuri.html"];
 
 self.addEventListener("install", function (e) {
@@ -52,6 +52,13 @@ self.addEventListener("notificationclick", function (e) {
 
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
+  var url;
+  try { url = new URL(e.request.url); } catch (err) { return; }
+  /* În cache intră DOAR fișierele aplicației. Apelurile către API-uri nu au ce căuta
+     aici: cu strategia de mai jos (cached || fetched) o interogare a camerei live ar
+     întoarce răspunsul de la interogarea ANTERIOARĂ, iar vremea ar apărea veche dar
+     cu oră nouă. Lăsate netratate, pleacă normal în rețea. */
+  if (url.origin !== self.location.origin || url.pathname.indexOf("/api/") === 0) return;
   e.respondWith(
     caches.match(e.request).then(function (cached) {
       var fetched = fetch(e.request).then(function (res) {
