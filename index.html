@@ -388,8 +388,9 @@
       <input inputmode="numeric" id="t-nadire" placeholder="ex: 10" onchange="setTimer()">
       <label class="f" style="margin-top:8px;">Se termină la</label>
       <input type="datetime-local" id="t-end" onchange="setTimer()">
+      <button class="btn btn-ghost mt" onclick="testHorn()">📢 Ascultă claxonul</button>
       <button class="btn btn-danger mt" onclick="clearTimer()">Șterge cronometrul</button>
-      <p class="hint">Timpul rămas apare sus în aplicație. Dacă setezi „Nădire grea", cu 10 minute (sau câte alegi) înainte de start sună o alertă de „ÎNCEPE NĂDIREA", apoi la ora de start sună „START PESCUIT". La final sună alarma și se anunță „STOP PESCUIT!". Cântărirea rămâne permisă și după stop (peștii prinși înainte de final se cântăresc după).</p>
+      <p class="hint">Timpul rămas apare sus în aplicație. Dacă setezi „Nădire grea", cu 10 minute (sau câte alegi) înainte de start sună o alertă de „ÎNCEPE NĂDIREA", apoi la ora de start sună „START PESCUIT". <b>Cu 30, 10, 5 și 1 minut înainte de final sună un claxon lung</b> și se anunță cât timp a mai rămas. La final sună alarma și se anunță „STOP PESCUIT!". Cântărirea rămâne permisă și după stop (peștii prinși înainte de final se cântăresc după). Apasă „Ascultă claxonul" o dată înainte de concurs — și ca să-i verifici volumul, și ca să deblochezi sunetul pe telefon.</p>
     </div>
   </section>
 
@@ -1813,6 +1814,16 @@
 
   // ---------- cronometru concurs ----------
   var timerInt=null, timerWasRunning=false, nadireAlerted=false, startAlerted=false;
+  // avertismente înainte de final, în minute (descrescător)
+  var WARN_MIN=[30,10,5,1], warnAlerted={};
+  // marchează drept "sunate" pragurile deja trecute, ca un cronometru pornit târziu
+  // să nu declanșeze retroactiv toate avertismentele deodată
+  function resetWarnings(){
+    warnAlerted={};
+    if(!state.endAt) return;
+    var leftMin=(state.endAt-Date.now())/60000;
+    WARN_MIN.forEach(function(m){ if(leftMin<=m) warnAlerted[m]=true; });
+  }
   function toLocalInput(ms){
     var d=new Date(ms);
     function p2(n){ return (n<10?"0":"")+n; }
@@ -1825,14 +1836,14 @@
     state.startAt = s ? new Date(s).getTime() : null;
     state.endAt = e ? new Date(e).getTime() : null;
     state.nadireMin = nd!=="" ? Math.max(0, parseInt(nd,10)||0) : 10;
-    save(); timerWasRunning=false; nadireAlerted=false; startAlerted=false; startTimerLoop();
+    save(); timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings(); startTimerLoop();
     if(state.endAt) toast("Cronometru setat");
   }
   function clearTimer(){
     if(guard()) return;
     state.startAt=null; state.endAt=null; save();
     document.getElementById("t-start").value=""; document.getElementById("t-end").value="";
-    timerWasRunning=false; nadireAlerted=false; startAlerted=false;
+    timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings();
     startTimerLoop(); toast("Cronometru șters");
   }
   function fmtDur(ms){
@@ -1856,6 +1867,11 @@
         txt="⏱ Începe în "+fmtDur(state.startAt-now); timerWasRunning=false;
       } else if(now<=state.endAt){
         if(state.startAt && !startAlerted){ startAlerted=true; alarmStart(); }
+        var leftMin=(state.endAt-now)/60000;
+        for(var wi=0; wi<WARN_MIN.length; wi++){
+          var wm=WARN_MIN[wi];
+          if(!warnAlerted[wm] && leftMin<=wm){ warnAlerted[wm]=true; alarmWarn(wm); break; }
+        }
         txt="⏱ Timp rămas: "+fmtDur(state.endAt-now); timerWasRunning=true;
       } else {
         txt="🏁 Concurs încheiat"; if(timerWasRunning){ timerWasRunning=false; alarmEnd(); }
@@ -1888,6 +1904,40 @@
     state.voiceOn=wasOn;
     toast("🏁 STOP PESCUIT!");
   }
+  // claxon lung: două frecvențe grave la interval de terță mică, ca un claxon de vapor —
+  // se aude de departe și nu se confundă cu bipurile de start/stop
+  function hornLong(){
+    try{
+      var ctx=new (window.AudioContext||window.webkitAudioContext)();
+      if(ctx.state==="suspended" && ctx.resume) ctx.resume();
+      var t0=ctx.currentTime, dur=1.9;
+      var g=ctx.createGain(); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.35, t0+0.15);
+      g.gain.setValueAtTime(0.35, t0+dur-0.4);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      [233, 311].forEach(function(f){
+        var o=ctx.createOscillator();
+        o.type="sawtooth"; o.frequency.value=f;
+        o.connect(g); o.start(t0); o.stop(t0+dur);
+      });
+      setTimeout(function(){ try{ ctx.close(); }catch(e){} }, (dur+0.4)*1000);
+    }catch(e){}
+  }
+  function minutesLabel(m){
+    if(m===1) return "A mai rămas un minut.";
+    if(m<20) return "Au mai rămas "+m+" minute.";
+    return "Au mai rămas "+m+" de minute.";   // 20+ cere „de" în română
+  }
+  function alarmWarn(m){
+    hornLong();
+    if(navigator.vibrate){ try{ navigator.vibrate([600]); }catch(e){} }
+    var wasOn=state.voiceOn; state.voiceOn=true;
+    speak(minutesLabel(m));
+    state.voiceOn=wasOn;
+    toast("⏳ "+minutesLabel(m));
+  }
+  function testHorn(){ alarmWarn(10); }
   function beep(n, freq, gap){
     freq=freq||880; gap=gap||0.55;
     try{
@@ -2079,6 +2129,7 @@
     if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);
     if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
     document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
+    resetWarnings();
     startTimerLoop();
     var roomParam=(new URLSearchParams(location.search)).get("room");
     if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
