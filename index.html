@@ -633,11 +633,12 @@
     if(mi==='total') return extraOfM(p,1)+extraOfM(p,2);
     var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ s+=(+v||0); }); return s;
   }
+  // cel mai mare pește al unei manșe = maximul dintre peștii extra (nu există câmp separat de completat)
   function cmmcOfM(p, mi){
-    if(mi==='total') return cmmcOfM(p,1)+cmmcOfM(p,2);
-    return num(mOf(p,mi).cmmc);
+    if(mi==='total') return Math.max(cmmcOfM(p,1), cmmcOfM(p,2));
+    var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ v=(+v||0); if(v>s) s=v; }); return s;
   }
-  function totalOfM(p, mi){ return cantOfM(p,mi) + extraOfM(p,mi) + cmmcOfM(p,mi); }
+  function totalOfM(p, mi){ return cantOfM(p,mi) + extraOfM(p,mi); }
   // premiul CMMC (cel mai mare pește) — la scor "general" e maximul dintre cele 2 zile, nu suma (nu se cântărește de 2 ori același pește)
   function cmmcAward(p, mi){ return mi==='total' ? Math.max(cmmcOfM(p,1), cmmcOfM(p,2)) : cmmcOfM(p,mi); }
   function scopeLabel(mi){ return mi===1?"Manșa 1":mi===2?"Manșa 2":"General (ambele manșe)"; }
@@ -1481,10 +1482,12 @@
     return arr.slice().sort(function(a,b){
       var d=totalOfM(b,mi)-totalOfM(a,mi);
       if(Math.abs(d)>1e-9) return d;
-      return (a.nume+a.prenume).localeCompare(b.nume+b.prenume,"ro");
+      return byStand(a,b);
     });
   }
   function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
+  // cheie de sortare tolerantă la nume/prenume lipsă (altfel undefined+undefined => NaN, iar NaN.localeCompare crapă)
+  function nameKey(p){ return ((p.nume||"")+" "+(p.prenume||"")).trim(); }
 
   function setRankScope(mi){
     rankScope=mi;
@@ -1531,7 +1534,7 @@
       var d=pmap[a.id]-pmap[b.id]; if(d!==0) return d;
       // la egalitate de puncte, câștigă cantitatea totală de pește (cantitate + pești extra)
       var t=totalOfM(b,mi)-totalOfM(a,mi); if(Math.abs(t)>1e-9) return t;
-      return (a.nume+a.prenume).localeCompare(b.nume+b.prenume,"ro");
+      return byStand(a,b);
     });
   }
 
@@ -1722,6 +1725,9 @@
     queueSave(); renderList(); toast("Tragere făcută – ordine + standuri");
     showView("cantar");
   }
+  // sortare numerică după stand (stand 10 vine după stand 2); cei fără cifre în stand merg la coadă
+  function standKey(p){ var m=(""+(p.stand||"")).match(/\d+/); return m?parseInt(m[0],10):Number.POSITIVE_INFINITY; }
+  function byStand(a,b){ var d=standKey(a)-standKey(b); if(d) return d; return nameKey(a).localeCompare(nameKey(b),"ro"); }
   function copyText(txt){ try{ navigator.clipboard.writeText(txt).then(function(){toast("Copiat");},function(){fallbackCopy(txt);}); }catch(e){ fallbackCopy(txt); } }
   function copyDraw(){
     var arr=state.participants.filter(function(p){return p.stand;});
@@ -1733,7 +1739,7 @@
     });
     lines.push("");
     lines.push("PE STANDURI:");
-    arr.slice().sort(function(a,b){return (parseInt(a.stand,10)||0)-(parseInt(b.stand,10)||0);}).forEach(function(p){
+    arr.slice().sort(byStand).forEach(function(p){
       lines.push("Stand "+p.stand+" – "+nameOf(p)+(p.sector?" ("+p.sector+")":""));
     });
     copyText(lines.join("\n"));
