@@ -199,6 +199,13 @@
       var data = res.data;
       var parts = Array.isArray(data.participants) ? data.participants : [];
       if(!parts.length) return;
+      /* O cameră live în care nu s-a cântărit încă NIMIC nu e un rezultat: ar
+         intra în sezon cu toată lumea pe zero și ar umfla numărul de concursuri
+         al fiecărui participant. Un concurs terminat rămâne în sezon chiar dacă
+         s-a prins puțin — de aceea filtrul e doar pe camerele live, nu pe arhive. */
+      var totalCamera = 0;
+      parts.forEach(function(p){ totalCamera += totalKg(p); });
+      if(totalCamera <= 0) return;
       out.push({
         compName: (data.name || r.name || r.code).trim() || r.code,
         compDate: data.startAt || (r.updated_at && Date.parse(r.updated_at)) || null,
