@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Feeder Moldova Iași</title>
 <meta name="apple-mobile-web-app-title" content="Feeder MD">
-<meta name="theme-color" content="#2f8ae6">
+<meta name="theme-color" content="#1c6fd9">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,18 +13,18 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
   :root{
-    --pine:#eef3fa;      /* text / headers (light-on-dark now) */
-    --teal:#2f8ae6;      /* primary */
+    --pine:#0f1b2d;      /* text / headers */
+    --teal:#1c6fd9;      /* primary */
     --teal-d:#0f4fa8;
-    --teal-soft:#17395c; /* dark tint for highlights/active states */
-    --amber:#ffa733;     /* accent / weigh */
-    --amber-soft:#3d2a12;
-    --bg:#0a1220;        /* app background — dark for sun glare readability */
-    --card:#131f30;
-    --line:#26374d;
-    --muted:#93a9c2;
-    --shadow-sm:0 1px 2px rgba(0,0,0,.35);
-    --shadow-md:0 10px 24px -10px rgba(0,0,0,.5);
+    --teal-soft:#e8f0fd; /* soft tint for highlights/active states */
+    --amber:#f2971d;     /* accent / weigh */
+    --amber-soft:#fdecd2;
+    --bg:#f2f6fb;        /* app background */
+    --card:#ffffff;
+    --line:#dde6f0;
+    --muted:#5c7189;
+    --shadow-sm:0 1px 2px rgba(15,31,51,.05);
+    --shadow-md:0 10px 24px -10px rgba(15,31,51,.16);
     --gold:#eab308; --silver:#c3cdd6; --bronze:#c98457;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -73,11 +73,11 @@
   label.f{display:block; font-size:12px; font-weight:700; color:var(--muted); margin:0 0 4px;}
   input,select{
     width:100%; font-size:16px; font-family:inherit; color:var(--pine);
-    padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:var(--card);
+    padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:#fff;
     transition:border-color .15s ease, box-shadow .15s ease;
   }
   input:focus,select:focus{outline:none; border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-soft);}
-  textarea{width:100%; font-size:15px; font-family:inherit; color:var(--pine); padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:var(--card); resize:vertical; line-height:1.4; margin-bottom:8px; transition:border-color .15s ease, box-shadow .15s ease;}
+  textarea{width:100%; font-size:15px; font-family:inherit; color:var(--pine); padding:11px 12px; border:1.5px solid var(--line); border-radius:12px; background:#fff; resize:vertical; line-height:1.4; margin-bottom:8px; transition:border-color .15s ease, box-shadow .15s ease;}
   textarea:focus{outline:none; border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-soft);}
   .row{display:flex; gap:8px;}
   .row>*{flex:1; min-width:0;}
@@ -93,7 +93,7 @@
   .btn-primary:active{filter:brightness(.94);}
   .btn-amber{background:linear-gradient(135deg,var(--amber) 0%,#d97b0a 100%); color:#fff; box-shadow:0 6px 16px -6px rgba(217,123,10,.45);}
   .btn-ghost{background:var(--teal-soft); color:var(--teal-d); border:1.5px solid var(--line);}
-  .btn-danger{background:var(--card); color:#ff7a68; border:1.5px solid #5a332c;}
+  .btn-danger{background:#fff; color:#b23b2e; border:1.5px solid #ecccc6;}
 
   /* participant card */
   .p{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; margin-bottom:10px; box-shadow:var(--shadow-sm);}
@@ -184,13 +184,13 @@
 
   .filter-chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:8px; -webkit-overflow-scrolling:touch; scrollbar-width:none;}
   .filter-chips::-webkit-scrollbar{display:none;}
-  .filter-chips button{flex:0 0 auto; border:1.5px solid var(--line); background:var(--card); color:var(--muted); font-weight:800; font-size:12px; padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit; white-space:nowrap;}
+  .filter-chips button{flex:0 0 auto; border:1.5px solid var(--line); background:#fff; color:var(--muted); font-weight:800; font-size:12px; padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit; white-space:nowrap;}
   .filter-chips button.on{background:var(--teal); border-color:var(--teal); color:#fff;}
 
   /* toggle */
   .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
   .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
-  .seg button.on{background:var(--card); color:var(--teal); box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .seg button.on{background:#fff; color:var(--teal-d); box-shadow:0 1px 3px rgba(0,0,0,.08);}
 
   .cmmc{background:linear-gradient(120deg,#fff5e4,#fbe9cf); border:1.5px solid #f0d29a; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
   .cmmc .medal{font-size:26px;}
@@ -1616,7 +1616,7 @@
     catch(e){ fallbackCopy(txt); }
   }
   function fallbackCopy(txt){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Clasament copiat");}catch(e){toast("Nu am putut copia");} document.body.removeChild(ta); }
-  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1e3654;border:1px solid #2f4d6e;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.45);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
+  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#10263c;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
 
   // ---------- sectors ----------
   function renderSectors(){
