@@ -227,19 +227,6 @@
   body.locked .lockbar{display:block;}
   .metric .ro{ text-align:center; font-weight:700; padding:11px 4px; border:1.5px dashed var(--line); border-radius:10px; background:#f5f8fc;}
 
-  /* mod tabela TV */
-  #tv{position:fixed; inset:0; background:#081a2e; color:#fff; z-index:100; display:none; flex-direction:column; padding:3vh 4vw; overflow:hidden; cursor:pointer;}
-  #tv.on{display:flex;}
-  #tv .tv-head{display:flex; align-items:baseline; justify-content:space-between; gap:2vw; margin-bottom:2vh; flex-wrap:wrap;}
-  #tv .tv-title{font-size:4.5vh; font-weight:800;}
-  #tv .tv-sub{font-size:2.6vh; color:#9cc6ee; font-weight:800; text-transform:uppercase; letter-spacing:.12em;}
-  #tv table{width:100%; border-collapse:collapse; background:none; border:0;}
-  #tv td{border:0; border-bottom:1px solid rgba(255,255,255,.08); padding:1.2vh 1vw; font-size:3.6vh; color:#fff;}
-  #tv td.pos{width:8vw; font-weight:800; text-align:center; font-size:4vh;}
-  #tv td.kg{text-align:right; font-weight:800; font-variant-numeric:tabular-nums;}
-  #tv tr.p1 td{background:rgba(231,181,60,.14);}
-  #tv .tv-cmmc{margin-top:auto; font-size:2.8vh; color:#e7b53c; font-weight:800; padding-top:2vh;}
-  #tv .tv-hint{position:absolute; bottom:1.2vh; right:2vw; font-size:1.7vh; color:rgba(255,255,255,.35);}
 
   /* ora capturii pe chip */
   .cht{font-style:normal; font-size:10px; color:var(--muted); font-weight:700; margin-left:3px;}
@@ -285,7 +272,6 @@
 
   /* cronometru */
   #timerBar{margin-top:8px; background:rgba(255,255,255,.16); border-radius:10px; padding:6px 12px; font-weight:800; font-size:14px; display:none; font-variant-numeric:tabular-nums;}
-  .tv-timer{font-size:3.2vh; font-weight:800; color:#e7b53c; font-variant-numeric:tabular-nums;}
 </style>
 </head>
 <body>
@@ -403,7 +389,7 @@
       <label class="f" style="margin-top:8px;">Se termină la</label>
       <input type="datetime-local" id="t-end" onchange="setTimer()">
       <button class="btn btn-danger mt" onclick="clearTimer()">Șterge cronometrul</button>
-      <p class="hint">Timpul rămas apare sus în aplicație și pe Tabela TV. Dacă setezi „Nădire grea", cu 10 minute (sau câte alegi) înainte de start sună o alertă de „ÎNCEPE NĂDIREA", apoi la ora de start sună „START PESCUIT". La final sună alarma și se anunță „STOP PESCUIT!". Cântărirea rămâne permisă și după stop (peștii prinși înainte de final se cântăresc după).</p>
+      <p class="hint">Timpul rămas apare sus în aplicație. Dacă setezi „Nădire grea", cu 10 minute (sau câte alegi) înainte de start sună o alertă de „ÎNCEPE NĂDIREA", apoi la ora de start sună „START PESCUIT". La final sună alarma și se anunță „STOP PESCUIT!". Cântărirea rămâne permisă și după stop (peștii prinși înainte de final se cântăresc după).</p>
     </div>
   </section>
 
@@ -426,7 +412,6 @@
     <div id="cmmcBox"></div>
     <div id="rankBody"></div>
     <button class="btn btn-ghost mt" onclick="copyRank()">⧉ Copiază clasamentul</button>
-    <button class="btn btn-primary mt" onclick="tvStart()">📺 Mod Tabelă (ecran mare)</button>
     <button class="btn btn-ghost mt" onclick="printRank()">🖨 Print / PDF</button>
     <button class="btn btn-ghost mt" onclick="shareImage()">🖼 Imagine pentru WhatsApp / Facebook</button>
 
@@ -572,13 +557,6 @@
     </div>
   </section>
 </main>
-
-<div id="tv" onclick="tvStop()">
-  <div class="tv-head"><div class="tv-title" id="tv-title"></div><div class="tv-timer" id="tv-timer"></div><div class="tv-sub" id="tv-sub"></div></div>
-  <div id="tv-body" style="flex:1; overflow:hidden;"></div>
-  <div class="tv-cmmc" id="tv-cmmc"></div>
-  <div class="tv-hint">atinge ecranul ca să ieși</div>
-</div>
 
 <div id="leader" onclick="hideLeader()">
   <div class="lh">🏆 NOU LIDER!</div>
@@ -1863,7 +1841,7 @@
     return h+":"+("0"+m).slice(-2)+":"+("0"+sec).slice(-2);
   }
   function timerTick(){
-    var bar=document.getElementById("timerBar"), tvT=document.getElementById("tv-timer");
+    var bar=document.getElementById("timerBar");
     var now=Date.now(), txt="", show=false;
     if(state.endAt){
       show=true;
@@ -1884,7 +1862,6 @@
       }
     }
     if(bar){ bar.style.display=show?"block":"none"; bar.textContent=txt; }
-    if(tvT){ tvT.textContent = show?txt:""; }
   }
   function startTimerLoop(){ if(timerInt) clearInterval(timerInt); timerTick(); timerInt=setInterval(timerTick,1000); }
   function alarmNadire(){
@@ -2022,56 +1999,6 @@
     document.getElementById("printArea").innerHTML=h;
     window.print();
   }
-  // ---------- mod tabela TV ----------
-  var tvTimer=null, tvPage=0, tvWake=null;
-  function tvPages(){
-    var pages=[{k:"fin"}];
-    var secs={};
-    state.participants.forEach(function(p){ secs[p.sector||"Fără sector"]=1; });
-    var keys=Object.keys(secs);
-    if(keys.length>1){
-      keys.sort(function(a,b){return a.localeCompare(b,"ro");}).forEach(function(k){ pages.push({k:"sec", s:k}); });
-    }
-    return pages;
-  }
-  function tvRender(){
-    var pages=tvPages(); if(tvPage>=pages.length) tvPage=0;
-    var pg=pages[tvPage];
-    document.getElementById("tv-title").textContent = state.name||"Concurs pescuit";
-    var arr, sub;
-    if(pg.k==="fin"){ sub="Clasament general · "+scopeLabel(rankScope); arr=sortRankS(state.participants,rankScope); }
-    else { sub="Sector "+pg.s+" · "+scopeLabel(rankScope); arr=sortRankS(state.participants.filter(function(p){return (p.sector||"Fără sector")===pg.s;}),rankScope); }
-    document.getElementById("tv-sub").textContent=sub;
-    var out="<table><tbody>";
-    arr.slice(0,10).forEach(function(p,i){
-      var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
-      out+='<tr class="'+(i===0?"p1":"")+'"><td class="pos">'+medal+'</td><td>'+esc(nameOf(p))+(p.stand?' <span style="opacity:.55;font-size:2.4vh;">· St.'+esc(p.stand)+'</span>':'')+'</td><td class="kg">'+fmt(totalOfM(p,rankScope))+' kg</td></tr>';
-    });
-    out+="</tbody></table>";
-    document.getElementById("tv-body").innerHTML=out;
-    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
-    var cm=document.getElementById("tv-cmmc");
-    if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); cm.textContent="🐟 CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg"; }
-    else cm.textContent="";
-    tvPage++;
-  }
-  function tvStart(){
-    if(!state.participants.length){ toast("Nu ai participanți de afișat"); return; }
-    document.getElementById("tv").classList.add("on");
-    tvPage=0; tvRender();
-    tvTimer=setInterval(tvRender, 8000);
-    try{ if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); }catch(e){}
-    if(navigator.wakeLock && navigator.wakeLock.request){
-      navigator.wakeLock.request("screen").then(function(w){ tvWake=w; }).catch(function(){});
-    }
-  }
-  function tvStop(){
-    document.getElementById("tv").classList.remove("on");
-    if(tvTimer){ clearInterval(tvTimer); tvTimer=null; }
-    if(tvWake){ try{ tvWake.release(); }catch(e){} tvWake=null; }
-    try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
-  }
-
   // ---------- sync (export / import fisier) ----------
   function exportData(){
     var payload={app:"concurs-pescuit", ver:1, exportedAt:new Date().toISOString(), data:state};
