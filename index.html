@@ -587,6 +587,13 @@
       </div>
     </div>
 
+    <div class="card lockhide" id="card-arhive">
+      <div class="sec-title">Curăță arhiva de sezon</div>
+      <p class="hint" style="margin:0 0 10px;">Concursurile arhivate online intră în <b>Clasamentul de sezon</b>. Dacă ai făcut simulări sau ai arhivat de două ori același concurs, șterge-le de aici. Coloana de kilograme te ajută să le deosebești: o simulare are de obicei <b>0 kg</b>.</p>
+      <button class="btn btn-ghost" onclick="loadArhive()">🗂️ Încarcă arhivele salvate online</button>
+      <div id="arhive-list" style="margin-top:12px;"></div>
+    </div>
+
     <div class="card lockhide">
       <div class="sec-title">Moderare calendar regional</div>
       <p class="hint" style="margin:0 0 10px;">Poți șterge orice concurs programat de altcineva (nu doar pe-ale tale), folosind cheia de scriere de mai sus — util dacă apare ceva greșit sau abuziv în calendarul public.</p>
@@ -1646,6 +1653,78 @@
       return d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear()+" "+pad2(d.getHours())+":"+pad2(d.getMinutes());
     }catch(e){ return ""; }
   }
+  // ---------- curățarea arhivei de sezon ----------
+  // Arhivele intră direct în Clasamentul de sezon, deci o simulare uitată acolo
+  // strică punctajul tuturor. Ștergerea cere cheia de scriere, care stă doar pe
+  // telefonul organizatorului.
+  function arhivaKg(parts){
+    var s=0;
+    (parts||[]).forEach(function(p){
+      var m=p.m||{1:{catches:p.catches,extras:p.extras}};
+      [1,2].forEach(function(i){
+        var mm=m[i]||{};
+        (mm.catches||[]).forEach(function(v){ s+=(+v||0); });
+        (mm.extras||[]).forEach(function(v){ s+=(+v||0); });
+      });
+    });
+    return s;
+  }
+  function loadArhive(){
+    var el=document.getElementById("arhive-list");
+    if(!el) return;
+    el.innerHTML='<p class="hint">Se încarcă…</p>';
+    fetch(API_BASE+"/api/archive").then(function(r){ return r.json(); }).then(function(j){
+      var list=(j&&j.ok&&j.archives)?j.archives:[];
+      if(!list.length){ el.innerHTML='<p class="hint">Nu e nicio arhivă salvată online.</p>'; return; }
+      var h='<p class="hint" style="margin:0 0 8px;">'+list.length+' arhivate online. Fișierele din <b>arhiva/</b> (concursurile vechi păstrate în site) nu apar aici și nu se pot șterge de pe telefon.</p>';
+      list.forEach(function(a){
+        var d=a.data||{}, parts=(d.participants||[]);
+        var nume=((d.name||a.name||"")+"").trim();
+        var kg=arhivaKg(parts);
+        var cand=a.archived_at||a.saved_at||a.created_at||"";
+        h+='<div class="evt"><div style="flex:1; min-width:0;">'+
+             '<div class="nm">'+esc(nume||"(fără nume)")+'</div>'+
+             '<div class="hint" style="margin:2px 0 0;">'+esc(cand?new Date(cand).toLocaleString("ro-RO"):"fără dată")+
+             ' · '+parts.length+' particip. · <b>'+fmt(kg)+' kg</b>'+(kg===0?' — pare simulare':'')+'</div></div>'+
+             '<button class="btn btn-danger" style="width:auto; margin:0; padding:8px 12px;" onclick="delArhiva(\''+esc(a.id)+'\')">Șterge</button></div>';
+      });
+      h+='<button class="btn btn-danger mt" onclick="delArhiveToate()">Șterge TOATE arhivele online ('+list.length+')</button>';
+      el.innerHTML=h;
+    }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca lista (fără net?).</p>'; });
+  }
+  function delArhiva(id, tacut){
+    if(!syncKey){ toast("Îți trebuie cheia de scriere, completată mai sus"); return Promise.resolve(false); }
+    if(!tacut && !confirm("Ștergi arhiva asta din Clasamentul de sezon? Nu se poate reveni.")) return Promise.resolve(false);
+    return fetch(API_BASE+"/api/archive?id="+encodeURIComponent(id), { method:"DELETE", headers:{"x-write-key":syncKey} })
+      .then(function(r){ return r.json().catch(function(){ return {ok:r.ok}; }); })
+      .then(function(j){
+        if(!(j&&j.ok)){ if(!tacut) toast("Nu s-a putut șterge – cheia e greșită?"); return false; }
+        if(!tacut){ toast("Arhivă ștearsă"); loadArhive(); }
+        return true;
+      })
+      .catch(function(){ if(!tacut) toast("Eroare de rețea"); return false; });
+  }
+  function delArhiveToate(){
+    if(!syncKey){ toast("Îți trebuie cheia de scriere, completată mai sus"); return; }
+    var el=document.getElementById("arhive-list");
+    fetch(API_BASE+"/api/archive").then(function(r){ return r.json(); }).then(function(j){
+      var list=(j&&j.ok&&j.archives)?j.archives:[];
+      if(!list.length){ toast("Nu e nimic de șters"); return; }
+      if(!confirm("Ștergi TOATE cele "+list.length+" arhive salvate online?\n\nClasamentul de sezon va rămâne doar cu concursurile păstrate în site (arhiva/). Nu se poate reveni.")) return;
+      el.innerHTML='<p class="hint">Se șterg…</p>';
+      var sterse=0;
+      var pas=function(i){
+        if(i>=list.length){
+          toast(sterse+" din "+list.length+" șterse");
+          loadArhive();
+          return;
+        }
+        delArhiva(list[i].id, true).then(function(ok){ if(ok) sterse++; pas(i+1); });
+      };
+      pas(0);
+    }).catch(function(){ toast("Eroare de rețea"); });
+  }
+
   function loadRoomHistory(){
     if(!syncRoom){ toast("Setează întâi un cod de cameră"); return; }
     var el=document.getElementById("room-history-list");

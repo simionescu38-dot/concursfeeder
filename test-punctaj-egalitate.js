@@ -8,6 +8,7 @@
  */
 const fs = require("fs");
 const vm = require("vm");
+const H2 = require("./test-helpers.js"); // extractor care sare peste comentarii/șiruri/regex
 
 const HTML = "D:/concursfeeder-repo/index.html";
 const src = fs.readFileSync(HTML, "utf8");
@@ -301,6 +302,49 @@ t("…iar codul chiar ia maximul (4), nu suma (7)",
 // afirmația despre ordinea de departajare
 t("textul enumeră departajarea în ordinea din cod",
   /puncte → kilograme → cea mai bună manșă .* → cel mai mare pește → numărul standului → nume/.test(regText), true);
+
+/* ================================================================
+   12. Sezonul nu are voie să numere același concurs de două ori.
+   Camera live și arhiva făcută din ea sunt aceleași date; la fel
+   două arhivări ale aceluiași concurs. Fără filtru, punctele și
+   kilogramele acelorași oameni intrau de mai multe ori.
+   ================================================================ */
+console.log("\n=== 12. Filtrul de dubluri din sezon.html ===");
+{
+  const ctx = { console };
+  vm.createContext(ctx);
+  vm.runInContext(
+    ["nameOf", "mOf", "catchesSum", "extrasSum", "totalKg", "semnatura", "faraDubluri"]
+      .map(n => H2.grabFunction(sezSrc, n)).join("\n"),
+    ctx);
+  ctx.faraDubluri = vm.runInContext("faraDubluri", ctx);
+
+  const pescar = (id, kg) => ({ id, prenume: "X", nume: id, m: { 1: { catches: [kg], extras: [] }, 2: { catches: [], extras: [] } } });
+  const concurs = (nume, parts) => ({ compName: nume, compDate: 1, code: nume, parts });
+
+  const oameni = [pescar("a", 5), pescar("b", 3)];
+  const camera  = concurs("remuslake2026", oameni);
+  const arhiva  = concurs("Remus Lake 7.08", oameni.map(p => JSON.parse(JSON.stringify(p))));
+  const altul   = concurs("Alt concurs", [pescar("c", 9)]);
+
+  ctx.__in = [arhiva, camera, altul];
+  const iesire = ctx.faraDubluri(ctx.__in);
+  t("camera live și arhiva ei se contopesc într-unul singur", iesire.length, 2);
+  t("rămâne arhiva (are nume și dată stabile), nu camera", iesire[0].compName, "Remus Lake 7.08");
+  t("un concurs chiar diferit nu e înlăturat", iesire[1].compName, "Alt concurs");
+
+  // două arhivări ale aceluiași concurs, la ore diferite
+  ctx.__in2 = [concurs("Remus Lake 7.08.2026", oameni),
+               concurs("Remus Lake 7.08.2026", oameni.map(p => JSON.parse(JSON.stringify(p))))];
+  t("două arhivări ale aceluiași concurs contează o dată", ctx.faraDubluri(ctx.__in2).length, 1);
+
+  // dacă cineva a mai prins un pește între timp, NU mai e aceeași sursă
+  const dupaOCaptura = concurs("remuslake2026", [pescar("a", 5), Object.assign(pescar("b", 3), { m: { 1: { catches: [3, 2], extras: [] }, 2: { catches: [], extras: [] } } })]);
+  t("dacă s-a mai cântărit ceva, e o stare diferită și rămâne separată",
+    ctx.faraDubluri([arhiva, dupaOCaptura]).length, 2);
+
+  t("lista goală nu crapă", ctx.faraDubluri([]).length, 0);
+}
 
 console.log("\n──────────────────────────────");
 console.log(ok + " trecute, " + fail + " picate");

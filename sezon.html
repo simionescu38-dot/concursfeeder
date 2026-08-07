@@ -175,6 +175,15 @@
     return d.toLocaleDateString("ro-RO",{day:"2-digit",month:"2-digit",year:"numeric"});
   }
 
+  /* Un identificator intern (uuid, cale de fișier) nu e un nume de concurs —
+     în clasament apărea „327269e3-ebde-4800-…" ca și cum ar fi o competiție. */
+  function numeConcurs(brut, cand){
+    var n = ((brut||"")+"").trim();
+    if(n && !/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(n)) return n;
+    var d = cand ? new Date(cand) : null;
+    return "Concurs fără nume" + (d && !isNaN(d.getTime()) ? " · " + d.toLocaleDateString("ro-RO") : "");
+  }
+
   async function fetchLiveSources(){
     var roomsRes = await fetch(API_BASE+"/api/rooms").then(function(r){return r.json();}).catch(function(){ return null; });
     var rooms = (roomsRes && roomsRes.ok && roomsRes.rooms) ? roomsRes.rooms : [];
@@ -211,7 +220,7 @@
       var parts = Array.isArray(data.participants) ? data.participants : [];
       if(!parts.length) return;
       out.push({
-        compName: (data.name || ARCHIVE_FILES[i]).trim() || ARCHIVE_FILES[i],
+        compName: numeConcurs(data.name, exp.exportedAt),
         compDate: data.startAt || (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
         code: "arhiva:"+ARCHIVE_FILES[i],
         parts: parts
@@ -229,7 +238,7 @@
       var parts = Array.isArray(data.participants) ? data.participants : [];
       if(!parts.length) return;
       out.push({
-        compName: (data.name || a.name || a.id).trim() || a.id,
+        compName: numeConcurs(data.name || a.name, a.archived_at),
         compDate: data.startAt || (a.archived_at && Date.parse(a.archived_at)) || null,
         code: "arhiva-api:"+a.id,
         parts: parts
@@ -243,10 +252,31 @@
     return results[0].concat(results[1]);
   }
 
+  /* Aceeași competiție ajunge aici din mai multe surse: camera live ȘI arhiva
+     făcută din ea, sau două arhivări ale aceluiași concurs. Fără filtrul ăsta
+     erau numărate de fiecare dată — adică punctele și kilogramele acelorași
+     oameni intrau de două ori în clasamentul de sezon.
+     Semnătura: lista de participanți (id + kg), care e identică la copii. */
+  function semnatura(src){
+    return src.parts.map(function(p){ return (p.id||nameOf(p))+":"+totalKg(p).toFixed(3); })
+                    .sort().join("|");
+  }
+  function faraDubluri(sources){
+    var vazute = {}, out = [];
+    sources.forEach(function(s){
+      var k = semnatura(s);
+      if(!k || vazute[k]){ return; }
+      vazute[k] = true;
+      out.push(s);
+    });
+    return out;
+  }
+
   async function loadSeason(){
     var liveSources = await fetchLiveSources();
     var archiveSources = await fetchArchiveSources();
-    var sources = liveSources.concat(archiveSources);
+    // arhivele primele: au nume și dată stabile, camera live e doar o copie de moment
+    var sources = faraDubluri(archiveSources.concat(liveSources));
     if(!sources.length){
       throw new Error("Niciun concurs găsit.");
     }
