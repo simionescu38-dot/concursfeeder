@@ -129,6 +129,8 @@
 
   function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
   function fmt(n){ if(!n) return "0"; return (Math.round(n*1000)/1000).toFixed(3).replace(".",","); }
+  // locurile pot fi fracționare (media locurilor la egalitate): 2 → "2", 2.5 → "2,5"
+  function fmtPts(n){ return (Math.round((+n||0)*2)/2).toString().replace(".",","); }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || ""; }
   function normKey(nm){
@@ -264,6 +266,14 @@
       });
       comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length, top3:top3});
 
+      // la greutăți egale, locul = media locurilor ocupate de grup — aceeași convenție
+      // ca în aplicație (pointsMapS), altfel clasamentul de sezon divergea de cel de concurs
+      var places = ranked.map(function(row){
+        var better = ranked.filter(function(o){ return o.kg > row.kg + 1e-9; }).length;
+        var tied   = ranked.filter(function(o){ return Math.abs(o.kg - row.kg) <= 1e-9; }).length;
+        return better + (tied+1)/2;
+      });
+
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
         if(!nm) return;
@@ -273,7 +283,7 @@
           byKey[key] = {name:nm, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
         }
         var rec = byKey[key];
-        var place = idx+1;
+        var place = places[idx];
         rec.totalKg += row.kg;
         rec.totalPoints += place;
         rec.competitions += 1;
@@ -310,7 +320,7 @@
       list.sort(function(a,b){ return b.totalKg - a.totalKg; });
     } else {
       list.sort(function(a,b){
-        var d=a.totalPoints-b.totalPoints; if(d!==0) return d;
+        var d=a.totalPoints-b.totalPoints; if(Math.abs(d)>1e-9) return d;
         return b.totalKg-a.totalKg; // la egalitate de puncte, departajează cantitatea totală mai mare
       });
     }
@@ -321,12 +331,12 @@
       rows += '<tr class="'+cls+' pclick" onclick="toggleHist('+i+')">'+
         '<td class="pos">'+medal+'</td>'+
         '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+' · atinge pentru istoric</div></td>'+
-        '<td class="kg num">'+rec.totalPoints+'</td>'+
+        '<td class="kg num">'+fmtPts(rec.totalPoints)+'</td>'+
         '<td class="kg num">'+fmt(rec.totalKg)+'</td>'+
       '</tr>';
       var histRows = rec.rows.slice().sort(function(a,b){ return (b.date||0)-(a.date||0); }).map(function(r){
         return '<tr><td>'+esc(r.comp)+'<div class="small" style="color:var(--muted);font-size:11px;">'+(r.date?dateLabel(r.date):'fără dată')+'</div></td>'+
-          '<td class="pos">'+r.place+'</td>'+
+          '<td class="pos">'+fmtPts(r.place)+'</td>'+
           '<td class="kg num">'+fmt(r.kg)+'</td>'+
           '<td class="kg num">'+(r.fish>0?fmt(r.fish):'–')+'</td></tr>';
       }).join("");
@@ -400,7 +410,7 @@
   function currentSeasonSorted(){
     var list = season.list.slice();
     if(sortMode==="kg"){ list.sort(function(a,b){ return b.totalKg - a.totalKg; }); }
-    else { list.sort(function(a,b){ var d=a.totalPoints-b.totalPoints; if(d!==0) return d; return b.totalKg-a.totalKg; }); }
+    else { list.sort(function(a,b){ var d=a.totalPoints-b.totalPoints; if(Math.abs(d)>1e-9) return d; return b.totalKg-a.totalKg; }); }
     return list;
   }
 
@@ -409,7 +419,7 @@
     var lines=["Clasament de sezon — "+sortLabel(), ""];
     if(season.seasonFish) lines.push("CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg ("+season.seasonFish.comp+")");
     lines.push("");
-    list.forEach(function(rec,i){ lines.push((i+1)+". "+rec.name+" — "+rec.totalPoints+" pct, "+fmt(rec.totalKg)+" kg ("+rec.competitions+" concursuri)"); });
+    list.forEach(function(rec,i){ lines.push((i+1)+". "+rec.name+" — "+fmtPts(rec.totalPoints)+" pct, "+fmt(rec.totalKg)+" kg ("+rec.competitions+" concursuri)"); });
     var txt=lines.join("\n");
     try{ navigator.clipboard.writeText(txt).then(function(){toast("Clasament copiat");},function(){fallbackCopy(txt);}); }
     catch(e){ fallbackCopy(txt); }
@@ -420,7 +430,7 @@
     var h='<div class="pr-h1">Clasament de sezon</div><div class="pr-sub">'+esc(sortLabel())+' · '+season.comps.length+' concursuri · '+roDate()+'</div>';
     if(season.seasonFish) h+='<div class="pr-sub"><b>CMMC sezon:</b> '+esc(season.seasonFish.name)+' — '+fmt(season.seasonFish.v)+' kg</div>';
     h+='<div class="pr-sec">Clasament general</div><table class="pr-t"><tr><th>Loc</th><th>Concurent</th><th>Concursuri</th><th>Pct</th><th>Total kg</th></tr>';
-    list.forEach(function(rec,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(rec.name)+'</td><td class="c">'+rec.competitions+'</td><td class="c">'+rec.totalPoints+'</td><td class="r">'+fmt(rec.totalKg)+'</td></tr>'; });
+    list.forEach(function(rec,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(rec.name)+'</td><td class="c">'+rec.competitions+'</td><td class="c">'+fmtPts(rec.totalPoints)+'</td><td class="r">'+fmt(rec.totalKg)+'</td></tr>'; });
     h+='</table>';
     document.getElementById("printArea").innerHTML=h;
     window.print();

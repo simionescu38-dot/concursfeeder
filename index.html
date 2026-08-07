@@ -238,6 +238,45 @@
   .hb-f{height:100%; background:var(--teal); border-radius:7px;}
   .hb-v{flex:0 0 auto; font-size:12px; font-weight:800;}
 
+  /* statistici – grafic pe coloane (ore, distribuție) */
+  .vb-wrap{display:flex; align-items:flex-end; gap:2px; height:124px; margin:4px 0 0; padding:0 2px;}
+  .vb-col{flex:1 1 0; min-width:0; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;}
+  .vb-n{font-size:11px; font-weight:800; color:var(--muted); line-height:1.1; margin-bottom:2px;}
+  .vb{width:100%; background:var(--teal); border-radius:4px 4px 0 0;}
+  .vb.z{background:var(--line);}   /* interval gol – axa rămâne continuă */
+  .vb-x{display:flex; gap:2px; padding:4px 2px 0; border-top:1px solid var(--line);}
+  .vb-xl{flex:1 1 0; min-width:0; text-align:center; font-size:10px; font-weight:700; color:var(--muted); overflow:hidden;}
+
+  /* grila de meniu de pe Acasă — butoane mari, se apasă cu degete ude */
+  .mg{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:0 0 12px;}
+  .mg button{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:14px 6px; min-height:94px; cursor:pointer; box-shadow:var(--shadow-sm);
+    font-family:inherit; font-size:13px; font-weight:800; color:var(--pine);
+    line-height:1.15; text-align:center;
+  }
+  .mg button .ic{font-size:26px; line-height:1;}
+  .mg button:active{background:var(--teal-soft); border-color:var(--teal);}
+
+  /* meteo + solunar */
+  .wx-top{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+  .wx-em{font-size:36px; line-height:1;}
+  .wx-temp{font-size:32px; font-weight:900; line-height:1.05; color:var(--pine);}
+  .wx-desc{font-size:13px; font-weight:700; color:var(--muted);}
+  .wx-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .wx-cell{background:var(--teal-soft); border-radius:10px; padding:8px 10px; min-width:0;}
+  .wx-k{font-size:10px; font-weight:800; color:var(--teal-d); text-transform:uppercase; letter-spacing:.06em;}
+  .wx-v{font-size:15px; font-weight:800; color:var(--pine); word-break:break-word;}
+  .sol-row{display:flex; align-items:center; gap:8px; padding:8px 6px; border-top:1px solid var(--line);}
+  .sol-b{flex:0 0 auto; font-size:10px; font-weight:900; padding:3px 8px; border-radius:999px; letter-spacing:.04em;}
+  .sol-major{background:var(--teal); color:#fff;}
+  .sol-minor{background:var(--teal-soft); color:var(--teal-d);}
+  .sol-t{flex:0 0 auto; font-size:14px; font-weight:800; color:var(--pine);}
+  .sol-l{flex:1; min-width:0; font-size:12px; font-weight:600; color:var(--muted); text-align:right;}
+  .sol-now{background:var(--amber-soft); border-radius:10px; border-top-color:transparent;}
+  .sol-now .sol-l{color:#7a4a06;}
+
   /* NOU LIDER + confetti */
   #leader{position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
     flex-direction:column; background:rgba(8,26,46,.92); color:#fff; text-align:center; padding:20px; cursor:pointer;}
@@ -250,6 +289,35 @@
 
   /* print: clasament + diplome */
   #printArea{display:none;}
+  /* ---------- ecran mare ----------
+     Aplicația era gândită doar pentru telefon: pe laptop sau pe tabletă în peisaj
+     rămânea aceeași coloană îngustă de 640px în mijlocul ecranului. Ecranele
+     făcute din carduri independente se împart pe coloane; clasamentul NU, fiindcă
+     un tabel rupt în două coloane se citește mai prost, nu mai bine. */
+  @media (min-width:900px){
+    main{max-width:1100px; padding:20px 20px 28px;}
+    header{padding:18px 24px 16px;}
+    header h1{font-size:24px;}
+    nav.tabs{max-width:1100px; margin:0 auto; border-radius:16px 16px 0 0; border:1px solid var(--line); border-bottom:0;}
+
+    #view-set.active, #view-cal.active{columns:2; column-gap:18px;}
+    #view-set .card, #view-cal .card{break-inside:avoid; -webkit-column-break-inside:avoid;}
+
+    /* fișele participanților, două pe rând */
+    #list{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:start;}
+
+    /* rândurile de text lungi obosesc ochiul — le ținem la lățime de citit */
+    #view-rank.active, #view-part.active{max-width:780px; margin:0 auto;}
+    .wx-grid{grid-template-columns:repeat(3,1fr);}
+    .vb-wrap{height:170px;}
+  }
+  @media (min-width:1300px){
+    main{max-width:1280px;}
+    nav.tabs{max-width:1280px;}
+    #view-set.active{columns:3;}
+    #list{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+
   @media print{
     body>*:not(#printArea){display:none !important;}
     #printArea{display:block !important;}
@@ -295,8 +363,17 @@
       <p class="hero-desc">Urmărește în timp real clasamentul concursurilor de pescuit, direct din telefon.</p>
       <div class="summary" id="hero-stats" style="width:100%; max-width:340px;"></div>
       <div id="hero-spotlight" style="width:100%; max-width:340px;"></div>
-      <button class="btn btn-primary hero-cta" onclick="showView('rank')">🏆 Vezi clasamentele</button>
+      <!-- Grila stă ÎN hero, deasupra liniei de îndoire: la baltă vrei uneltele
+           dintr-o privire, nu după ce derulezi. „Vezi clasamentele" a fost scos —
+           Clasament e primul buton din grilă, nu are rost de două ori. -->
+      <div class="mg" id="meniu-grila" style="width:100%;"></div>
       <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
+    </div>
+
+    <div class="card" style="text-align:left;" id="card-meteo">
+      <div class="sec-title">Vremea la baltă și solunarul</div>
+      <div id="wx-body"></div>
+      <button class="btn btn-ghost" style="margin-top:10px;" onclick="loadWeather(true)">📍 Folosește locația mea</button>
     </div>
   </section>
 
@@ -380,7 +457,7 @@
       <p class="hint">Pagină publică cu toate camerele active chiar acum — oricine poate deschide clasamentul live al oricărui concurs, fără cod.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card lockhide" id="card-cronometru">
       <div class="sec-title">Cronometru concurs</div>
       <label class="f">Începe la (opțional)</label>
       <input type="datetime-local" id="t-start" onchange="setTimer()">
@@ -453,7 +530,7 @@
       <p class="hint" id="imp-preview"></p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card lockhide" id="card-sorti">
       <div class="sec-title">Tragere la sorți</div>
       <label class="f">Număr de standuri</label>
       <input id="draw-stands" inputmode="numeric" placeholder="= nr. participanți" oninput="previewDraw()">
@@ -502,7 +579,7 @@
       <p class="hint" id="sync-status" style="margin-top:8px;"></p>
       <p class="hint">Cheia de scriere rămâne doar pe telefonul tău — nu o pune în linkul trimis altora.</p>
       <div id="live-qr-wrap" style="display:none; text-align:center; margin-top:14px;">
-        <img id="live-qr" width="220" height="220" style="max-width:100%; border-radius:12px; background:#fff; padding:8px; box-shadow:var(--shadow-sm);" alt="Cod QR spre clasamentul live">
+        <div id="live-qr" style="display:inline-block; width:220px; max-width:100%; border-radius:12px; background:#fff; padding:8px; box-shadow:var(--shadow-sm);" role="img" aria-label="Cod QR spre clasamentul live"></div>
         <p class="hint">Afișează codul ăsta la baltă — oricine îl scanează cu camera telefonului ajunge direct la clasamentul live.</p>
       </div>
     </div>
@@ -535,8 +612,10 @@
 
     <div class="card">
       <div class="sec-title">Instalare pe telefoane – cod QR</div>
-      <div style="display:flex; justify-content:center; padding:4px 0 8px;"><svg viewBox="0 0 33 33" width="220" height="220" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect width="33" height="33" fill="#ffffff"/><path d="M2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM8 2h1v1h-1zM12 2h1v1h-1zM15 2h1v1h-1zM16 2h1v1h-1zM18 2h1v1h-1zM19 2h1v1h-1zM20 2h1v1h-1zM21 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM27 2h1v1h-1zM28 2h1v1h-1zM29 2h1v1h-1zM30 2h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM10 3h1v1h-1zM12 3h1v1h-1zM13 3h1v1h-1zM14 3h1v1h-1zM16 3h1v1h-1zM17 3h1v1h-1zM21 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM30 3h1v1h-1zM2 4h1v1h-1zM4 4h1v1h-1zM5 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM15 4h1v1h-1zM16 4h1v1h-1zM18 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM26 4h1v1h-1zM27 4h1v1h-1zM28 4h1v1h-1zM30 4h1v1h-1zM2 5h1v1h-1zM4 5h1v1h-1zM5 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM11 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM17 5h1v1h-1zM18 5h1v1h-1zM20 5h1v1h-1zM21 5h1v1h-1zM24 5h1v1h-1zM26 5h1v1h-1zM27 5h1v1h-1zM28 5h1v1h-1zM30 5h1v1h-1zM2 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM11 6h1v1h-1zM16 6h1v1h-1zM17 6h1v1h-1zM20 6h1v1h-1zM21 6h1v1h-1zM24 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM30 6h1v1h-1zM2 7h1v1h-1zM8 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM15 7h1v1h-1zM17 7h1v1h-1zM19 7h1v1h-1zM20 7h1v1h-1zM21 7h1v1h-1zM24 7h1v1h-1zM30 7h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM8 8h1v1h-1zM10 8h1v1h-1zM12 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM18 8h1v1h-1zM20 8h1v1h-1zM22 8h1v1h-1zM24 8h1v1h-1zM25 8h1v1h-1zM26 8h1v1h-1zM27 8h1v1h-1zM28 8h1v1h-1zM29 8h1v1h-1zM30 8h1v1h-1zM14 9h1v1h-1zM15 9h1v1h-1zM16 9h1v1h-1zM17 9h1v1h-1zM19 9h1v1h-1zM20 9h1v1h-1zM21 9h1v1h-1zM22 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM11 10h1v1h-1zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM19 10h1v1h-1zM20 10h1v1h-1zM21 10h1v1h-1zM22 10h1v1h-1zM26 10h1v1h-1zM29 10h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM5 11h1v1h-1zM6 11h1v1h-1zM7 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM22 11h1v1h-1zM23 11h1v1h-1zM24 11h1v1h-1zM27 11h1v1h-1zM30 11h1v1h-1zM4 12h1v1h-1zM7 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM10 12h1v1h-1zM13 12h1v1h-1zM15 12h1v1h-1zM19 12h1v1h-1zM24 12h1v1h-1zM26 12h1v1h-1zM28 12h1v1h-1zM29 12h1v1h-1zM30 12h1v1h-1zM3 13h1v1h-1zM4 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM14 13h1v1h-1zM17 13h1v1h-1zM19 13h1v1h-1zM29 13h1v1h-1zM3 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM10 14h1v1h-1zM12 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM18 14h1v1h-1zM19 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM27 14h1v1h-1zM29 14h1v1h-1zM30 14h1v1h-1zM2 15h1v1h-1zM3 15h1v1h-1zM4 15h1v1h-1zM9 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM15 15h1v1h-1zM18 15h1v1h-1zM22 15h1v1h-1zM24 15h1v1h-1zM27 15h1v1h-1zM30 15h1v1h-1zM2 16h1v1h-1zM4 16h1v1h-1zM5 16h1v1h-1zM7 16h1v1h-1zM8 16h1v1h-1zM11 16h1v1h-1zM12 16h1v1h-1zM14 16h1v1h-1zM16 16h1v1h-1zM18 16h1v1h-1zM19 16h1v1h-1zM24 16h1v1h-1zM27 16h1v1h-1zM29 16h1v1h-1zM30 16h1v1h-1zM3 17h1v1h-1zM5 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM15 17h1v1h-1zM16 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM24 17h1v1h-1zM26 17h1v1h-1zM27 17h1v1h-1zM29 17h1v1h-1zM2 18h1v1h-1zM3 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM8 18h1v1h-1zM9 18h1v1h-1zM11 18h1v1h-1zM13 18h1v1h-1zM16 18h1v1h-1zM17 18h1v1h-1zM18 18h1v1h-1zM19 18h1v1h-1zM24 18h1v1h-1zM27 18h1v1h-1zM29 18h1v1h-1zM30 18h1v1h-1zM7 19h1v1h-1zM10 19h1v1h-1zM12 19h1v1h-1zM14 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM22 19h1v1h-1zM23 19h1v1h-1zM24 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM30 19h1v1h-1zM2 20h1v1h-1zM4 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM7 20h1v1h-1zM8 20h1v1h-1zM10 20h1v1h-1zM11 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM23 20h1v1h-1zM25 20h1v1h-1zM26 20h1v1h-1zM29 20h1v1h-1zM30 20h1v1h-1zM3 21h1v1h-1zM5 21h1v1h-1zM6 21h1v1h-1zM7 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM17 21h1v1h-1zM19 21h1v1h-1zM20 21h1v1h-1zM21 21h1v1h-1zM22 21h1v1h-1zM25 21h1v1h-1zM27 21h1v1h-1zM29 21h1v1h-1zM2 22h1v1h-1zM7 22h1v1h-1zM8 22h1v1h-1zM9 22h1v1h-1zM11 22h1v1h-1zM14 22h1v1h-1zM17 22h1v1h-1zM19 22h1v1h-1zM21 22h1v1h-1zM22 22h1v1h-1zM23 22h1v1h-1zM24 22h1v1h-1zM25 22h1v1h-1zM26 22h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM12 23h1v1h-1zM13 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM21 23h1v1h-1zM22 23h1v1h-1zM26 23h1v1h-1zM28 23h1v1h-1zM29 23h1v1h-1zM30 23h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM5 24h1v1h-1zM6 24h1v1h-1zM7 24h1v1h-1zM8 24h1v1h-1zM12 24h1v1h-1zM13 24h1v1h-1zM16 24h1v1h-1zM18 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM24 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM29 24h1v1h-1zM30 24h1v1h-1zM2 25h1v1h-1zM8 25h1v1h-1zM11 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM15 25h1v1h-1zM16 25h1v1h-1zM18 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM26 25h1v1h-1zM27 25h1v1h-1zM29 25h1v1h-1zM2 26h1v1h-1zM4 26h1v1h-1zM5 26h1v1h-1zM6 26h1v1h-1zM8 26h1v1h-1zM10 26h1v1h-1zM11 26h1v1h-1zM14 26h1v1h-1zM16 26h1v1h-1zM18 26h1v1h-1zM19 26h1v1h-1zM22 26h1v1h-1zM23 26h1v1h-1zM24 26h1v1h-1zM25 26h1v1h-1zM26 26h1v1h-1zM29 26h1v1h-1zM30 26h1v1h-1zM2 27h1v1h-1zM4 27h1v1h-1zM5 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM13 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM25 27h1v1h-1zM26 27h1v1h-1zM28 27h1v1h-1zM29 27h1v1h-1zM30 27h1v1h-1zM2 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM10 28h1v1h-1zM13 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM23 28h1v1h-1zM25 28h1v1h-1zM26 28h1v1h-1zM27 28h1v1h-1zM30 28h1v1h-1zM2 29h1v1h-1zM8 29h1v1h-1zM12 29h1v1h-1zM15 29h1v1h-1zM17 29h1v1h-1zM19 29h1v1h-1zM21 29h1v1h-1zM22 29h1v1h-1zM23 29h1v1h-1zM26 29h1v1h-1zM29 29h1v1h-1zM2 30h1v1h-1zM3 30h1v1h-1zM4 30h1v1h-1zM5 30h1v1h-1zM6 30h1v1h-1zM7 30h1v1h-1zM8 30h1v1h-1zM10 30h1v1h-1zM11 30h1v1h-1zM14 30h1v1h-1zM15 30h1v1h-1zM16 30h1v1h-1zM17 30h1v1h-1zM18 30h1v1h-1zM19 30h1v1h-1zM21 30h1v1h-1zM22 30h1v1h-1zM26 30h1v1h-1zM29 30h1v1h-1zM30 30h1v1h-1z" fill="#10263c"/></svg></div>
-      <p class="hint" style="text-align:center;">Concurenții scanează cu camera telefonului → se deschide aplicația → „Adaugă la ecranul principal". Fiecare telefon are datele lui; sincronizați prin Export/Import.</p>
+      <div style="display:flex; justify-content:center; padding:4px 0 8px;"><div id="install-qr" style="width:220px; max-width:100%; background:#fff; padding:8px; border-radius:12px;" role="img" aria-label="Cod QR pentru instalarea aplicației"></div></div>
+      <p class="hint" style="text-align:center;">Concurenții scanează cu camera telefonului → se deschide aplicația → „Adaugă la ecranul principal".</p>
+      <p class="hint" style="text-align:center;">Codul duce la <b id="install-qr-link" style="word-break:break-all;"></b> — adică exact adresa de unde ai deschis aplicația acum.</p>
+      <p class="hint" style="text-align:center;">Dacă doi organizatori cântăresc în paralel, folosiți <b>sincronizarea live</b> (cod de cameră + cheie), nu Export/Import: importul cu „Combină" înlocuiește participantul întreg și poate șterge cântăririle celuilalt telefon.</p>
     </div>
 
     <div class="card">
@@ -593,6 +672,8 @@
   // ---------- helpers ----------
   function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
   function fmt(n){ if(!n) return "0"; return (Math.round(n*1000)/1000).toFixed(3).replace(".",","); }
+  // punctele pot fi fracționare (media locurilor la egalitate): 2 → "2", 2.5 → "2,5"
+  function fmtPts(n){ return (Math.round((+n||0)*2)/2).toString().replace(".",","); }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
@@ -641,6 +722,7 @@
   function guard(){ if(isLocked()){ toast("🔒 Blocat – apasă lacătul de sus și introdu PIN-ul"); return true; } return false; }
   function updateLockUI(){
     document.body.classList.toggle("locked", isLocked());
+    renderMeniu(); // grila de pe Acasă arată altceva organizatorului față de pescar
     var b=document.getElementById("lockBtn"); if(b) b.textContent=isLocked()?"🔒":"🔓";
     var st=document.getElementById("pin-status");
     if(st) st.innerHTML = state.pinHash ? (isLocked()?"Stare: <b>blocată</b> 🔒 – doar vizualizare.":"Stare: <b>deblocată</b> – PIN setat. Apasă lacătul din dreapta-sus ca să blochezi.") : "Niciun PIN setat – oricine are telefonul poate modifica datele.";
@@ -950,14 +1032,556 @@
     if(k) k.value=syncKey;
     if(!syncRoom || !syncKey) setSyncStatus("Sincronizarea live e oprită – completează codul și cheia mai sus.");
     updateLiveQr();
+    updateInstallQr();
   }
+  // ---------- grila de meniu de pe Acasă ----------
+  // Se schimbă după lacăt: organizatorul vede uneltele de concurs, pescarul nu vede
+  // niciodată cântărirea sau tragerea la sorți. Trimite doar către ecrane care există.
+  function meniuGo(view, elId, inainte){
+    if(inainte) inainte();
+    showView(view);
+    if(elId) setTimeout(function(){
+      var el=document.getElementById(elId);
+      if(el) el.scrollIntoView({block:"start", behavior:"smooth"});
+    }, 60);
+  }
+  function meniuLink(href){ location.href=href; }
+  function renderMeniu(){
+    var g=document.getElementById("meniu-grila");
+    if(!g) return;
+    var org=[
+      ["🎣","Cântărire","meniuGo('cantar')"],
+      ["🏆","Clasament","meniuGo('rank')"],
+      ["🎲","Tragere la sorți","meniuGo('set','card-sorti')"],
+      ["⏱️","Cronometru","meniuGo('set','card-cronometru')"],
+      ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
+      ["📅","Calendar","meniuGo('cal')"]
+    ];
+    var pescar=[
+      ["🏆","Clasament","meniuGo('rank')"],
+      ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
+      ["📅","Calendar","meniuGo('cal')"],
+      ["🌦️","Vremea","meniuGo('part','card-meteo')"],
+      ["🥇","Sezon","meniuLink('sezon.html')"],
+      ["🔴","Concursuri live","meniuLink('concursuri.html')"]
+    ];
+    var items = isLocked() ? pescar : org;
+    g.innerHTML = items.map(function(it){
+      return '<button type="button" onclick="'+it[2]+'"><span class="ic">'+it[0]+'</span>'+esc(it[1])+'</button>';
+    }).join("");
+  }
+
+  // ---------- meteo (Open-Meteo) + solunar ----------
+  // Open-Meteo nu cere cheie și acceptă cereri direct din browser, deci merge din
+  // pagina asta fără să atingem Worker-ul și fără niciun secret în cod public.
+  var WX_KEY="concurs-meteo-v1";
+  var wxState=null;
+
+  function wxLoad(){ try{ var s=localStorage.getItem(WX_KEY); if(s) wxState=JSON.parse(s); }catch(e){} }
+  function wxSave(){ try{ localStorage.setItem(WX_KEY, JSON.stringify(wxState)); }catch(e){} }
+  function p2(n){ return (n<10?"0":"")+n; }
+  function hhmm(dt){ return p2(dt.getHours())+":"+p2(dt.getMinutes()); }
+  function unaZec(n){ return (Math.round((+n||0)*10)/10).toString().replace(".",","); }
+  function busola(g){
+    var d=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSV","SV","VSV","V","VNV","NV","NNV"];
+    return d[Math.round((((+g||0)%360)+360)%360/22.5)%16];
+  }
+  // codurile meteo standard WMO, traduse
+  function wxCod(c){
+    var m={0:["☀️","senin"],1:["🌤️","aproape senin"],2:["⛅","parțial noros"],3:["☁️","acoperit"],
+      45:["🌫️","ceață"],48:["🌫️","ceață cu chiciură"],
+      51:["🌦️","burniță slabă"],53:["🌦️","burniță"],55:["🌦️","burniță deasă"],
+      56:["🌧️","burniță înghețată"],57:["🌧️","burniță înghețată deasă"],
+      61:["🌧️","ploaie slabă"],63:["🌧️","ploaie"],65:["🌧️","ploaie puternică"],
+      66:["🌧️","ploaie înghețată"],67:["🌧️","ploaie înghețată puternică"],
+      71:["🌨️","ninsoare slabă"],73:["🌨️","ninsoare"],75:["🌨️","ninsoare abundentă"],77:["🌨️","măzăriche"],
+      80:["🌦️","averse slabe"],81:["🌦️","averse"],82:["⛈️","averse puternice"],
+      85:["🌨️","averse de ninsoare"],86:["🌨️","averse puternice de ninsoare"],
+      95:["⛈️","furtună"],96:["⛈️","furtună cu grindină"],99:["⛈️","furtună cu grindină mare"]};
+    return m[c] ? {emoji:m[c][0], text:m[c][1]} : {emoji:"🌡️", text:"vreme"};
+  }
+  function wxUrl(lat,lon){
+    return "https://api.open-meteo.com/v1/forecast?latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)+
+      "&current=temperature_2m,relative_humidity_2m,apparent_temperature,surface_pressure,"+
+      "wind_speed_10m,wind_direction_10m,cloud_cover,precipitation,weather_code"+
+      "&hourly=surface_pressure&past_days=1&forecast_days=1&timezone=auto";
+  }
+  // tendința presiunii pe ultimele 3 ore — la feeder contează mai mult decât temperatura
+  function wxTrend(j){
+    var ht=(j.hourly&&j.hourly.time)||[], hp=(j.hourly&&j.hourly.surface_pressure)||[];
+    var acum=((j.current&&j.current.time)||"").slice(0,13), i=-1;
+    for(var k=0;k<ht.length;k++){ if((ht[k]||"").slice(0,13)===acum){ i=k; break; } }
+    if(i<3 || hp[i]==null || hp[i-3]==null) return null;
+    return hp[i]-hp[i-3];
+  }
+  function wxCell(k,v){ return '<div class="wx-cell"><div class="wx-k">'+esc(k)+'</div><div class="wx-v">'+esc(v)+'</div></div>'; }
+
+  function wxMeteoHtml(){
+    var c=wxState&&wxState.current;
+    if(!c) return '<p class="hint" style="margin:0 0 4px;">Vremea nu s-a putut descărca (probabil fără net). Solunarul de mai jos se calculează în telefon, deci apare oricum.</p>';
+    var v=wxCod(c.weather_code), tr=wxState.trend;
+    var trTxt = (tr===null||tr===undefined) ? "necunoscută"
+      : (Math.abs(tr)<0.7 ? "stabilă" : (tr>0 ? "în creștere" : "în scădere"))+" · "+(tr>0?"+":"")+unaZec(tr)+" hPa";
+    return '<div class="wx-top"><div class="wx-em">'+v.emoji+'</div><div>'+
+        '<div class="wx-temp">'+Math.round(c.temperature_2m)+'°C</div>'+
+        '<div class="wx-desc">'+esc(v.text)+' · resimțit '+Math.round(c.apparent_temperature)+'°</div></div></div>'+
+      '<div class="wx-grid">'+
+        wxCell("Presiune", Math.round(c.surface_pressure)+" hPa")+
+        wxCell("Tendință 3h", trTxt)+
+        wxCell("Vânt", Math.round(c.wind_speed_10m)+" km/h din "+busola(c.wind_direction_10m))+
+        wxCell("Umiditate", Math.round(c.relative_humidity_2m)+"%")+
+        wxCell("Nori", Math.round(c.cloud_cover)+"%")+
+        wxCell("Precipitații", unaZec(c.precipitation)+" mm")+
+      '</div>'+
+      '<p class="hint" style="margin:8px 0 0;">Citit la '+esc(wxState.cand||"—")+
+      (wxState.vechi?' — <b>e ultima citire salvată</b>, acum telefonul nu are net':'')+'.</p>';
+  }
+
+  function wxSolunarHtml(){
+    var lat=wxState.coords.lat, lon=wxState.coords.lon, acum=new Date();
+    var f=Astro.faza(acum), ev=Astro.events(acum,lat,lon), per=Astro.perioade(acum,lat,lon);
+    var ora=function(j){ return j===null ? "—" : hhmm(Astro.jdToDate(j)); };
+    var h='<div class="sec-title" style="margin:16px 0 10px;">Solunar · '+esc(f.emoji+" "+f.nume)+'</div>'+
+      '<div class="wx-grid">'+
+        wxCell("Lună iluminată", Math.round(f.iluminat*100)+"%")+
+        wxCell("Soare", ora(ev.rasaritSoare)+" – "+ora(ev.apusSoare))+
+      '</div>';
+    if(per.length){
+      h+='<div style="margin-top:10px;">';
+      per.forEach(function(p){
+        var activ = acum>=p.start && acum<=p.sfarsit;
+        h+='<div class="sol-row'+(activ?' sol-now':'')+'">'+
+             '<span class="sol-b '+(p.tip==="major"?"sol-major":"sol-minor")+'">'+(p.tip==="major"?"MAJOR":"MINOR")+'</span>'+
+             '<span class="sol-t">'+hhmm(p.start)+'–'+hhmm(p.sfarsit)+'</span>'+
+             '<span class="sol-l">'+(activ?'<b>acum</b> · ':'')+esc(p.eticheta)+'</span></div>';
+      });
+      h+='</div>';
+    }
+    h+='<p class="hint" style="margin:10px 0 0;">Perioadele <b>majore</b> sunt când luna e deasupra capului sau exact sub picioare, cele <b>minore</b> la răsăritul și apusul lunii. Teoria solunară (John Alden Knight, 1926) e folosită de mulți pescari, dar <b>nu e demonstrată științific</b> — folosește-o ca reper, nu ca pe o garanție.</p>';
+    return h;
+  }
+
+  function renderWx(){
+    var box=document.getElementById("wx-body");
+    if(!box) return;
+    if(!wxState || !wxState.coords){
+      box.innerHTML='<p class="hint" style="margin:0;">Apasă butonul de mai jos ca să iau locația telefonului. Vremea vine de la Open-Meteo (fără cont și fără cheie), iar solunarul se calculează chiar în telefon — deci apare și când nu ai semnal la baltă.</p>';
+      return;
+    }
+    box.innerHTML = wxMeteoHtml() + wxSolunarHtml();
+  }
+
+  function wxRefresh(){
+    if(!wxState || !wxState.coords) return;
+    fetch(wxUrl(wxState.coords.lat, wxState.coords.lon))
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(j){
+        wxState.current=j.current; wxState.trend=wxTrend(j); wxState.vechi=false;
+        wxState.cand=new Date().toLocaleString("ro-RO",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+        wxSave(); renderWx();
+      })
+      .catch(function(){ if(wxState.current) wxState.vechi=true; renderWx(); });
+  }
+
+  function loadWeather(cerLocatie){
+    var box=document.getElementById("wx-body");
+    if(cerLocatie){
+      if(!navigator.geolocation){
+        if(box) box.innerHTML='<p class="hint" style="margin:0;">Telefonul ăsta nu oferă locația în browser.</p>';
+        return;
+      }
+      if(box) box.innerHTML='<p class="hint" style="margin:0;">Caut locația…</p>';
+      navigator.geolocation.getCurrentPosition(function(pos){
+        wxState=wxState||{};
+        wxState.coords={lat:pos.coords.latitude, lon:pos.coords.longitude};
+        wxSave(); renderWx(); wxRefresh();
+      }, function(err){
+        if(wxState && wxState.coords){ renderWx(); wxRefresh(); }
+        else if(box) box.innerHTML='<p class="hint" style="margin:0;">Nu am putut lua locația ('+esc(err&&err.message||"acces refuzat")+'). Pornește GPS-ul, permite accesul la locație și apasă din nou.</p>';
+      }, {enableHighAccuracy:false, timeout:10000, maximumAge:600000});
+      return;
+    }
+    renderWx(); wxRefresh();
+  }
+
+  // ---------- astronomie: soare și lună, calculate local ----------
+  // Solunarul NU se descarcă de nicăieri — se calculează din latitudine, longitudine
+  // și dată, deci merge și fără semnal, exact cum e la baltă. Precizia (sub un minut
+  // pentru răsărit/apus) e mult peste ce cere o „perioadă favorabilă" de două ore.
+  var Astro = (function(){
+    var RAD=Math.PI/180, DEG=180/Math.PI;
+    function norm360(x){ x=x%360; return x<0?x+360:x; }
+    function dateToJd(dt){ return dt.getTime()/86400000 + 2440587.5; }
+    function jdToDate(j){ return new Date((j-2440587.5)*86400000); }
+    // d = zile de la J2000.0
+    function dOf(jd){ return jd-2451545.0; }
+
+    function sunPos(d){
+      var L=norm360(280.460+0.9856474*d), g=norm360(357.528+0.9856003*d)*RAD;
+      var lam=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g));
+      var eps=(23.439-0.0000004*d)*RAD, lr=lam*RAD;
+      return { ra:norm360(Math.atan2(Math.cos(eps)*Math.sin(lr), Math.cos(lr))*DEG),
+               dec:Math.asin(Math.sin(eps)*Math.sin(lr))*DEG,
+               lam:norm360(lam) };
+    }
+    // serie trunchiată (Meeus) — eroare de câteva minute de arc, suficient aici
+    function moonPos(d){
+      var T=d/36525;
+      var Lp=norm360(218.3164477+481267.88123421*T);
+      var D =norm360(297.8501921+445267.1114034*T)*RAD;
+      var M =norm360(357.5291092+35999.0502909*T)*RAD;
+      var Mp=norm360(134.9633964+477198.8675055*T)*RAD;
+      var F =norm360(93.2720950+483202.0175233*T)*RAD;
+      var lam = Lp
+        + 6.289*Math.sin(Mp)      + 1.274*Math.sin(2*D-Mp)
+        + 0.658*Math.sin(2*D)     + 0.214*Math.sin(2*Mp)
+        - 0.186*Math.sin(M)       - 0.114*Math.sin(2*F)
+        + 0.059*Math.sin(2*D-2*Mp)+ 0.057*Math.sin(2*D-M-Mp)
+        + 0.053*Math.sin(2*D+Mp)  + 0.046*Math.sin(2*D-M)
+        - 0.041*Math.sin(M-Mp)    - 0.035*Math.sin(D)
+        - 0.031*Math.sin(M+Mp);
+      var bet = 5.128*Math.sin(F)
+        + 0.281*Math.sin(Mp+F)    + 0.278*Math.sin(Mp-F)
+        + 0.173*Math.sin(2*D-F)   + 0.055*Math.sin(2*D-Mp+F)
+        + 0.046*Math.sin(2*D-Mp-F)+ 0.033*Math.sin(2*D+F)
+        + 0.017*Math.sin(2*Mp+F);
+      var eps=(23.439-0.0000004*d)*RAD, lr=lam*RAD, br=bet*RAD;
+      return { ra:norm360(Math.atan2(Math.sin(lr)*Math.cos(eps)-Math.tan(br)*Math.sin(eps), Math.cos(lr))*DEG),
+               dec:Math.asin(Math.sin(br)*Math.cos(eps)+Math.cos(br)*Math.sin(eps)*Math.sin(lr))*DEG,
+               lam:norm360(lam) };
+    }
+    function gmst(d){ return norm360(280.46061837+360.98564736629*d); }
+    function altOf(pos,d,lat,lon){
+      var ha=(gmst(d)+lon-pos.ra)*RAD, la=lat*RAD, de=pos.dec*RAD;
+      return Math.asin(Math.sin(la)*Math.sin(de)+Math.cos(la)*Math.cos(de)*Math.cos(ha))*DEG;
+    }
+    function haOf(pos,d,lon){ return norm360(gmst(d)+lon-pos.ra); }
+
+    // caută trecerile prin zero eșantionând din 10 în 10 minute, apoi rafinează prin
+    // înjumătățire — mai simplu și mai robust decât o formulă închisă
+    function crossings(f, jd0, jd1){
+      var step=10/1440, out=[], prevT=jd0, prevV=f(jd0);
+      for(var t=jd0+step; t<=jd1; t+=step){
+        var v=f(t);
+        if(prevV<0 && v>=0) out.push({t:refine(f,prevT,t), sus:true});
+        else if(prevV>0 && v<=0) out.push({t:refine(f,prevT,t), sus:false});
+        prevT=t; prevV=v;
+      }
+      return out;
+    }
+    function refine(f,a,b){
+      var na=f(a)<0;
+      for(var i=0;i<30;i++){ var m=(a+b)/2; if((f(m)<0)===na) a=m; else b=m; }
+      return (a+b)/2;
+    }
+
+    // ziua locală [00:00, 24:00) a datei primite
+    function dayBounds(dt){
+      var s=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),0,0,0,0);
+      var e=new Date(s.getTime()+86400000);
+      return [dateToJd(s), dateToJd(e)];
+    }
+
+    function events(dt, lat, lon){
+      var b=dayBounds(dt), jd0=b[0], jd1=b[1];
+      var H0_SOARE=-0.833, H0_LUNA=0.125; // refracție; la lună și paralaxa/semidiametrul
+      var rsSoare=crossings(function(t){ return altOf(sunPos(dOf(t)),dOf(t),lat,lon)-H0_SOARE; }, jd0, jd1);
+      var rsLuna =crossings(function(t){ return altOf(moonPos(dOf(t)),dOf(t),lat,lon)-H0_LUNA; }, jd0, jd1);
+      // trecerea la meridian (lună sus) și la nadir (lună dedesubt): unghi orar 0 și 180
+      var trec=crossings(function(t){ return Math.sin(haOf(moonPos(dOf(t)),dOf(t),lon)*RAD); }, jd0, jd1);
+      var sus=[], jos=[];
+      trec.forEach(function(c){ (c.sus?sus:jos).push(c.t); });
+      var pick=function(arr,vrea){ var r=null; arr.forEach(function(c){ if(c.sus===vrea && r===null) r=c.t; }); return r; };
+      return {
+        rasaritSoare: pick(rsSoare,true),  apusSoare: pick(rsSoare,false),
+        rasaritLuna:  pick(rsLuna,true),   apusLuna:  pick(rsLuna,false),
+        lunaSus: sus.length?sus[0]:null,   lunaJos: jos.length?jos[0]:null
+      };
+    }
+
+    function faza(dt){
+      var d=dOf(dateToJd(dt));
+      var el=norm360(moonPos(d).lam - sunPos(d).lam);
+      var nume=["Lună nouă","Seceră crescătoare","Primul pătrar","Aproape plină (crește)",
+                "Lună plină","Aproape plină (scade)","Ultimul pătrar","Seceră descrescătoare"];
+      var em=["🌑","🌒","🌓","🌔","🌕","🌖","🌗","🌘"];
+      var k=Math.floor((norm360(el+22.5))/45)%8;
+      return { unghi:el, iluminat:(1-Math.cos(el*RAD))/2, nume:nume[k], emoji:em[k] };
+    }
+
+    // perioadele solunare: „majore" în jurul trecerii lunii la meridian și la nadir,
+    // „minore" în jurul răsăritului și apusului lunar
+    function perioade(dt, lat, lon){
+      var e=events(dt,lat,lon), out=[];
+      function add(centru, tip, eticheta){
+        if(centru===null) return;
+        var lat2=(tip==="major"?60:30)/1440;
+        out.push({ tip:tip, eticheta:eticheta,
+                   start:jdToDate(centru-lat2), sfarsit:jdToDate(centru+lat2),
+                   centru:jdToDate(centru) });
+      }
+      add(e.lunaSus,"major","luna sus, deasupra capului");
+      add(e.lunaJos,"major","luna jos, sub orizont");
+      add(e.rasaritLuna,"minor","răsărit de lună");
+      add(e.apusLuna,"minor","apus de lună");
+      out.sort(function(a,b){ return a.start-b.start; });
+      return out;
+    }
+
+    return { events:events, faza:faza, perioade:perioade, jdToDate:jdToDate,
+             sunPos:sunPos, moonPos:moonPos, altOf:altOf, dOf:dOf, dateToJd:dateToJd };
+  })();
+
+  // ---------- generator de coduri QR, local ----------
+  // Mod octeți, corecție de erori nivel M, versiunile 1-10 (până la 213 de caractere).
+  // Scris local fiindcă înainte codul venea de pe api.qrserver.com: la baltă, fără
+  // semnal bun, imaginea nu apărea deloc — exact când e nevoie de ea.
+  var QR = (function(){
+    // versiune: [codewords de date, codewords de corecție pe bloc, număr de blocuri]
+    var SPEC={1:[16,10,1],2:[28,16,1],3:[44,26,1],4:[64,18,2],5:[86,24,2],
+              6:[108,16,4],7:[124,18,4],8:[154,22,4],9:[182,22,5],10:[216,26,5]};
+    var ALIGN={2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],
+               7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+
+    var EXP=new Array(512), LOG=new Array(256);
+    (function(){ var x=1; for(var i=0;i<255;i++){ EXP[i]=x; LOG[x]=i; x<<=1; if(x&0x100) x^=0x11d; }
+                 for(var j=255;j<512;j++) EXP[j]=EXP[j-255]; })();
+    function gmul(a,b){ return (a===0||b===0)?0:EXP[LOG[a]+LOG[b]]; }
+    function rsPoly(n){
+      var p=[1];
+      for(var i=0;i<n;i++){
+        var q=[]; for(var z=0;z<=p.length;z++) q.push(0);
+        for(var j=0;j<p.length;j++){ q[j]^=p[j]; q[j+1]^=gmul(p[j],EXP[i]); }
+        p=q;
+      }
+      return p;
+    }
+    function rsRemainder(data,n){
+      var g=rsPoly(n), rem=[]; for(var z=0;z<n;z++) rem.push(0);
+      for(var d=0;d<data.length;d++){
+        var f=data[d]^rem[0];
+        rem.shift(); rem.push(0);
+        for(var i=0;i<n;i++) rem[i]^=gmul(g[i+1],f);
+      }
+      return rem;
+    }
+    function toBytes(text){
+      var s=encodeURIComponent(text), out=[];
+      for(var i=0;i<s.length;i++){
+        if(s.charAt(i)==="%"){ out.push(parseInt(s.substr(i+1,2),16)); i+=2; }
+        else out.push(s.charCodeAt(i));
+      }
+      return out;
+    }
+    function ccBits(ver){ return ver<10 ? 8 : 16; }
+    function capacity(ver){ return Math.floor((SPEC[ver][0]*8 - 4 - ccBits(ver))/8); }
+    function pickVersion(n){
+      for(var v=1;v<=10;v++) if(capacity(v)>=n) return v;
+      throw new Error("text prea lung pentru un cod QR");
+    }
+
+    function codewords(bytes,ver){
+      var spec=SPEC[ver], nData=spec[0], nEc=spec[1], nBlocks=spec[2];
+      var bits=[];
+      function push(val,len){ for(var i=len-1;i>=0;i--) bits.push((val>>i)&1); }
+      push(4,4); push(bytes.length,ccBits(ver));
+      for(var i=0;i<bytes.length;i++) push(bytes[i],8);
+      var cap=nData*8;
+      for(var t=0;t<4 && bits.length<cap;t++) bits.push(0);
+      while(bits.length%8) bits.push(0);
+      var pad=[0xEC,0x11], pi=0;
+      var data=[];
+      for(var b=0;b<bits.length;b+=8){
+        var v=0; for(var k=0;k<8;k++) v=(v<<1)|bits[b+k];
+        data.push(v);
+      }
+      while(data.length<nData){ data.push(pad[pi]); pi^=1; }
+
+      // împarte în blocuri: cele lungi au un codeword în plus și stau la coadă
+      var shortLen=Math.floor(nData/nBlocks), nLong=nData%nBlocks, nShort=nBlocks-nLong;
+      var blocks=[], ecs=[], off=0;
+      for(var i2=0;i2<nBlocks;i2++){
+        var len=shortLen+(i2>=nShort?1:0);
+        var blk=data.slice(off,off+len); off+=len;
+        blocks.push(blk); ecs.push(rsRemainder(blk,nEc));
+      }
+      var out=[];
+      for(var c=0;c<shortLen+1;c++)
+        for(var i3=0;i3<nBlocks;i3++)
+          if(c<blocks[i3].length) out.push(blocks[i3][c]);
+      for(var c2=0;c2<nEc;c2++)
+        for(var i4=0;i4<nBlocks;i4++) out.push(ecs[i4][c2]);
+      return out;
+    }
+
+    function maskBit(k,r,c){
+      switch(k){
+        case 0: return (r+c)%2===0?1:0;
+        case 1: return r%2===0?1:0;
+        case 2: return c%3===0?1:0;
+        case 3: return (r+c)%3===0?1:0;
+        case 4: return (Math.floor(r/2)+Math.floor(c/3))%2===0?1:0;
+        case 5: return ((r*c)%2+(r*c)%3)===0?1:0;
+        case 6: return (((r*c)%2+(r*c)%3)%2)===0?1:0;
+        default: return (((r+c)%2+(r*c)%3)%2)===0?1:0;
+      }
+    }
+
+    function build(ver,cw,mask){
+      var size=17+4*ver, m=[], res=[];
+      for(var i=0;i<size;i++){
+        var rowM=[], rowR=[];
+        for(var j=0;j<size;j++){ rowM.push(0); rowR.push(false); }
+        m.push(rowM); res.push(rowR);
+      }
+      function setF(r,c,v){ if(r<0||c<0||r>=size||c>=size) return; m[r][c]=v; res[r][c]=true; }
+      function finder(r0,c0){
+        for(var r=-1;r<=7;r++) for(var c=-1;c<=7;c++){
+          var on=(r>=0&&r<=6&&(c===0||c===6))||(c>=0&&c<=6&&(r===0||r===6))||(r>=2&&r<=4&&c>=2&&c<=4);
+          setF(r0+r,c0+c,on?1:0);
+        }
+      }
+      finder(0,0); finder(0,size-7); finder(size-7,0);
+      for(var i5=8;i5<size-8;i5++){ var v5=i5%2===0?1:0; setF(6,i5,v5); setF(i5,6,v5); }
+      var ap=ALIGN[ver]||[];
+      for(var a=0;a<ap.length;a++) for(var b=0;b<ap.length;b++){
+        var ar=ap[a], ac=ap[b];
+        if((ar===6&&ac===6)||(ar===6&&ac===size-7)||(ar===size-7&&ac===6)) continue;
+        for(var dr=-2;dr<=2;dr++) for(var dc=-2;dc<=2;dc++)
+          setF(ar+dr,ac+dc,(Math.max(Math.abs(dr),Math.abs(dc))!==1)?1:0);
+      }
+      // rezervă zonele de format — SĂRIND indicele 6, care aparține sincronizării
+      for(var i6=0;i6<9;i6++){ if(i6===6) continue; setF(8,i6,0); setF(i6,8,0); }
+      for(var i7=0;i7<8;i7++){ setF(8,size-1-i7,0); setF(size-1-i7,8,0); }
+      setF(size-8,8,1); // modulul întunecat obligatoriu, după rezervări
+      if(ver>=7){
+        var rv=ver;
+        for(var i8=0;i8<12;i8++) rv=(rv<<1)^(((rv>>11)&1)*0x1F25);
+        var vb=(ver<<12)|(rv&0xFFF);
+        for(var i9=0;i9<18;i9++){
+          var bit9=(vb>>i9)&1, q=Math.floor(i9/3), rmd=i9%3;
+          setF(size-11+rmd,q,bit9); setF(q,size-11+rmd,bit9);
+        }
+      }
+      // datele, în zigzag de la colțul din dreapta-jos
+      var bits=[];
+      for(var z=0;z<cw.length;z++) for(var t=7;t>=0;t--) bits.push((cw[z]>>t)&1);
+      var idx=0, up=true;
+      for(var col=size-1; col>0; col-=2){
+        if(col===6) col--;
+        for(var i10=0;i10<size;i10++){
+          var row=up?size-1-i10:i10;
+          for(var j2=0;j2<2;j2++){
+            var cc=col-j2;
+            if(res[row][cc]) continue;
+            var bit=idx<bits.length?bits[idx++]:0;
+            m[row][cc]=(bit^maskBit(mask,row,cc))&1;
+          }
+        }
+        up=!up;
+      }
+      // informația de format (nivel M = 00) — se scrie după mascare
+      var fd=(0<<3)|mask, fr=fd;
+      for(var i11=0;i11<10;i11++) fr=(fr<<1)^(((fr>>9)&1)*0x537);
+      var fbits=(((fd<<10)|(fr&0x3FF))^0x5412);
+      for(var i12=0;i12<15;i12++){
+        var fb=(fbits>>i12)&1;
+        // copia 1: coloana 8 de sus în jos, apoi rândul 8 de la dreapta spre stânga
+        if(i12<6) m[i12][8]=fb;
+        else if(i12===6) m[7][8]=fb;
+        else if(i12===7) m[8][8]=fb;
+        else if(i12===8) m[8][7]=fb;
+        else m[8][14-i12]=fb;
+        // copia 2: capătul drept al rândului 8, apoi capătul de jos al coloanei 8
+        if(i12<8) m[8][size-1-i12]=fb;
+        else m[size-15+i12][8]=fb;
+      }
+      m[size-8][8]=1;
+      return m;
+    }
+
+    function penalty(m){
+      var size=m.length, p=0, dark=0, i, j;
+      function run(get){
+        var total=0;
+        for(i=0;i<size;i++){
+          var last=-1, len=0;
+          for(j=0;j<size;j++){
+            var v=get(i,j);
+            if(v===last) len++; else { if(len>=5) total+=3+(len-5); last=v; len=1; }
+          }
+          if(len>=5) total+=3+(len-5);
+        }
+        return total;
+      }
+      p+=run(function(r,c){return m[r][c];});
+      p+=run(function(r,c){return m[c][r];});
+      for(i=0;i<size-1;i++) for(j=0;j<size-1;j++){
+        var s=m[i][j]+m[i][j+1]+m[i+1][j]+m[i+1][j+1];
+        if(s===0||s===4) p+=3;
+      }
+      var pat1=[1,0,1,1,1,0,1,0,0,0,0], pat2=[0,0,0,0,1,0,1,1,1,0,1];
+      function scan(get){
+        var total=0;
+        for(i=0;i<size;i++) for(j=0;j+11<=size;j++){
+          var ok1=true, ok2=true;
+          for(var k=0;k<11;k++){
+            var v=get(i,j+k);
+            if(v!==pat1[k]) ok1=false;
+            if(v!==pat2[k]) ok2=false;
+          }
+          if(ok1) total+=40;
+          if(ok2) total+=40;
+        }
+        return total;
+      }
+      p+=scan(function(r,c){return m[r][c];});
+      p+=scan(function(r,c){return m[c][r];});
+      for(i=0;i<size;i++) for(j=0;j<size;j++) dark+=m[i][j];
+      p+=10*Math.floor(Math.abs(dark*100/(size*size)-50)/5);
+      return p;
+    }
+
+    function matrix(text){
+      var bytes=toBytes(text), ver=pickVersion(bytes.length), cw=codewords(bytes,ver);
+      var best=null, bestP=Infinity;
+      for(var k=0;k<8;k++){
+        var m=build(ver,cw,k), s=penalty(m);
+        if(s<bestP){ bestP=s; best=m; }
+      }
+      return best;
+    }
+
+    // SVG, nu canvas: rămâne clar la orice mărime și se poate mări cu degetele
+    function svg(text,color){
+      var m=matrix(text), size=m.length, q=4, total=size+2*q, d="";
+      for(var r=0;r<size;r++) for(var c=0;c<size;c++)
+        if(m[r][c]) d+="M"+(c+q)+" "+(r+q)+"h1v1h-1z";
+      return '<svg viewBox="0 0 '+total+' '+total+'" width="100%" xmlns="http://www.w3.org/2000/svg" '+
+             'shape-rendering="crispEdges" style="display:block"><rect width="'+total+'" height="'+total+
+             '" fill="#ffffff"/><path d="'+d+'" fill="'+(color||"#10263c")+'"/></svg>';
+    }
+    return {svg:svg, matrix:matrix, capacity:capacity};
+  })();
+
   function liveLink(){ return location.origin+location.pathname+"?room="+encodeURIComponent(syncRoom); }
   function updateLiveQr(){
-    var wrap=document.getElementById("live-qr-wrap"), img=document.getElementById("live-qr");
-    if(!wrap || !img) return;
+    var wrap=document.getElementById("live-qr-wrap"), box=document.getElementById("live-qr");
+    if(!wrap || !box) return;
     if(!syncRoom){ wrap.style.display="none"; return; }
-    img.src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=0&data="+encodeURIComponent(liveLink());
-    wrap.style.display="block";
+    try{ box.innerHTML=QR.svg(liveLink()); wrap.style.display="block"; }
+    catch(e){ wrap.style.display="none"; }
+  }
+  // Codul de instalare se generează din adresa curentă, nu e desenat fix în pagină.
+  // Cel vechi era o imagine fixă care trimitea încă la Netlify-ul abandonat.
+  function installLink(){ return location.origin+location.pathname; }
+  function updateInstallQr(){
+    var box=document.getElementById("install-qr");
+    if(!box) return;
+    try{ box.innerHTML=QR.svg(installLink()); }
+    catch(e){ box.innerHTML=""; }
+    var lbl=document.getElementById("install-qr-link");
+    if(lbl) lbl.textContent=installLink();
   }
   function shareLiveLink(){
     if(!syncRoom){ toast("Setează întâi un cod de cameră"); return; }
@@ -1190,7 +1814,7 @@
     if(v==="rank") renderRank();
     if(v==="set") previewDraw();
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
-    if(v==="part") loadAcasaRegional();
+    if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); }
     window.scrollTo(0,0);
   }
   function setManche(mi){
@@ -1473,7 +2097,7 @@
     document.getElementById("fm-pct").classList.toggle("on",m==="pct");
     renderRank();
   }
-  // puncte pe sector: loc 1 = 1 punct; egalitate de kg => puncte egale
+  // puncte pe sector: loc 1 = 1 punct; la greutăți egale se împarte media locurilor (FIPS/CIPS)
   function pointsMapS(mi){
     var secs={};
     state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; (secs[k]=secs[k]||[]).push(p); });
@@ -1481,8 +2105,11 @@
     Object.keys(secs).forEach(function(k){
       var arr=secs[k];
       arr.forEach(function(p){
-        var better=arr.filter(function(o){ return totalOfM(o,mi) > totalOfM(p,mi)+1e-9; }).length;
-        map[p.id]=better+1;
+        var w=totalOfM(p,mi);
+        var better=arr.filter(function(o){ return totalOfM(o,mi) > w+1e-9; }).length;
+        var tied=arr.filter(function(o){ return Math.abs(totalOfM(o,mi)-w) <= 1e-9; }).length;
+        // grupul la egalitate ocupă locurile (better+1) … (better+tied); media = better + (tied+1)/2
+        map[p.id]=better+(tied+1)/2;
       });
     });
     return map;
@@ -1494,11 +2121,18 @@
     return map;
   }
   function currentPmap(){ return rankScope==='total' ? pointsCombo() : pointsMapS(rankScope); }
+  function bestMancheOf(p){ return Math.max(totalOfM(p,1), totalOfM(p,2)); }
   function sortByPointsS(arr,pmap,mi){
     return arr.slice().sort(function(a,b){
-      var d=pmap[a.id]-pmap[b.id]; if(d!==0) return d;
+      // punctele sunt fracționare la egalitate, deci comparație cu toleranță
+      var d=pmap[a.id]-pmap[b.id]; if(Math.abs(d)>1e-9) return d;
       // la egalitate de puncte, câștigă cantitatea totală de pește (cantitate + pești extra)
       var t=totalOfM(b,mi)-totalOfM(a,mi); if(Math.abs(t)>1e-9) return t;
+      // la General, apoi cea mai bună manșă, apoi cel mai mare pește
+      if(mi==='total'){
+        var m=bestMancheOf(b)-bestMancheOf(a); if(Math.abs(m)>1e-9) return m;
+      }
+      var f=cmmcAward(b,mi)-cmmcAward(a,mi); if(Math.abs(f)>1e-9) return f;
       return byStand(a,b);
     });
   }
@@ -1508,7 +2142,7 @@
     sorted.forEach(function(p,i){
       var cls=i===0?"p1":i===1?"p2":i===2?"p3":"";
       var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
-      var pts = opts.pmap ? '<td class="kg num" style="width:52px;color:var(--teal-d);">'+opts.pmap[p.id]+'</td>' : '';
+      var pts = opts.pmap ? '<td class="kg num" style="width:52px;color:var(--teal-d);">'+fmtPts(opts.pmap[p.id])+'</td>' : '';
       var sub='Stand '+(esc(p.stand)||"–")+((opts.showSector&&p.sector)?' · Sec '+esc(p.sector):'');
       out+='<tr class="'+cls+'">'+
         '<td class="pos">'+medal+'</td>'+
@@ -1567,14 +2201,14 @@
     if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); lines.push("CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg"); lines.push(""); }
     if(rankMode==="fin" && finMethod==="pct"){
       lines.push("CLASAMENT FINAL (pe puncte)");
-      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+", Sec "+(p.sector||"-")+") — "+pmap[p.id]+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
+      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+", Sec "+(p.sector||"-")+") — "+fmtPts(pmap[p.id])+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
     } else if(rankMode==="fin"){
       lines.push("CLASAMENT FINAL (pe kg)");
       sortRankS(state.participants,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+") — "+fmt(totalOfM(p,rankScope))+" kg"); });
     } else {
       var secs={},order=[]; state.participants.forEach(function(p){var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
-      order.forEach(function(k){ lines.push("SECTOR "+k); sortRankS(secs[k],rankScope).forEach(function(p,i){ lines.push("  "+(i+1)+". "+nameOf(p)+" — "+fmt(totalOfM(p,rankScope))+" kg ("+pmap[p.id]+" pct)"); }); lines.push(""); });
+      order.forEach(function(k){ lines.push("SECTOR "+k); sortRankS(secs[k],rankScope).forEach(function(p,i){ lines.push("  "+(i+1)+". "+nameOf(p)+" — "+fmt(totalOfM(p,rankScope))+" kg ("+fmtPts(pmap[p.id])+" pct)"); }); lines.push(""); });
     }
     var txt=lines.join("\n");
     try{ navigator.clipboard.writeText(txt).then(function(){toast("Clasament copiat");},function(){fallbackCopy(txt);}); }
@@ -1739,6 +2373,22 @@
       (function(el){ setTimeout(function(){ el.remove(); }, 5400); })(c);
     }
   }
+  // grafic pe coloane: o bară per interval, cu valoarea scrisă deasupra.
+  // Fără tooltip intenționat — se citește cu degete ude, în soare, dintr-o privire.
+  function colChart(vals, labels){
+    var mx=0; vals.forEach(function(v){ if(v>mx) mx=v; });
+    var bars="", xs="";
+    vals.forEach(function(v,i){
+      var h = (mx && v) ? Math.max(6, Math.round(v/mx*80)) : 0;
+      bars+='<div class="vb-col">'+
+            (v?'<span class="vb-n">'+v+'</span>':'')+
+            '<div class="vb'+(v?'':' z')+'" style="height:'+(v?h+'%':'2px')+'"></div></div>';
+      xs+='<span class="vb-xl">'+esc(labels[i])+'</span>';
+    });
+    return '<div class="vb-wrap">'+bars+'</div><div class="vb-x">'+xs+'</div>';
+  }
+  function kgShort(n){ return (Math.round((+n||0)*10)/10).toString().replace(".",","); }
+
   function statsHtml(){
     var all=[];
     var allEx=[];
@@ -1774,6 +2424,59 @@
         html+='<div class="hb-row"><span class="hb-l">'+esc(k)+'</span><div class="hb"><div class="hb-f" style="width:'+w+'%;"></div></div><span class="hb-v num">'+fmt(secs[k])+' kg</span></div>';
       });
       html+='</div>';
+
+      // Media pe pescar: totalul de mai sus avantajează sectorul cu mai mulți oameni.
+      var cnt={};
+      state.participants.forEach(function(p){ var kk=p.sector||"Fără sector"; cnt[kk]=(cnt[kk]||0)+1; });
+      var inegal=sk.some(function(k){ return cnt[k]!==cnt[sk[0]]; });
+      var avg={}, mxa=0;
+      sk.forEach(function(k){ avg[k]=secs[k]/Math.max(1,cnt[k]); if(avg[k]>mxa) mxa=avg[k]; });
+      html+='<div class="card"><div class="sec-title">Medie pe pescar, pe sectoare</div>';
+      sk.forEach(function(k){
+        var w2=mxa?Math.max(4, Math.round(avg[k]/mxa*100)):4;
+        html+='<div class="hb-row"><span class="hb-l">'+esc(k)+'</span><div class="hb"><div class="hb-f" style="width:'+w2+'%;"></div></div>'+
+              '<span class="hb-v num">'+fmt(avg[k])+' kg</span></div>';
+      });
+      html+='<p class="hint" style="margin:8px 0 0;">'+(inegal
+        ? 'Sectoarele au număr diferit de pescari, deci totalul de mai sus îl avantajează pe cel mai numeros — media îi compară corect.'
+        : 'Toate sectoarele au același număr de pescari, deci media păstrează ordinea de la total.')+'</p></div>';
+    }
+
+    // Când a mușcat peștele — ora e salvată la fiecare cântărire (m.catchTimes)
+    var timed=all.filter(function(c){ return c.t; });
+    var faraOra=all.length-timed.length;
+    if(timed.length>=3){
+      var byH={}, minH=null, maxH=null;
+      timed.forEach(function(c){
+        var h=new Date(c.t).getHours();
+        byH[h]=(byH[h]||0)+1;
+        if(minH===null||h<minH) minH=h;
+        if(maxH===null||h>maxH) maxH=h;
+      });
+      var hv=[], hl=[];
+      for(var h2=minH;h2<=maxH;h2++){ hv.push(byH[h2]||0); hl.push(h2+""); }
+      html+='<div class="card"><div class="sec-title">Când a mușcat peștele</div>'+
+        colChart(hv,hl)+
+        '<p class="hint" style="margin:8px 0 0;">Câte cântăriri s-au făcut în fiecare oră'+
+        (faraOra?' (din '+timed.length+' cu oră salvată, '+faraOra+' fără)':'')+
+        '. <b>Peștii extra nu apar aici</b> — la ei aplicația nu salvează ora.</p></div>';
+    }
+
+    // Distribuția cântăririlor
+    var vs=[]; all.forEach(function(c){ if(c.v>0) vs.push(c.v); });
+    if(vs.length>=5){
+      var lo=Math.min.apply(null,vs), hi=Math.max.apply(null,vs);
+      if(hi>lo){
+        var NB=8, step=(hi-lo)/NB, bins=[], bl=[];
+        for(var b=0;b<NB;b++){ bins.push(0); bl.push(kgShort(lo+b*step)); }
+        vs.forEach(function(v){
+          var b2=Math.floor((v-lo)/step); if(b2>=NB) b2=NB-1; if(b2<0) b2=0;
+          bins[b2]++;
+        });
+        html+='<div class="card"><div class="sec-title">Distribuția cântăririlor</div>'+
+          colChart(bins,bl)+
+          '<p class="hint" style="margin:8px 0 0;">Câte cântăriri au căzut în fiecare interval, între '+fmt(lo)+' și '+fmt(hi)+' kg. Sub fiecare coloană e începutul intervalului.</p></div>';
+      }
     }
     return html;
   }
@@ -2033,7 +2736,7 @@
     if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); h+='<div class="pr-sub"><b>CMMC (cel mai mare pește):</b> '+esc(nameOf(best))+' — '+fmt(cmmcAward(best,rankScope))+' kg</div>'; }
     h+='<div class="pr-sec">Clasament final</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Sector</th><th>Pct</th><th>Total kg</th></tr>';
     sortRankS(state.participants,rankScope).forEach(function(p,i){
-      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(p.stand||"–")+'</td><td class="c">'+esc(p.sector||"–")+'</td><td class="c">'+pmap[p.id]+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
+      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(p.stand||"–")+'</td><td class="c">'+esc(p.sector||"–")+'</td><td class="c">'+fmtPts(pmap[p.id])+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
     });
     h+='</table>';
     var secs={},order=[];
@@ -2121,6 +2824,7 @@
   (function(){
     load();
     loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
+    wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
     document.getElementById("set-name").value = state.name||"";
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
