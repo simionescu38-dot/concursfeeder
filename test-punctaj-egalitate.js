@@ -187,7 +187,8 @@ t("la egalitate perfectă de kg, câștigă peștele mai mare (a: 2,5)", ord, ["
    ================================================================ */
 console.log("\n=== 9. Codul REAL din index.html ===");
 const realSrc = ["mOf","cantOfM","extraOfM","cmmcOfM","totalOfM","cmmcAward","standKey","nameKey",
-                 "byStand","pointsMapS","pointsCombo","bestMancheOf","sortByPointsS","fmtPts"]
+                 "byStand","pointsMapS","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
+                 "regPunctajHtml"]
   .map(grab).join("\n");
 const real = { state: { participants: [] }, console };
 vm.createContext(real);
@@ -254,6 +255,52 @@ t("sezon real: doi egali pe 2-3 => 2,5",
   placesOf([{kg:9},{kg:5},{kg:5},{kg:1}]), [1,2.5,2.5,4]);
 t("sezon real: toți la 0 kg => 2,5 fiecare (media 1-4)",
   placesOf([{kg:0},{kg:0},{kg:0},{kg:0}]), [2.5,2.5,2.5,2.5]);
+
+/* ================================================================
+   11. Pagina de Regulament trebuie să spună ADEVĂRUL despre punctaj.
+   Textul e citit de pescari ca să înțeleagă clasamentul; dacă regula
+   din cod se schimbă și textul rămâne, aplicația îi minte.
+   ================================================================ */
+console.log("\n=== 11. Regulamentul descrie ce face codul ===");
+const regText = vm.runInContext("regPunctajHtml()", real).replace(/<[^>]+>/g, " ");
+
+// afirmația: „doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte"
+t("textul chiar face afirmația despre 2,5 puncte", /2,5 puncte/.test(regText), true);
+setupReal([["a","A","A1",9.0],["b","A","A2",5.0],["c","A","A3",5.0],["d","A","A4",1.0]]);
+{
+  const p = ptsReal(1);
+  t("…iar codul chiar dă 2,5 celor doi de pe 2-3", [p.b, p.c], [2.5, 2.5]);
+  t("…și îl afișează cu virgulă, cum scrie în text", vm.runInContext("fmtPts(2.5)", real), "2,5");
+}
+
+// afirmația: „Totalul = cantitatea + peștii extra", fără CMMC
+t("textul spune că totalul e cantitate + pești extra",
+  /cantitatea cântărită \+ peștii extra/.test(regText), true);
+real.state.participants = [
+  {id:"x",sector:"A",stand:"1",nume:"x",prenume:"",m:{1:{catches:[3],extras:[2]},2:{catches:[0],extras:[]}}}
+];
+{
+  const total = vm.runInContext("totalOfM(state.participants[0],1)", real);
+  const cant  = vm.runInContext("cantOfM(state.participants[0],1)", real);
+  const extra = vm.runInContext("extraOfM(state.participants[0],1)", real);
+  const cmmc  = vm.runInContext("cmmcOfM(state.participants[0],1)", real);
+  t("…iar codul chiar face total = cantitate + extra", total, cant + extra);
+  t("…și NU adaugă CMMC-ul pe deasupra", total !== cant + extra + cmmc || cmmc === 0, true);
+  t("(CMMC-ul există totuși, ca premiu separat)", cmmc, 2);
+}
+
+// afirmația: la General, CMMC e cel mai mare din concurs, nu suma zilelor
+t("textul spune că la General CMMC e cel mai mare, nu suma",
+  /cel mai mare din tot concursul, nu suma/.test(regText), true);
+real.state.participants = [
+  {id:"y",sector:"A",stand:"1",nume:"y",prenume:"",m:{1:{catches:[0],extras:[4]},2:{catches:[0],extras:[3]}}}
+];
+t("…iar codul chiar ia maximul (4), nu suma (7)",
+  vm.runInContext("cmmcAward(state.participants[0],'total')", real), 4);
+
+// afirmația despre ordinea de departajare
+t("textul enumeră departajarea în ordinea din cod",
+  /puncte → kilograme → cea mai bună manșă .* → cel mai mare pește → numărul standului → nume/.test(regText), true);
 
 console.log("\n──────────────────────────────");
 console.log(ok + " trecute, " + fail + " picate");

@@ -152,11 +152,14 @@
   .empty .big{font-size:30px; margin-bottom:6px;}
 
   /* Acasă – ecran de bun venit */
-  .hero{text-align:center; padding:12vh 8px 24px; display:flex; flex-direction:column; align-items:center;}
-  .hero-emoji{font-size:44px; margin-bottom:10px;}
-  .hero-title{margin:0; font-size:28px; font-weight:800; letter-spacing:-.01em; color:var(--pine);}
-  .hero-tag{margin:6px 0 0; font-size:14px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-d);}
-  .hero-desc{margin:14px 0 30px; font-size:15px; line-height:1.5; color:var(--muted); max-width:340px;}
+  /* Padding-ul era 12vh sus, adică aproape o sută de pixeli de gol. Cu grila de 9
+     în hero, al treilea rând cădea sub marginea ecranului — iar un meniu pe care
+     trebuie să-l cauți derulând e exact ce am vrut să evităm. */
+  .hero{text-align:center; padding:16px 8px 14px; display:flex; flex-direction:column; align-items:center;}
+  .hero-emoji{font-size:36px; margin-bottom:4px;}
+  .hero-title{margin:0; font-size:26px; font-weight:800; letter-spacing:-.01em; color:var(--pine);}
+  .hero-tag{margin:4px 0 0; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-d);}
+  .hero-desc{margin:10px 0 14px; font-size:14px; line-height:1.45; color:var(--muted); max-width:340px;}
   .hero-cta{max-width:340px;}
   .btn-link{border:0; background:none; margin-top:14px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;}
 
@@ -252,7 +255,7 @@
   .mg button{
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
     background:var(--card); border:1px solid var(--line); border-radius:16px;
-    padding:14px 6px; min-height:94px; cursor:pointer; box-shadow:var(--shadow-sm);
+    padding:12px 6px; min-height:84px; cursor:pointer; box-shadow:var(--shadow-sm);
     font-family:inherit; font-size:13px; font-weight:800; color:var(--pine);
     line-height:1.15; text-align:center;
   }
@@ -636,6 +639,76 @@
       <button class="btn btn-danger" onclick="wipe()">Șterge toate datele</button>
     </div>
   </section>
+
+  <!-- ASISTENT STRATEGIE — carnet personal, rămâne pe telefon -->
+  <section class="view" id="view-strat">
+    <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
+    <div class="card">
+      <div class="sec-title">Carnetul meu de strategie</div>
+      <p class="hint" style="margin:0;">Ce ai găsit pe fiecare stand: distanța la clip, adâncimea, structura, nada, momeala și orele când a mușcat. <b>Rămâne doar pe telefonul tău</b> — nu se trimite nicăieri, nu intră în clasament și nu-l vede niciun alt pescar.</p>
+    </div>
+    <div class="card">
+      <div class="sec-title" id="strat-form-titlu">Însemnare nouă</div>
+      <input type="hidden" id="st-id">
+      <label class="f">Balta</label>
+      <input id="st-balta" placeholder="ex: Remus Lake">
+      <label class="f" style="margin-top:8px;">Standul</label>
+      <input id="st-stand" placeholder="ex: 7">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+        <div><label class="f">Distanța (m)</label><input id="st-dist" inputmode="decimal" placeholder="ex: 32"></div>
+        <div><label class="f">Adâncimea (m)</label><input id="st-adanc" inputmode="decimal" placeholder="ex: 2,4"></div>
+      </div>
+      <label class="f" style="margin-top:8px;">Ce am găsit pe fund</label>
+      <input id="st-struct" placeholder="ex: prag pietros, apoi mâl">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+        <div><label class="f">Nadă</label><input id="st-nada" placeholder="ex: pelete 2mm + porumb"></div>
+        <div><label class="f">Momeală</label><input id="st-momeala" placeholder="ex: viermi + porumb"></div>
+      </div>
+      <label class="f" style="margin-top:8px;">Orele când a mușcat</label>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input id="st-ora" placeholder="ex: 09:20" style="flex:1;">
+        <button class="btn btn-ghost" style="flex:0 0 auto; width:auto; padding:11px 14px;" onclick="stratAddOra()">+</button>
+        <button class="btn btn-ghost" style="flex:0 0 auto; width:auto; padding:11px 14px;" onclick="stratAddOraAcum()">Acum</button>
+      </div>
+      <div id="st-ore" style="margin-top:6px;"></div>
+      <label class="f" style="margin-top:8px;">Alte observații</label>
+      <textarea id="st-note" rows="3" placeholder="vânt, culoarea apei, ce n-a mers…"></textarea>
+      <button class="btn btn-primary mt" onclick="stratSave()">Salvează însemnarea</button>
+      <button class="btn btn-ghost mt" id="st-anuleaza" style="display:none;" onclick="stratReset()">Renunță la modificare</button>
+    </div>
+    <div id="strat-list"></div>
+  </section>
+
+  <!-- REGULAMENT -->
+  <section class="view" id="view-reg">
+    <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
+    <div id="reg-body"></div>
+    <div class="card lockhide">
+      <div class="sec-title">Regulamentul scris de organizator</div>
+      <textarea id="reg-text" rows="10" placeholder="Scrie aici regulile concursului: ora de start și stop, numărul de lansete, ce momeli sunt permise, cum se face cântărirea, ce se întâmplă la contestații…"></textarea>
+      <button class="btn btn-primary mt" onclick="saveReg()">Salvează regulamentul</button>
+      <p class="hint">Textul intră în datele concursului, deci îl văd toți cei care deschid clasamentul live al camerei tale.</p>
+    </div>
+  </section>
+
+  <!-- SPONSORI -->
+  <section class="view" id="view-spons">
+    <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
+    <div id="spons-body"></div>
+    <div class="card lockhide">
+      <div class="sec-title">Adaugă sponsor</div>
+      <label class="f">Numele</label>
+      <input id="sp-nume" placeholder="ex: Magazin Feeder Iași">
+      <label class="f" style="margin-top:8px;">Ce oferă</label>
+      <input id="sp-oferta" placeholder="ex: 10% la nade și peleți">
+      <label class="f" style="margin-top:8px;">Cod de reducere (opțional)</label>
+      <input id="sp-cod" placeholder="ex: FEEDER10">
+      <label class="f" style="margin-top:8px;">Site sau telefon (opțional)</label>
+      <input id="sp-link" placeholder="ex: 07xx xxx xxx">
+      <button class="btn btn-primary mt" onclick="sponsAdd()">Adaugă</button>
+      <p class="hint">Fără poze și fără logouri de descărcat: la baltă, cu semnal slab, o imagine care nu se încarcă e mai rea decât un nume scris clar. Sponsorii intră în datele concursului, deci îi văd toți cei din camera live.</p>
+    </div>
+  </section>
 </main>
 
 <div id="leader" onclick="hideLeader()">
@@ -661,7 +734,7 @@
 
 <script>
   // ---------- state ----------
-  var state = { name:"", sectors:["A","B","C"], participants:[], manche:1 };
+  var state = { name:"", sectors:["A","B","C"], participants:[], manche:1, rules:"", sponsors:[] };
   var rankMode = "sec";
   var finMethod = "kg";
   var rankScope = 1;
@@ -1052,16 +1125,22 @@
     var org=[
       ["🎣","Cântărire","meniuGo('cantar')"],
       ["🏆","Clasament","meniuGo('rank')"],
+      ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
       ["🎲","Tragere la sorți","meniuGo('set','card-sorti')"],
       ["⏱️","Cronometru","meniuGo('set','card-cronometru')"],
-      ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
-      ["📅","Calendar","meniuGo('cal')"]
+      ["📅","Calendar","meniuGo('cal')"],
+      ["📓","Strategie","meniuGo('strat')"],
+      ["📜","Regulament","meniuGo('reg')"],
+      ["🤝","Sponsori","meniuGo('spons')"]
     ];
     var pescar=[
       ["🏆","Clasament","meniuGo('rank')"],
       ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
-      ["📅","Calendar","meniuGo('cal')"],
+      ["📓","Strategie","meniuGo('strat')"],
       ["🌦️","Vremea","meniuGo('part','card-meteo')"],
+      ["📜","Regulament","meniuGo('reg')"],
+      ["📅","Calendar","meniuGo('cal')"],
+      ["🤝","Sponsori","meniuGo('spons')"],
       ["🥇","Sezon","meniuLink('sezon.html')"],
       ["🔴","Concursuri live","meniuLink('concursuri.html')"]
     ];
@@ -1069,6 +1148,184 @@
     g.innerHTML = items.map(function(it){
       return '<button type="button" onclick="'+it[2]+'"><span class="ic">'+it[0]+'</span>'+esc(it[1])+'</button>';
     }).join("");
+  }
+
+  // ---------- asistent strategie ----------
+  // Carnet personal. NU intră în `state`, deci nu se sincronizează cu camera live
+  // și nu ajunge la nimeni: un pescar nu-și dă adâncimile și nada pe mâna
+  // concurenței. Din același motiv nu apare nici în export/import.
+  var STRAT_KEY="concurs-strategie-v1";
+  var stratLista=[], stratOre=[];
+
+  function stratLoad(){
+    try{ var v=localStorage.getItem(STRAT_KEY); stratLista=v?JSON.parse(v):[]; }catch(e){ stratLista=[]; }
+    if(!Array.isArray(stratLista)) stratLista=[];
+  }
+  function stratSaveAll(){
+    try{ localStorage.setItem(STRAT_KEY, JSON.stringify(stratLista)); }
+    catch(e){ toast("Stocare plină – șterge câteva însemnări"); }
+  }
+  function stratAddOra(){
+    var el=document.getElementById("st-ora"), v=(el.value||"").trim();
+    if(!v) return;
+    if(stratOre.indexOf(v)<0) stratOre.push(v);
+    stratOre.sort(); el.value=""; stratRenderOre();
+  }
+  function stratAddOraAcum(){
+    var d=new Date(), v=p2(d.getHours())+":"+p2(d.getMinutes());
+    if(stratOre.indexOf(v)<0) stratOre.push(v);
+    stratOre.sort(); stratRenderOre();
+  }
+  function stratDelOra(i){ stratOre.splice(i,1); stratRenderOre(); }
+  function stratRenderOre(){
+    var el=document.getElementById("st-ore");
+    if(!el) return;
+    el.innerHTML = stratOre.length
+      ? stratOre.map(function(o,i){ return '<span class="chip-c">'+esc(o)+' <b onclick="stratDelOra('+i+')" style="cursor:pointer;">✕</b></span>'; }).join("")
+      : '<span class="hint">Nicio oră adăugată încă.</span>';
+  }
+  var STRAT_CAMPURI=["st-id","st-balta","st-stand","st-dist","st-adanc","st-struct","st-nada","st-momeala","st-note","st-ora"];
+  function stratReset(){
+    STRAT_CAMPURI.forEach(function(id){ var e=document.getElementById(id); if(e) e.value=""; });
+    stratOre=[]; stratRenderOre();
+    var t=document.getElementById("strat-form-titlu"); if(t) t.textContent="Însemnare nouă";
+    var a=document.getElementById("st-anuleaza"); if(a) a.style.display="none";
+  }
+  function stratSave(){
+    var g=function(id){ var e=document.getElementById(id); return e?(e.value||"").trim():""; };
+    var balta=g("st-balta"), stand=g("st-stand");
+    if(!balta && !stand){ toast("Scrie măcar balta sau standul"); return; }
+    var id=g("st-id");
+    var rec={ id:id||uid(), balta:balta, stand:stand, dist:g("st-dist"), adanc:g("st-adanc"),
+              struct:g("st-struct"), nada:g("st-nada"), momeala:g("st-momeala"),
+              note:g("st-note"), ore:stratOre.slice(), cand:Date.now() };
+    var i=-1; stratLista.forEach(function(x,k){ if(x.id===rec.id) i=k; });
+    if(i>=0) stratLista[i]=rec; else stratLista.unshift(rec);
+    stratSaveAll(); stratReset(); renderStrat();
+    toast(i>=0 ? "Însemnare actualizată" : "Însemnare salvată");
+  }
+  function stratEdit(id){
+    var r=null; stratLista.forEach(function(x){ if(x.id===id) r=x; });
+    if(!r) return;
+    var s=function(el,v){ var e=document.getElementById(el); if(e) e.value=v||""; };
+    s("st-id",r.id); s("st-balta",r.balta); s("st-stand",r.stand); s("st-dist",r.dist);
+    s("st-adanc",r.adanc); s("st-struct",r.struct); s("st-nada",r.nada);
+    s("st-momeala",r.momeala); s("st-note",r.note);
+    stratOre=(r.ore||[]).slice(); stratRenderOre();
+    document.getElementById("strat-form-titlu").textContent="Modifici însemnarea";
+    document.getElementById("st-anuleaza").style.display="block";
+    window.scrollTo(0,0);
+  }
+  function stratDel(id){
+    if(!confirm("Ștergi însemnarea? Nu se poate reveni.")) return;
+    stratLista=stratLista.filter(function(x){ return x.id!==id; });
+    stratSaveAll(); renderStrat(); toast("Însemnare ștearsă");
+  }
+  function renderStrat(){
+    var box=document.getElementById("strat-list");
+    if(!box) return;
+    stratRenderOre();
+    if(!stratLista.length){
+      box.innerHTML='<div class="empty"><div class="big">📓</div>Încă nicio însemnare. Completează formularul de mai sus după prima partidă — la a zecea o să știi singur unde să te așezi.</div>';
+      return;
+    }
+    box.innerHTML = stratLista.map(function(r){
+      var linii=[];
+      if(r.dist) linii.push(["Distanță", r.dist+" m"]);
+      if(r.adanc) linii.push(["Adâncime", r.adanc+" m"]);
+      if(r.nada) linii.push(["Nadă", r.nada]);
+      if(r.momeala) linii.push(["Momeală", r.momeala]);
+      var cap=(r.balta?esc(r.balta):"Baltă nescrisă")+(r.stand?" · standul "+esc(r.stand):"");
+      return '<div class="card"><div class="sec-title">'+cap+'</div>'+
+        (linii.length?'<div class="wx-grid">'+linii.map(function(l){ return wxCell(l[0],l[1]); }).join("")+'</div>':'')+
+        (r.struct?'<p class="hint" style="margin:8px 0 0;"><b>Pe fund:</b> '+esc(r.struct)+'</p>':'')+
+        (r.ore&&r.ore.length?'<p class="hint" style="margin:6px 0 0;"><b>A mușcat la:</b> '+esc(r.ore.join(", "))+'</p>':'')+
+        (r.note?'<p class="hint" style="margin:6px 0 0;">'+esc(r.note)+'</p>':'')+
+        '<div style="display:flex; gap:8px; margin-top:10px;">'+
+          '<button class="btn btn-ghost" style="flex:1; width:auto; margin:0;" onclick="stratEdit(\''+r.id+'\')">Modifică</button>'+
+          '<button class="btn btn-danger" style="flex:0 0 auto; width:auto; margin:0;" onclick="stratDel(\''+r.id+'\')">Șterge</button>'+
+        '</div></div>';
+    }).join("");
+  }
+
+  // ---------- regulament ----------
+  // Pe lângă textul organizatorului, pagina explică punctajul pe care îl aplică
+  // efectiv aplicația. Descrierea e ținută lângă cod tocmai ca să nu ajungă să
+  // spună altceva decât face programul.
+  function regPunctajHtml(){
+    return '<div class="card"><div class="sec-title">Cum se calculează, în aplicație</div>'+
+      '<p class="hint" style="margin:0 0 8px;">Astea nu se pot schimba din setări — așa numără programul:</p>'+
+      '<ul style="margin:0; padding-left:20px; font-size:14px; line-height:1.5;">'+
+      '<li><b>Totalul unui pescar</b> = cantitatea cântărită + peștii extra. Cel mai mare pește (CMMC) <b>nu</b> se adună separat, ca să nu fie numărat de două ori.</li>'+
+      '<li><b>Punctele pe sector:</b> locul 1 ia 1 punct, locul 2 ia 2 și așa mai departe. Câștigă cel cu punctaj mic.</li>'+
+      '<li><b>La greutăți egale</b> se împarte media locurilor ocupate: doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte. Așa suma punctelor pe sector rămâne corectă și cei fără captură nu sunt avantajați (convenția FIPS/CIPS).</li>'+
+      '<li><b>La General pe două manșe</b> se adună punctele din fiecare manșă.</li>'+
+      '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma celor două zile.</li>'+
+      '<li><b>Departajare</b>, în ordine: puncte → kilograme → cea mai bună manșă (doar la General) → cel mai mare pește → numărul standului → nume.</li>'+
+      '</ul></div>';
+  }
+  function renderReg(){
+    var box=document.getElementById("reg-body");
+    if(!box) return;
+    var t=(state.rules||"").trim();
+    var h='';
+    if(t){
+      h+='<div class="card"><div class="sec-title">Regulamentul concursului'+(state.name?' · '+esc(state.name):'')+'</div>'+
+         '<div style="font-size:15px; line-height:1.5; white-space:pre-wrap;">'+esc(t)+'</div></div>';
+    } else {
+      h+='<div class="card"><div class="sec-title">Regulament</div>'+
+         '<p class="hint" style="margin:0;">Organizatorul n-a scris încă regulamentul acestui concurs. Mai jos vezi oricum cum calculează aplicația punctajul.</p></div>';
+    }
+    box.innerHTML = h + regPunctajHtml();
+    var ta=document.getElementById("reg-text");
+    if(ta && document.activeElement!==ta) ta.value=state.rules||"";
+  }
+  function saveReg(){
+    if(guard()) return;
+    state.rules=(document.getElementById("reg-text").value||"").trim();
+    queueSave(); renderReg(); toast("Regulament salvat");
+  }
+
+  // ---------- sponsori ----------
+  function sponsAdd(){
+    if(guard()) return;
+    var g=function(id){ return (document.getElementById(id).value||"").trim(); };
+    var nume=g("sp-nume");
+    if(!nume){ toast("Scrie măcar numele sponsorului"); return; }
+    state.sponsors=state.sponsors||[];
+    state.sponsors.push({ id:uid(), nume:nume, oferta:g("sp-oferta"), cod:g("sp-cod"), link:g("sp-link") });
+    ["sp-nume","sp-oferta","sp-cod","sp-link"].forEach(function(id){ document.getElementById(id).value=""; });
+    queueSave(); renderSpons(); toast("Sponsor adăugat");
+  }
+  function sponsDel(id){
+    if(guard()) return;
+    if(!confirm("Scoți sponsorul din listă?")) return;
+    state.sponsors=(state.sponsors||[]).filter(function(s){ return s.id!==id; });
+    queueSave(); renderSpons(); toast("Sponsor scos");
+  }
+  function sponsCod(cod){ copyText(cod); }
+  function renderSpons(){
+    var box=document.getElementById("spons-body");
+    if(!box) return;
+    var l=state.sponsors||[];
+    if(!l.length){
+      box.innerHTML='<div class="empty"><div class="big">🤝</div>Niciun sponsor adăugat.'+
+        (isLocked()?'':' Folosește formularul de mai jos.')+'</div>';
+      return;
+    }
+    box.innerHTML='<div class="card"><div class="sec-title">Sponsorii concursului</div>'+
+      '<p class="hint" style="margin:0 0 10px;">Fără ei n-ar fi premii. Dacă treci pe la magazin, spune că vii de la concurs.</p></div>'+
+      l.map(function(s){
+        var initiala=(s.nume||"?").trim().charAt(0).toUpperCase();
+        return '<div class="card"><div style="display:flex; align-items:center; gap:12px;">'+
+          '<div style="flex:0 0 auto; width:44px; height:44px; border-radius:12px; background:var(--teal); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900;">'+esc(initiala)+'</div>'+
+          '<div style="min-width:0;"><div style="font-weight:800; font-size:16px;">'+esc(s.nume)+'</div>'+
+          (s.oferta?'<div class="hint" style="margin:2px 0 0;">'+esc(s.oferta)+'</div>':'')+'</div></div>'+
+          (s.cod?'<button class="btn btn-ghost mt" onclick="sponsCod(\''+esc(s.cod).replace(/'/g,"\\'")+'\')">🏷️ Cod: <b>'+esc(s.cod)+'</b> – apasă ca să copiezi</button>':'')+
+          (s.link?'<p class="hint" style="margin:8px 0 0;">'+esc(s.link)+'</p>':'')+
+          (isLocked()?'':'<button class="btn btn-danger mt" onclick="sponsDel(\''+s.id+'\')">Scoate din listă</button>')+
+        '</div>';
+      }).join("");
   }
 
   // ---------- meteo (Open-Meteo) + solunar ----------
@@ -1773,6 +2030,8 @@
   function normalize(){
     if(!state.manche) state.manche=1;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
+    if(typeof state.rules!=="string") state.rules="";
+    if(!Array.isArray(state.sponsors)) state.sponsors=[];
     (state.participants||[]).forEach(function(p){
       if(!p.m){
         if(!Array.isArray(p.catches)){ var v=num(p.cant); p.catches = v>0 ? [v] : []; }
@@ -1806,15 +2065,24 @@
   }
 
   // ---------- views ----------
+  // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
+  // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
+  var TAB_PARINTE={strat:"part", reg:"part", spons:"part"};
   function showView(v){
-    document.querySelectorAll(".view").forEach(function(el){el.classList.remove("active");});
-    document.getElementById("view-"+v).classList.add("active");
+    var el=document.getElementById("view-"+v);
+    if(!el) return;
+    document.querySelectorAll(".view").forEach(function(x){x.classList.remove("active");});
+    el.classList.add("active");
     document.querySelectorAll("nav.tabs button").forEach(function(b){b.classList.remove("on");});
-    document.getElementById("tab-"+v).classList.add("on");
+    var tab=document.getElementById("tab-"+(TAB_PARINTE[v]||v));
+    if(tab) tab.classList.add("on");
     if(v==="rank") renderRank();
     if(v==="set") previewDraw();
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
     if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); }
+    if(v==="strat") renderStrat();
+    if(v==="reg") renderReg();
+    if(v==="spons") renderSpons();
     window.scrollTo(0,0);
   }
   function setManche(mi){
@@ -2784,7 +3052,7 @@
       var mode=document.getElementById("imp-mode").value;
       if(mode==="replace"){
         if(!confirm("Înlocuiești TOATE datele de pe acest telefon cu cele din fișier ("+data.participants.length+" participanți)?")) return;
-        state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1 };
+        state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1, rules:data.rules||"", sponsors:Array.isArray(data.sponsors)?data.sponsors:[] };
         normalize(); save();
         toast("Date înlocuite: "+state.participants.length+" participanți");
       } else {
@@ -2815,7 +3083,10 @@
       : "Ștergi toți participanții și datele? Nu se poate reveni.";
     if(!confirm(msg)) return;
     if(willArchive) archiveToSeason(function(){ saveArchiveId(""); });
-    state={ name:"", sectors:["A","B","C"], participants:[] };
+    // sponsorii sunt o listă de parteneri, nu rezultate: supraviețuiesc ștergerii,
+    // altfel ar trebui retastați la fiecare concurs. Regulamentul, fiind al
+    // concursului, se șterge odată cu el.
+    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice() };
     save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
     renderSectors(); renderList(); renderRank();
   }
@@ -2825,6 +3096,7 @@
     load();
     loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
     wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
+    stratLoad();
     document.getElementById("set-name").value = state.name||"";
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
