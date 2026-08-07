@@ -14,14 +14,25 @@ const fs = require("fs");
 const vm = require("vm");
 const H = require("./test-helpers.js");
 
-const src = H.citeste("D:/concursfeeder-repo/index.html");
+const src = H.citeste("D:/concursfeeder-repo/qr.js");
 const t = H.creeazaVerificator();
 
-/* ---------- încarcă modulul QR VERBATIM din index.html ---------- */
+/* ---------- încarcă modulul QR VERBATIM din qr.js ---------- */
 const sandbox = { console };
 vm.createContext(sandbox);
 vm.runInContext(H.grabIIFE(src, "var QR = (function(){"), sandbox);
 const QR = sandbox.QR;
+
+/* modulul e folosit de două pagini — amândouă trebuie să-l încarce, și niciuna
+   să nu păstreze o copie proprie care ar putea diverge */
+console.log("\n=== 0. Un singur generator, folosit de ambele pagini ===");
+for (const pagina of ["index.html", "concursuri.html"]) {
+  const p = H.citeste("D:/concursfeeder-repo/" + pagina);
+  t(pagina + " încarcă qr.js", p.indexOf('<script src="qr.js"></script>') >= 0, true);
+  t(pagina + " nu are o copie proprie a generatorului", p.indexOf("var QR = (function(){") >= 0, false);
+}
+t("sw.js pune qr.js în cache pentru offline",
+  H.citeste("D:/concursfeeder-repo/sw.js").indexOf('"./qr.js"') >= 0, true);
 
 /* ================= decodor independent ================= */
 // tabele proprii, scrise din specificație (nu refolosite din codificator)

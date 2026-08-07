@@ -8,7 +8,8 @@ const TESTE = [
   ["Punctaj la egalitate", "test-punctaj-egalitate.js"],
   ["Coduri QR", "test-qr.js"],
   ["Soare / lună (solunar)", "test-astro.js"],
-  ["Meteo", "test-meteo.js"]
+  ["Meteo", "test-meteo.js"],
+  ["Adrese date mai departe", "test-adrese.js"]
 ];
 
 let picate = [];

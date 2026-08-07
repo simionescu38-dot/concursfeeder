@@ -67,6 +67,7 @@
   <div class="status" id="status"></div>
 </main>
 
+<script src="qr.js"></script>
 <script>
 var API_BASE = "https://concurs-api.simionescu38.workers.dev";
 
@@ -90,10 +91,13 @@ function render(rooms){
   var prevMap = prevRooms || {};
   el.innerHTML = rooms.map(function(r){
     var link = location.href.replace(/concursuri\.html.*$/,"")+"index.html?room="+encodeURIComponent(r.code);
-    var qrSrc = "https://api.qrserver.com/v1/create-qr-code/?size=104x104&margin=0&data="+encodeURIComponent(link);
+    // codul se desenează local; înainte venea de pe api.qrserver.com și la baltă,
+    // cu semnal slab, nu se încărca deloc — exact acolo unde e nevoie de el
+    var qrSvg = "";
+    try{ qrSvg = QR.svg(link); }catch(e){}
     var changed = prevRooms!==null && prevMap[r.code]!==r.updated_at;
     return '<div class="card'+(changed?' flash':'')+'">'+
-      '<img class="qr" src="'+qrSrc+'" alt="Cod QR" loading="lazy">'+
+      '<div class="qr" role="img" aria-label="Cod QR spre clasamentul live">'+qrSvg+'</div>'+
       '<div style="flex:1; min-width:0;"><div class="name">'+esc(r.name || "Concurs fără nume")+'</div>'+
       '<div class="meta">actualizat '+timeAgo(r.updated_at)+(changed?' · <b style="color:var(--teal-d);">tocmai acum</b>':'')+'</div></div>'+
       '<a href="index.html?room='+encodeURIComponent(r.code)+'">Vezi live →</a>'+

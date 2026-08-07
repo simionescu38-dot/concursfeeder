@@ -8,9 +8,23 @@ const vm = require("vm");
 const path = require("path");
 
 const FISIERE = ["index.html", "sezon.html", "concursuri.html"];
+const FISIERE_JS = ["qr.js", "sw.js"];
 const ROOT = "D:/concursfeeder-repo";
 
 let ok = 0, fail = 0;
+for (const f of FISIERE_JS) {
+  const p = path.join(ROOT, f);
+  if (!fs.existsSync(p)) { console.log("  ⚠️  lipsește " + f); continue; }
+  const src = fs.readFileSync(p, "utf8");
+  try {
+    new vm.Script(src, { filename: f });
+    ok++;
+    console.log("  ✅ " + f + " (fișier separat), " + src.split("\n").length + " linii");
+  } catch (e) {
+    fail++;
+    console.log("  ❌ " + f + ": " + e.message);
+  }
+}
 for (const f of FISIERE) {
   const p = path.join(ROOT, f);
   if (!fs.existsSync(p)) { console.log("  ⚠️  lipsește " + f); continue; }
