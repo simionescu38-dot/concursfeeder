@@ -1820,7 +1820,11 @@
       if(!j.data){ setSyncStatus("Se așteaptă date de la organizator…", true); return; }
       if(j.rev===lastRev) return;
       lastRev=j.rev;
+      var oldStart=state.startAt||null, oldEnd=state.endAt||null, oldNadire=state.nadireMin;
       state=j.data; normalize();
+      // orele vin acum prin sincronizare; le preluăm doar când chiar s-au schimbat,
+      // ca un avertisment aflat exact pe prag să nu fie înghițit de o actualizare de date
+      if((state.startAt||null)!==oldStart || (state.endAt||null)!==oldEnd || state.nadireMin!==oldNadire) adoptTimer();
       var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
       renderSectors(); renderList(); renderRank();
       setSyncStatus("Actualizat • "+nowHM(), true);
@@ -2649,6 +2653,25 @@
     var leftMin=(state.endAt-Date.now())/60000;
     WARN_MIN.forEach(function(m){ if(leftMin<=m) warnAlerted[m]=true; });
   }
+  // preia orele venite prin sincronizare (telefonul care privește camera live).
+  // Marchează drept „deja sunate" alarmele ale căror momente au trecut: fără asta,
+  // un telefon care intră în cameră la mijlocul concursului ar claxona pe rând
+  // 30, 10, 5 și 1 minut, în secunde consecutive.
+  function adoptTimer(){
+    resetWarnings();
+    var now=Date.now(), ndMin=state.nadireMin||0;
+    var nadireAt = (state.startAt && ndMin>0) ? (state.startAt - ndMin*60000) : null;
+    nadireAlerted = !!(nadireAt && now>=nadireAt);
+    startAlerted  = !!(state.startAt && now>=state.startAt);
+    // dacă a intrat după final, nu mai sună claxonul de încheiere; dacă a intrat
+    // în timpul concursului, timerTick pune la loc timerWasRunning și îl va suna
+    if(!state.endAt || now>state.endAt) timerWasRunning=false;
+    var ts=document.getElementById("t-start"), te=document.getElementById("t-end"), tn=document.getElementById("t-nadire");
+    if(ts) ts.value = state.startAt ? toLocalInput(state.startAt) : "";
+    if(te) te.value = state.endAt ? toLocalInput(state.endAt) : "";
+    if(tn) tn.value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
+    timerTick();
+  }
   function toLocalInput(ms){
     var d=new Date(ms);
     function p2(n){ return (n<10?"0":"")+n; }
@@ -2661,12 +2684,14 @@
     state.startAt = s ? new Date(s).getTime() : null;
     state.endAt = e ? new Date(e).getTime() : null;
     state.nadireMin = nd!=="" ? Math.max(0, parseInt(nd,10)||0) : 10;
-    save(); timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings(); startTimerLoop();
+    // queueSave, nu save: orele concursului trebuie să ajungă și pe telefoanele
+    // care urmăresc camera live, altfel doar organizatorul vede timpul rămas
+    queueSave(); timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings(); startTimerLoop();
     if(state.endAt) toast("Cronometru setat");
   }
   function clearTimer(){
     if(guard()) return;
-    state.startAt=null; state.endAt=null; save();
+    state.startAt=null; state.endAt=null; queueSave();
     document.getElementById("t-start").value=""; document.getElementById("t-end").value="";
     timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings();
     startTimerLoop(); toast("Cronometru șters");
