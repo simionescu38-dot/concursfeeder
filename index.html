@@ -1800,7 +1800,8 @@
     };
     if(currentArchiveId){
       // rearhivăm același concurs (nu a fost resetat între timp) — înlocuim arhiva veche, nu adăugăm una nouă
-      fetch(API_BASE+"/api/archive?id="+encodeURIComponent(currentArchiveId), { method:"DELETE", headers:{"x-write-key":syncKey} })
+      // (replace=1: șterge și copia din git a arhivei vechi, ca să nu rămână un fișier orfan/neactualizat)
+      fetch(API_BASE+"/api/archive?id="+encodeURIComponent(currentArchiveId)+"&replace=1", { method:"DELETE", headers:{"x-write-key":syncKey} })
         .catch(function(){}).then(doPost);
     } else {
       doPost();

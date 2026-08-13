@@ -217,8 +217,24 @@
     return out;
   }
 
+  // listă dinamică a folderului arhiva/ de pe GitHub, ca fișierele arhivate automat
+  // (din butonul „Arhivează" din aplicație) să apară aici fără nicio modificare de cod.
+  // ARCHIVE_FILES rămâne ca rezervă, dacă vreodată API-ul GitHub nu răspunde.
+  async function listareArhivaGit(){
+    try{
+      var r = await fetch("https://api.github.com/repos/simionescu38-dot/concursfeeder/contents/arhiva");
+      var list = await r.json();
+      if(!Array.isArray(list)) return ARCHIVE_FILES.slice();
+      var paths = list.filter(function(f){ return f && f.name && /\.json$/i.test(f.name); })
+                       .map(function(f){ return "arhiva/"+f.name; });
+      ARCHIVE_FILES.forEach(function(p){ if(paths.indexOf(p)===-1) paths.push(p); });
+      return paths;
+    }catch(e){ return ARCHIVE_FILES.slice(); }
+  }
+
   async function fetchArchiveFiles(){
-    var results = await Promise.all(ARCHIVE_FILES.map(function(path){
+    var paths = await listareArhivaGit();
+    var results = await Promise.all(paths.map(function(path){
       return fetch(path).then(function(r){return r.json();}).catch(function(){ return null; });
     }));
     var out = [];
@@ -230,7 +246,7 @@
       out.push({
         compName: numeConcurs(data.name, exp.exportedAt),
         compDate: data.startAt || (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
-        code: "arhiva:"+ARCHIVE_FILES[i],
+        code: "arhiva:"+paths[i],
         parts: parts
       });
     });
@@ -537,7 +553,9 @@
     toast("Se pregătește backup-ul…");
     Promise.all([
       fetch(API_BASE+"/api/archive").then(function(r){return r.json();}).catch(function(){return {ok:false, archives:[]};}),
-      Promise.all(ARCHIVE_FILES.map(function(path){ return fetch(path).then(function(r){return r.json();}).catch(function(){return null;}); }))
+      listareArhivaGit().then(function(paths){
+        return Promise.all(paths.map(function(path){ return fetch(path).then(function(r){return r.json();}).catch(function(){return null;}); }));
+      })
     ]).then(function(results){
       var apiArchives = (results[0] && results[0].ok) ? results[0].archives : [];
       var gitFiles = results[1].filter(Boolean);

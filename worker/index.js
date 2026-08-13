@@ -158,6 +158,84 @@ async function notifyRoomNewLeader(env, room, leaderName, leaderKg) {
   );
 }
 
+// ---------- backup permanent în git (arhiva/*.json), independent de D1 ----------
+const GH_OWNER = "simionescu38-dot";
+const GH_REPO = "concursfeeder";
+function slugify(s) {
+  return (s || "")
+    .toString()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "concurs";
+}
+function ghHeaders(env) {
+  return {
+    Authorization: "Bearer " + env.GITHUB_TOKEN,
+    "User-Agent": "concurs-api-worker",
+    Accept: "application/vnd.github+json",
+  };
+}
+async function ghGetFile(env, path) {
+  const res = await fetch(
+    "https://api.github.com/repos/" + GH_OWNER + "/" + GH_REPO + "/contents/" + path,
+    { headers: ghHeaders(env) }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("github get failed: " + res.status);
+  return res.json();
+}
+async function ghPutFile(env, path, contentObj, message) {
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(contentObj))));
+  const res = await fetch(
+    "https://api.github.com/repos/" + GH_OWNER + "/" + GH_REPO + "/contents/" + path,
+    {
+      method: "PUT",
+      headers: ghHeaders(env),
+      body: JSON.stringify({ message, content: b64, branch: "main" }),
+    }
+  );
+  if (!res.ok) throw new Error("github put failed: " + res.status + " " + (await res.text()));
+  return res.json();
+}
+async function ghDeleteFile(env, path, message) {
+  const info = await ghGetFile(env, path);
+  if (!info) return;
+  const res = await fetch(
+    "https://api.github.com/repos/" + GH_OWNER + "/" + GH_REPO + "/contents/" + path,
+    {
+      method: "DELETE",
+      headers: ghHeaders(env),
+      body: JSON.stringify({ message, sha: info.sha, branch: "main" }),
+    }
+  );
+  if (!res.ok) throw new Error("github delete failed: " + res.status);
+}
+async function ghUniquePath(env, basePath) {
+  let path = basePath;
+  for (let n = 2; n <= 20; n++) {
+    if (!(await ghGetFile(env, path))) return path;
+    path = basePath.replace(/\.json$/, "") + "-" + n + ".json";
+  }
+  return path;
+}
+// arhivează în arhiva/*.json — cel de-al doilea loc de stocare, în afara D1, care
+// nu poate fi șters din greșeală din aplicație (vezi „Șterge TOATE arhivele" din Setări)
+async function backupArchiveToGit(env, name, data, now) {
+  if (!env.GITHUB_TOKEN) return null;
+  const dateStr = now.slice(0, 10);
+  const basePath = "arhiva/" + dateStr + "-" + slugify(name) + ".json";
+  const path = await ghUniquePath(env, basePath);
+  await ghPutFile(
+    env,
+    path,
+    { app: "concurs-pescuit", ver: 1, exportedAt: now, data },
+    "Arhivare automată: " + (name || "concurs fără nume")
+  );
+  return path;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
@@ -279,7 +357,17 @@ export default {
         await env.DB.prepare(
           "INSERT INTO season_archive (id,room,name,data,archived_at) VALUES (?,?,?,?,?)"
         ).bind(id, room, name, JSON.stringify(data), now).run();
-        return json({ ok: true, id });
+
+        let gitPath = null;
+        let gitBackupError = null;
+        try {
+          gitPath = await backupArchiveToGit(env, name, data, now);
+          if (gitPath) {
+            await env.DB.prepare("UPDATE season_archive SET git_path=? WHERE id=?").bind(gitPath, id).run();
+          }
+        } catch (e) { gitPath = null; gitBackupError = String(e && e.message || e); } // best-effort — arhiva rămâne validă în D1 chiar dacă backup-ul în git eșuează
+
+        return json({ ok: true, id, gitBackup: !!gitPath, gitBackupError });
       }
 
       if (req.method === "GET") {
@@ -295,6 +383,16 @@ export default {
           return json({ ok: false, error: "forbidden" }, 403);
         const id = (url.searchParams.get("id") || "").trim();
         if (!id) return json({ ok: false, error: "missing id" }, 400);
+        // "replace=1" e trimis DOAR de rearhivarea automată a aceluiași concurs (înlocuire
+        // imediată de la același telefon) — atunci înlocuim și fișierul din git. Ștergerea
+        // manuală din Setări NU trimite replace=1, ca fișierul din arhiva/ să rămână intact
+        // chiar dacă arhiva e ștearsă din D1 din greșeală.
+        if (url.searchParams.get("replace") === "1" && env.GITHUB_TOKEN) {
+          const row = await env.DB.prepare("SELECT git_path FROM season_archive WHERE id=?").bind(id).first();
+          if (row && row.git_path) {
+            try { await ghDeleteFile(env, row.git_path, "Elimină arhivă înlocuită: " + row.git_path); } catch (e) { /* best-effort */ }
+          }
+        }
         await env.DB.prepare("DELETE FROM season_archive WHERE id=?").bind(id).run();
         return json({ ok: true });
       }
