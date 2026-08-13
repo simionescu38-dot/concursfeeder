@@ -359,14 +359,15 @@ export default {
         ).bind(id, room, name, JSON.stringify(data), now).run();
 
         let gitPath = null;
+        let gitBackupError = null;
         try {
           gitPath = await backupArchiveToGit(env, name, data, now);
           if (gitPath) {
             await env.DB.prepare("UPDATE season_archive SET git_path=? WHERE id=?").bind(gitPath, id).run();
           }
-        } catch (e) { gitPath = null; } // best-effort — arhiva rămâne validă în D1 chiar dacă backup-ul în git eșuează
+        } catch (e) { gitPath = null; gitBackupError = String(e && e.message || e); } // best-effort — arhiva rămâne validă în D1 chiar dacă backup-ul în git eșuează
 
-        return json({ ok: true, id, gitBackup: !!gitPath });
+        return json({ ok: true, id, gitBackup: !!gitPath, gitBackupError });
       }
 
       if (req.method === "GET") {
