@@ -19,7 +19,9 @@ import sys
 import tempfile
 
 # Valori implicite, alese pentru filmări în exterior la lac (vânt de fond).
-PRAG_IMPLICIT = "-32dB"
+# -28dB pentru că apa și vântul stau în jur de -21dB medie: sub -32dB nu se
+# taie mai nimic, iar peste -25dB începe să mănânce din vorbit.
+PRAG_IMPLICIT = "-28dB"
 LINISTE_MINIMA = 0.6      # secunde de liniște sub care nu tăiem nimic
 MARGINE = 0.15            # secunde păstrate în plus la capetele fiecărei bucăți
 SEGMENT_MINIM = 0.4       # bucăți mai scurte de atât se aruncă (ar clipi urât)
