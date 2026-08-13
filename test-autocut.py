@@ -93,6 +93,44 @@ def test_format_timp():
     verifica("ore", autocut.format_timp(3725.0), "1:02:05.000")
 
 
+def test_prag():
+    print("pragul audio")
+    verifica("forma completă", autocut.normalizeaza_prag("-32dB"), "-32dB")
+    verifica("fără unitate", autocut.normalizeaza_prag("-32"), "-32dB")
+    verifica("fără semn", autocut.normalizeaza_prag("32dB"), "-32dB")
+    verifica("cu zecimale", autocut.normalizeaza_prag("-28.5"), "-28.5dB")
+    verifica("db cu literă mică", autocut.normalizeaza_prag("-40db"), "-40dB")
+
+    try:
+        autocut.normalizeaza_prag("tare")
+        verifica("prag aiurea dă eroare", "fără eroare", "EroareAutocut")
+    except autocut.EroareAutocut:
+        verifica("prag aiurea dă eroare", "EroareAutocut", "EroareAutocut")
+
+    # argparse ar lua -40dB drept opțiune dacă nu l-am lipi de --prag.
+    verifica(
+        "--prag -40dB e citit ca valoare",
+        autocut.argumente(["a.mp4", "b.mp4", "--prag", "-40dB"]).prag,
+        "-40dB",
+    )
+    verifica(
+        "--prag=-40dB merge la fel",
+        autocut.argumente(["a.mp4", "b.mp4", "--prag=-40dB"]).prag,
+        "-40dB",
+    )
+    verifica(
+        "--prag -25 fără unitate e citit ca valoare",
+        autocut.argumente(["a.mp4", "b.mp4", "--prag", "-25"]).prag,
+        "-25",
+    )
+    verifica(
+        "fișierele rămân pe poziții",
+        [autocut.argumente(["a.mp4", "b.mp4", "--prag", "-40dB"]).intrare,
+         autocut.argumente(["a.mp4", "b.mp4", "--prag", "-40dB"]).iesire],
+        ["a.mp4", "b.mp4"],
+    )
+
+
 def test_capat_la_capat():
     print("cap la cap (ffmpeg)")
     if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
@@ -136,6 +174,7 @@ def test_capat_la_capat():
 def main():
     test_segmente()
     test_format_timp()
+    test_prag()
     test_capat_la_capat()
     print(f"\n{TRECUTE} trecute, {PICATE} picate")
     return 1 if PICATE else 0

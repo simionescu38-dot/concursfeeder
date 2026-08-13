@@ -188,6 +188,43 @@ def format_timp(secunde):
     return f"{ore:d}:{minute:02d}:{secunde:06.3f}"
 
 
+def normalizeaza_prag(valoare):
+    """Acceptă -32dB, -32, 32dB sau 32 și întoarce mereu forma '-32dB'."""
+    text = str(valoare).strip().lower()
+    if text.endswith("db"):
+        text = text[:-2].strip()
+    try:
+        numar = float(text)
+    except ValueError:
+        raise EroareAutocut(
+            f"Prag audio nevalid: {valoare}. Scrie ceva de forma -32dB."
+        )
+    return f"{-abs(numar):g}dB"
+
+
+def lipeste_valorile_negative(argv):
+    """argparse crede că -32dB e o opțiune; lipim valoarea de --prag.
+
+    Așa merge și `--prag -32dB`, nu doar `--prag=-32dB`.
+    """
+    rezultat = []
+    indice = 0
+    while indice < len(argv):
+        argument = argv[indice]
+        urmator = argv[indice + 1] if indice + 1 < len(argv) else None
+        if (
+            argument == "--prag"
+            and urmator is not None
+            and re.fullmatch(r"-\d+(?:\.\d+)?(?:dB)?", urmator, re.IGNORECASE)
+        ):
+            rezultat.append(f"--prag={urmator}")
+            indice += 2
+            continue
+        rezultat.append(argument)
+        indice += 1
+    return rezultat
+
+
 def argumente(argv=None):
     parser = argparse.ArgumentParser(
         description="Taie automat liniștea dintr-un video.",
@@ -217,7 +254,9 @@ def argumente(argv=None):
         "--lista", action="store_true",
         help="arată doar bucățile păstrate, fără să scrie fișierul",
     )
-    return parser.parse_args(argv)
+    if argv is None:
+        argv = sys.argv[1:]
+    return parser.parse_args(lipeste_valorile_negative(list(argv)))
 
 
 def main(argv=None):
@@ -225,6 +264,7 @@ def main(argv=None):
 
     try:
         verifica_unelte()
+        optiuni.prag = normalizeaza_prag(optiuni.prag)
         if not os.path.isfile(optiuni.intrare):
             raise EroareAutocut(f"Nu găsesc fișierul de intrare: {optiuni.intrare}")
         if not optiuni.lista and os.path.abspath(optiuni.intrare) == os.path.abspath(optiuni.iesire):
