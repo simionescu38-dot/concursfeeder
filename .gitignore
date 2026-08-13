@@ -6,3 +6,5 @@ Thumbs.db
 *.tmp
 .vscode/
 node_modules/
+__pycache__/
+*.pyc
