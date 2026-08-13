@@ -23,10 +23,14 @@ CREATE TABLE IF NOT EXISTS season_archive (
   room TEXT,
   name TEXT,
   data TEXT NOT NULL,
-  archived_at TEXT NOT NULL
+  archived_at TEXT NOT NULL,
+  git_path TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_season_archive_archived_at ON season_archive (archived_at DESC);
+
+-- migrare pentru baze deja existente (create înainte de coloana git_path de mai sus):
+-- ALTER TABLE season_archive ADD COLUMN git_path TEXT;
 
 CREATE TABLE IF NOT EXISTS room_history (
   id TEXT PRIMARY KEY,
