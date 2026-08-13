@@ -167,8 +167,16 @@
   function catchesSum(p, mi){ var s=0; (mOf(p,mi).catches||[]).forEach(function(v){ s+=(+v||0); }); return s; }
   function extrasSum(p, mi){ var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ s+=(+v||0); }); return s; }
   function extrasMax(p, mi){ var mx=0; (mOf(p,mi).extras||[]).forEach(function(v){ if((+v||0)>mx) mx=(+v||0); }); return mx; }
-  function totalKg(p){ return catchesSum(p,1)+catchesSum(p,2)+extrasSum(p,1)+extrasSum(p,2); }
-  function bestFish(p){ return Math.max(extrasMax(p,1), extrasMax(p,2)); }
+  // citește manșele direct din datele participantului (2 sau 3, sau formatul vechi fără p.m),
+  // ca sezonul să nu depindă de un câmp separat "numManse" pe fiecare arhivă/cameră
+  function totalKg(p){
+    var chei = p.m ? Object.keys(p.m) : ((Array.isArray(p.catches)||Array.isArray(p.extras)) ? [1] : []);
+    var s=0; chei.forEach(function(mi){ s+=catchesSum(p,mi)+extrasSum(p,mi); }); return s;
+  }
+  function bestFish(p){
+    var chei = p.m ? Object.keys(p.m) : ((Array.isArray(p.catches)||Array.isArray(p.extras)) ? [1] : []);
+    var mx=0; chei.forEach(function(mi){ var v=extrasMax(p,mi); if(v>mx) mx=v; }); return mx;
+  }
 
   function dateLabel(ms){
     if(!ms) return "";

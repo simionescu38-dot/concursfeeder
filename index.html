@@ -387,6 +387,7 @@
     <div class="seg">
       <button id="mc-1" class="on" onclick="setManche(1)">🎣 Manșa 1</button>
       <button id="mc-2" onclick="setManche(2)">🎣 Manșa 2</button>
+      <button id="mc-3" onclick="setManche(3)" style="display:none;">🎣 Manșa 3</button>
     </div>
     <div class="card lockhide">
       <div class="sec-title">Adaugă participant</div>
@@ -480,6 +481,7 @@
     <div class="seg">
       <button id="rs-1" class="on" onclick="setRankScope(1)">Manșa 1</button>
       <button id="rs-2" onclick="setRankScope(2)">Manșa 2</button>
+      <button id="rs-3" onclick="setRankScope(3)" style="display:none;">Manșa 3</button>
       <button id="rs-total" onclick="setRankScope('total')">General</button>
     </div>
     <div class="seg">
@@ -524,6 +526,15 @@
     </div>
 
     <div class="card lockhide">
+      <div class="sec-title">Manșe</div>
+      <div class="seg">
+        <button id="nm-2" class="on" onclick="setNumManse(2)">2 manșe</button>
+        <button id="nm-3" onclick="setNumManse(3)">3 manșe</button>
+      </div>
+      <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
+    </div>
+
+    <div class="card lockhide">
       <div class="sec-title">Import participanți</div>
       <textarea id="imp-text" rows="6" placeholder="Un participant pe linie, ex:&#10;1, Ion Popescu, A&#10;2, Vasile Ionescu, A&#10;Gheorghe Marin, B"></textarea>
       <p class="hint">Un participant pe linie. Separi cu virgulă sau tab: <b>stand, nume, sector</b>. Standul și sectorul sunt opționale. Sectoarele noi se creează automat.</p>
@@ -552,7 +563,7 @@
         <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra.</b> CMMC (cel mai mare pește) se calculează automat din peștii extra, în tab-ul Statistici.
         La egalitate de puncte, departajează totalul (cantitate + pești extra) mai mare. Datele se salvează automat.
       </p>
-      <p class="hint"><b>Concurs pe 2 zile (manșe):</b> în tab-ul Participanți, sus, alegi „Manșa 1" sau „Manșa 2" — tot ce cântărești merge în manșa activă. În tab-ul Clasamente alegi ce vrei să vezi: Manșa 1, Manșa 2 sau <b>General</b> (suma celor două zile). La „General" + „După puncte", clasamentul e suma locurilor din fiecare manșă — câștigă cine are cele mai puține puncte, exact ca la concursurile oficiale.</p>
+      <p class="hint"><b>Concurs pe mai multe zile (manșe):</b> în Setări alegi 2 sau 3 manșe pentru concurs. În tab-ul Participanți, sus, alegi manșa activă — tot ce cântărești merge acolo. În tab-ul Clasamente alegi ce vrei să vezi: fiecare manșă în parte sau <b>General</b> (suma tuturor). La „General" + „După puncte", clasamentul e suma locurilor din fiecare manșă — câștigă cine are cele mai puține puncte, exact ca la concursurile oficiale.</p>
     </div>
 
     <div class="card">
@@ -566,7 +577,7 @@
       </select>
       <button class="btn btn-ghost mt" onclick="document.getElementById('imp-file').click()">⇩ Importă din fișier</button>
       <input type="file" id="imp-file" accept=".json,application/json,text/plain" style="display:none;" onchange="importData(this)">
-      <p class="hint">„Combină" actualizează participanții comuni și îi adaugă pe cei noi — bun când două telefoane cântăresc sectoare diferite. „Înlocuiește tot" copiază fișierul exact cum e. <b>Atenție la 2 manșe:</b> dacă doi organizatori cântăresc manșe diferite pentru ACELAȘI participant pe telefoane separate, sincronizați între manșe (nu în paralel) — altfel „Combină" poate suprascrie datele uneia dintre zile pentru acel participant.</p>
+      <p class="hint">„Combină" actualizează participanții comuni și îi adaugă pe cei noi — bun când două telefoane cântăresc sectoare diferite. „Înlocuiește tot" copiază fișierul exact cum e. <b>Atenție la concursurile cu mai multe manșe:</b> dacă doi organizatori cântăresc manșe diferite pentru ACELAȘI participant pe telefoane separate, sincronizați între manșe (nu în paralel) — altfel „Combină" poate suprascrie datele uneia dintre zile pentru acel participant.</p>
     </div>
 
     <div class="card lockhide">
@@ -743,7 +754,7 @@
 <script src="qr.js"></script>
 <script>
   // ---------- state ----------
-  var state = { name:"", sectors:["A","B","C"], participants:[], manche:1, rules:"", sponsors:[] };
+  var state = { name:"", sectors:["A","B","C"], participants:[], manche:1, numManse:2, rules:"", sponsors:[] };
   var rankMode = "sec";
   var finMethod = "kg";
   var rankScope = 1;
@@ -759,31 +770,32 @@
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
-  // ---------- manșe (concurs pe 2 zile) ----------
+  // ---------- manșe (concurs pe 2 sau 3 zile) ----------
   function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[]}; }
+  function numManse(){ return state.numManse||2; }
+  function manseRange(){ var a=[]; for(var i=1;i<=numManse();i++) a.push(i); return a; }
   function ensureManche(p){
     if(!p.m) p.m={};
-    if(!p.m[1]) p.m[1]=emptyManche();
-    if(!p.m[2]) p.m[2]=emptyManche();
+    manseRange().forEach(function(i){ if(!p.m[i]) p.m[i]=emptyManche(); });
   }
   function mOf(p, mi){ ensureManche(p); return p.m[mi]; }
   function cantOfM(p, mi){
-    if(mi==='total') return cantOfM(p,1)+cantOfM(p,2);
+    if(mi==='total'){ var s=0; for(var i=1;i<=(state.numManse||2);i++) s+=cantOfM(p,i); return s; }
     var s=0; (mOf(p,mi).catches||[]).forEach(function(v){ s+=(+v||0); }); return s;
   }
   function extraOfM(p, mi){
-    if(mi==='total') return extraOfM(p,1)+extraOfM(p,2);
+    if(mi==='total'){ var s=0; for(var i=1;i<=(state.numManse||2);i++) s+=extraOfM(p,i); return s; }
     var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ s+=(+v||0); }); return s;
   }
   // cel mai mare pește al unei manșe = maximul dintre peștii extra (nu există câmp separat de completat)
   function cmmcOfM(p, mi){
-    if(mi==='total') return Math.max(cmmcOfM(p,1), cmmcOfM(p,2));
+    if(mi==='total'){ var mx=0; for(var i=1;i<=(state.numManse||2);i++){ var v=cmmcOfM(p,i); if(v>mx) mx=v; } return mx; }
     var s=0; (mOf(p,mi).extras||[]).forEach(function(v){ v=(+v||0); if(v>s) s=v; }); return s;
   }
   function totalOfM(p, mi){ return cantOfM(p,mi) + extraOfM(p,mi); }
-  // premiul CMMC (cel mai mare pește) — la scor "general" e maximul dintre cele 2 zile, nu suma (nu se cântărește de 2 ori același pește)
-  function cmmcAward(p, mi){ return mi==='total' ? Math.max(cmmcOfM(p,1), cmmcOfM(p,2)) : cmmcOfM(p,mi); }
-  function scopeLabel(mi){ return mi===1?"Manșa 1":mi===2?"Manșa 2":"General (ambele manșe)"; }
+  // premiul CMMC (cel mai mare pește) — la scor "general" e maximul dintre manșe, nu suma (nu se cântărește de 2 ori același pește)
+  function cmmcAward(p, mi){ return cmmcOfM(p, mi); }
+  function scopeLabel(mi){ return mi==='total' ? "General (toate manșele)" : "Manșa "+mi; }
 
   // ---------- versiuni "manșa activă" (cântărire live, tab Participanți) ----------
   function cantOf(p){ return cantOfM(p, state.manche||1); }
@@ -1268,8 +1280,8 @@
       '<li><b>Totalul unui pescar</b> = cantitatea cântărită + peștii extra. Cel mai mare pește (CMMC) <b>nu</b> se adună separat, ca să nu fie numărat de două ori.</li>'+
       '<li><b>Punctele pe sector:</b> locul 1 ia 1 punct, locul 2 ia 2 și așa mai departe. Câștigă cel cu punctaj mic.</li>'+
       '<li><b>La greutăți egale</b> se împarte media locurilor ocupate: doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte. Așa suma punctelor pe sector rămâne corectă și cei fără captură nu sunt avantajați (convenția FIPS/CIPS).</li>'+
-      '<li><b>La General pe două manșe</b> se adună punctele din fiecare manșă.</li>'+
-      '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma celor două zile.</li>'+
+      '<li><b>La General</b> se adună punctele din fiecare manșă.</li>'+
+      '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma manșelor.</li>'+
       '<li><b>Departajare</b>, în ordine: puncte → kilograme → cea mai bună manșă (doar la General) → cel mai mare pește → numărul standului → nume.</li>'+
       '</ul></div>';
   }
@@ -1752,6 +1764,9 @@
             state=sj.data; normalize();
             var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
             var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
+            document.getElementById("nm-2").classList.toggle("on", numManse()===2);
+            document.getElementById("nm-3").classList.toggle("on", numManse()===3);
+            updateManseButtons();
             renderSectors(); renderList(); renderRank();
             save();
           }
@@ -1828,6 +1843,9 @@
       // ca un avertisment aflat exact pe prag să nu fie înghițit de o actualizare de date
       if((state.startAt||null)!==oldStart || (state.endAt||null)!==oldEnd || state.nadireMin!==oldNadire) adoptTimer();
       var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
+      document.getElementById("nm-2").classList.toggle("on", numManse()===2);
+      document.getElementById("nm-3").classList.toggle("on", numManse()===3);
+      updateManseButtons();
       renderSectors(); renderList(); renderRank();
       setSyncStatus("Actualizat • "+nowHM(), true);
     }).catch(function(){ setSyncStatus("Eroare conexiune…", true); });
@@ -1889,6 +1907,7 @@
 
   function normalize(){
     if(!state.manche) state.manche=1;
+    if(state.numManse!==2 && state.numManse!==3) state.numManse=2;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
     if(typeof state.rules!=="string") state.rules="";
     if(!Array.isArray(state.sponsors)) state.sponsors=[];
@@ -1909,7 +1928,7 @@
       }
       delete p.catches; delete p.catchTimes; delete p.catchPhotos; delete p.extras; delete p.cmmc; delete p.cant; delete p.extra;
       ensureManche(p);
-      [1,2].forEach(function(mi){
+      manseRange().forEach(function(mi){
         var m=p.m[mi];
         if(!Array.isArray(m.catches)) m.catches=[];
         if(!Array.isArray(m.catchTimes)) m.catchTimes=[];
@@ -1947,11 +1966,26 @@
   }
   function setManche(mi){
     state.manche=mi; save();
-    var b1=document.getElementById("mc-1"), b2=document.getElementById("mc-2");
-    if(b1) b1.classList.toggle("on", mi===1);
-    if(b2) b2.classList.toggle("on", mi===2);
+    [1,2,3].forEach(function(i){ var b=document.getElementById("mc-"+i); if(b) b.classList.toggle("on", mi===i); });
     renderList();
     toast("Manșa "+mi+" activă pentru cântărire");
+  }
+  function setNumManse(n){
+    state.numManse=n; save();
+    document.getElementById("nm-2").classList.toggle("on", n===2);
+    document.getElementById("nm-3").classList.toggle("on", n===3);
+    updateManseButtons();
+    renderList(); if(document.getElementById("view-rank").classList.contains("active")) renderRank();
+    toast("Concurs cu "+n+" manșe");
+  }
+  // arată/ascunde butoanele „Manșa 3" după alegerea din Setări; dacă manșa activă
+  // nu mai există (numărul de manșe a scăzut), revine automat la Manșa 1
+  function updateManseButtons(){
+    var n=numManse();
+    var mc3=document.getElementById("mc-3"); if(mc3) mc3.style.display = n>=3 ? "" : "none";
+    var rs3=document.getElementById("rs-3"); if(rs3) rs3.style.display = n>=3 ? "" : "none";
+    if((state.manche||1) > n) setManche(1);
+    if(rankScope!=='total' && rankScope > n) setRankScope(1);
   }
 
   // ---------- participants ----------
@@ -2208,8 +2242,7 @@
 
   function setRankScope(mi){
     rankScope=mi;
-    document.getElementById("rs-1").classList.toggle("on", mi===1);
-    document.getElementById("rs-2").classList.toggle("on", mi===2);
+    [1,2,3].forEach(function(i){ var b=document.getElementById("rs-"+i); if(b) b.classList.toggle("on", mi===i); });
     document.getElementById("rs-total").classList.toggle("on", mi==='total');
     renderRank();
   }
@@ -2242,14 +2275,18 @@
     });
     return map;
   }
-  // clasament combinat: suma punctelor din manșa 1 și manșa 2 (câștigă cel mai mic total)
+  // clasament combinat: suma punctelor din fiecare manșă (câștigă cel mai mic total)
   function pointsCombo(){
-    var p1=pointsMapS(1), p2=pointsMapS(2), map={};
-    state.participants.forEach(function(p){ map[p.id]=(p1[p.id]||0)+(p2[p.id]||0); });
+    var maps=[]; for(var i=1;i<=(state.numManse||2);i++) maps.push(pointsMapS(i));
+    var map={};
+    state.participants.forEach(function(p){
+      var s=0; maps.forEach(function(m){ s+=(m[p.id]||0); });
+      map[p.id]=s;
+    });
     return map;
   }
   function currentPmap(){ return rankScope==='total' ? pointsCombo() : pointsMapS(rankScope); }
-  function bestMancheOf(p){ return Math.max(totalOfM(p,1), totalOfM(p,2)); }
+  function bestMancheOf(p){ var mx=0; for(var i=1;i<=(state.numManse||2);i++){ var t=totalOfM(p,i); if(t>mx) mx=t; } return mx; }
   function sortByPointsS(arr,pmap,mi){
     return arr.slice().sort(function(a,b){
       // punctele sunt fracționare la egalitate, deci comparație cu toleranță
@@ -2283,7 +2320,7 @@
   }
 
   function renderRank(){
-    // CMMC winner (după scopul curent: Manșa 1, Manșa 2 sau General)
+    // CMMC winner (după scopul curent: o manșă anume sau General)
     var cbox=document.getElementById("cmmcBox");
     var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
     if(withFish.length){
@@ -2299,7 +2336,7 @@
     var pmap=currentPmap();
     if(rankMode==="fin" && finMethod==="pct"){
       var pctHint = rankScope==='total'
-        ? 'Punctele sunt suma locurilor din sector obținute în Manșa 1 și Manșa 2 (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra).'
+        ? 'Punctele sunt suma locurilor din sector obținute în fiecare manșă (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra).'
         : 'Punctele vin din locul din sector (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra).';
       body.innerHTML='<p class="hint" style="margin:0 0 10px;">'+pctHint+'</p>'+
         '<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
@@ -2520,7 +2557,7 @@
   function statsHtml(){
     var all=[];
     var allEx=[];
-    var scopes = rankScope==='total' ? [1,2] : [rankScope];
+    var scopes = rankScope==='total' ? manseRange() : [rankScope];
     state.participants.forEach(function(p){
       scopes.forEach(function(mi){
         var m=mOf(p,mi);
@@ -2936,8 +2973,11 @@
       var mode=document.getElementById("imp-mode").value;
       if(mode==="replace"){
         if(!confirm("Înlocuiești TOATE datele de pe acest telefon cu cele din fișier ("+data.participants.length+" participanți)?")) return;
-        state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1, rules:data.rules||"", sponsors:Array.isArray(data.sponsors)?data.sponsors:[] };
+        state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1, numManse:data.numManse||2, rules:data.rules||"", sponsors:Array.isArray(data.sponsors)?data.sponsors:[] };
         normalize(); save();
+        document.getElementById("nm-2").classList.toggle("on", numManse()===2);
+        document.getElementById("nm-3").classList.toggle("on", numManse()===3);
+        updateManseButtons();
         toast("Date înlocuite: "+state.participants.length+" participanți");
       } else {
         var added=0, updated=0;
@@ -2970,8 +3010,11 @@
     // sponsorii sunt o listă de parteneri, nu rezultate: supraviețuiesc ștergerii,
     // altfel ar trebui retastați la fiecare concurs. Regulamentul, fiind al
     // concursului, se șterge odată cu el.
-    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice() };
+    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice(), numManse:state.numManse };
     save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
+    document.getElementById("nm-2").classList.toggle("on", numManse()===2);
+    document.getElementById("nm-3").classList.toggle("on", numManse()===3);
+    updateManseButtons();
     renderSectors(); renderList(); renderRank();
   }
 
@@ -2983,8 +3026,10 @@
     stratLoad();
     document.getElementById("set-name").value = state.name||"";
     document.getElementById("compName").textContent = state.name||"";
-    document.getElementById("mc-1").classList.toggle("on", (state.manche||1)===1);
-    document.getElementById("mc-2").classList.toggle("on", (state.manche||1)===2);
+    document.getElementById("nm-2").classList.toggle("on", numManse()===2);
+    document.getElementById("nm-3").classList.toggle("on", numManse()===3);
+    [1,2,3].forEach(function(i){ var b=document.getElementById("mc-"+i); if(b) b.classList.toggle("on", (state.manche||1)===i); });
+    updateManseButtons();
     renderSectors(); updateLockUI(); updateVoiceBtn(); updatePushBtn(); renderList();
     if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);
     if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
