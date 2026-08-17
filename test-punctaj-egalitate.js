@@ -371,25 +371,56 @@ real.state.numManse = 2;
    ================================================================ */
 console.log("\n=== 10. Codul REAL din sezon.html ===");
 const sezSrc = H2.citeste("sezon.html");
-function grabParen(hay, marker){
-  const i = hay.indexOf(marker);
-  if (i < 0) throw new Error("nu găsesc în sezon.html: " + marker);
-  let d = 0, started = false;
-  for (let j = i; j < hay.length; j++) {
-    const c = hay[j];
-    if (c === "(") { d++; started = true; }
-    else if (c === ")") { d--; if (started && d === 0) return hay.slice(i, j + 2); } // include ;
-  }
-  throw new Error("paranteze neechilibrate la " + marker);
-}
-const placesOf = new Function("ranked", grabParen(sezSrc, "var places = ranked.map(") + "\n return places;");
+const sez = { console };
+vm.createContext(sez);
+vm.runInContext(H2.grabFunction(sezSrc, "placesOfComp") + "\n" + H2.grabFunction(sezSrc, "fmtPts"), sez);
+/** locurile unui concurs; nMax implicit = mărimea concursului, adică fără întindere */
+const placesOf = (ranked, nMax) => JSON.parse(vm.runInContext(
+  `JSON.stringify(placesOfComp(${JSON.stringify(ranked)}, ${nMax === undefined ? ranked.length : nMax}))`, sez));
 
+// concursul e singurul din sezon (nMax = n), deci locurile rămân locuri
 t("sezon real: fără egalități => 1,2,3",
   placesOf([{kg:9},{kg:5},{kg:1}]), [1,2,3]);
 t("sezon real: doi egali pe 2-3 => 2,5",
   placesOf([{kg:9},{kg:5},{kg:5},{kg:1}]), [1,2.5,2.5,4]);
 t("sezon real: toți la 0 kg => 2,5 fiecare (media 1-4)",
   placesOf([{kg:0},{kg:0},{kg:0},{kg:0}]), [2.5,2.5,2.5,2.5]);
+
+/* ---------- 10b. concursuri de mărimi diferite în același sezon ---------- */
+console.log("\n=== 10b. Sezon: etape de mărimi diferite ===");
+// sezon cu o etapă de 6 și una de 3: locurile etapei mici se întind pe scala celei mari
+t("etapa mică se întinde pe scala sezonului",
+  placesOf([{kg:9},{kg:5},{kg:1}], 6), [1, 3.5, 6]);
+t("etapa mare rămâne neatinsă",
+  placesOf([{kg:9},{kg:8},{kg:7},{kg:6},{kg:5},{kg:4}], 6), [1,2,3,4,5,6]);
+t("câștigătorii ambelor etape iau 1 punct",
+  placesOf([{kg:9},{kg:5},{kg:1}], 6)[0] === placesOf([{kg:9},{kg:8},{kg:7},{kg:6},{kg:5},{kg:4}], 6)[0], true);
+t("ultimii ambelor etape iau la fel",
+  placesOf([{kg:9},{kg:5},{kg:1}], 6)[2] === placesOf([{kg:9},{kg:8},{kg:7},{kg:6},{kg:5},{kg:4}], 6)[5], true);
+
+// etapa cu un singur participant: ia media scalei, nu locul 1 pe gratis
+t("etapa cu un singur om ia media scalei", placesOf([{kg:9}], 7), [4]);
+t("…adică nu bate câștigătorul unei etape adevărate", placesOf([{kg:9}], 7)[0] > 1, true);
+
+// invariantul: suma locurilor unei etape = n × (nMax+1) / 2
+const sumaEtapa = (ranked, nMax) => placesOf(ranked, nMax).reduce((a,b) => a+b, 0);
+t("invariant sumă, etapă de 3 pe scala 6",
+  Math.abs(sumaEtapa([{kg:9},{kg:5},{kg:1}], 6) - 3*(6+1)/2) <= 1e-9, true);
+t("invariant sumă, etapă de 6 pe scala 6",
+  Math.abs(sumaEtapa([{kg:9},{kg:8},{kg:7},{kg:6},{kg:5},{kg:4}], 6) - 6*(6+1)/2) <= 1e-9, true);
+t("invariant sumă, etapă de 1 pe scala 7",
+  Math.abs(sumaEtapa([{kg:9}], 7) - 1*(7+1)/2) <= 1e-9, true);
+t("invariant sumă ține și cu egalități",
+  Math.abs(sumaEtapa([{kg:9},{kg:5},{kg:5},{kg:1}], 8) - 4*(8+1)/2) <= 1e-9, true);
+
+// egalitățile supraviețuiesc întinderii
+t("egalitate în etapa mică, întinsă",
+  placesOf([{kg:9},{kg:5},{kg:5},{kg:1}], 7)[1] === placesOf([{kg:9},{kg:5},{kg:5},{kg:1}], 7)[2], true);
+
+// fmtPts din sezon trebuie să arate fracțiile fine, nu să le rotunjească
+t("fmtPts din sezon: 3,5", vm.runInContext("fmtPts(3.5)", sez), "3,5");
+t("fmtPts din sezon: 3,25 nu devine 3,5", vm.runInContext("fmtPts(3.25)", sez), "3,25");
+t("fmtPts din sezon: întregii rămân întregi", vm.runInContext("fmtPts(6)", sez), "6");
 
 /* ================================================================
    11. Pagina de Regulament trebuie să spună ADEVĂRUL despre punctaj.
