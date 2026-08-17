@@ -257,8 +257,13 @@ real.state.participants = [pesc("a1","A",[10,0,0]), pesc("a2","A",[8,0,0]),
                            pesc("b1","B",[10,0,0]), pesc("b2","B",[8,0,0])];
 t("manșa nepescuită nu e disputată", vm.runInContext("mancheDisputata(2)", real), false);
 t("manșa pescuită e disputată",      vm.runInContext("mancheDisputata(1)", real), true);
+// b2 iese 4, nu 2: e ultimul din sectorul lui, iar locurile sectorului de 2 se întind pe
+// scala sectorului de 4 (vezi 9c). Ce verifică testul aici e că manșele nepescuite nu intră
+// în sumă — punctele de la General sunt exact cele din manșa 1, nimic în plus.
 t("General = punctele manșei pescuite, fără puncte fantomă",
-  comboReal(), {a1:1, a2:2, a3:3, a4:4, b1:1, b2:2});
+  comboReal(), {a1:1, a2:2, a3:3, a4:4, b1:1, b2:4});
+t("General e identic cu punctele manșei disputate",
+  comboReal(), JSON.parse(vm.runInContext("JSON.stringify(pointsMapS(1))", real)));
 t("câștigătorii celor două sectoare rămân la egalitate, nu îi separă mărimea sectorului",
   comboReal().a1 === comboReal().b1, true);
 
@@ -285,6 +290,81 @@ t("manșa cu doar pești extra contează ca disputată", vm.runInContext("manche
 t("…și punctele ei intră la General", comboReal(), {z1:1, z2:2});
 
 real.state.numManse = 2; // starea implicită, pentru orice verificare care urmează
+
+/* ================================================================
+   9c. Sectoare de mărimi diferite, aduse pe aceeași scală.
+   Locurile brute nu se pot compara între sectoare inegale: ultimul dintr-un
+   sector de 10 lua 10 puncte, ultimul dintr-unul de 5 doar 5, deși amândoi
+   și-au închis sectorul — cine nimerea sectorul mic era avantajat de tragerea
+   la sorți. Locurile fiecărui sector se întind pe scala sectorului celui mai
+   numeros, iar invariantul care ține totul în frâu e că suma punctelor unui
+   sector = n × (nMax+1) / 2, adică fiecare sector contribuie la fel de mult.
+   ================================================================ */
+console.log("\n=== 9c. Normalizarea sectoarelor inegale ===");
+real.state.numManse = 1;
+/** pune concurenții pe sectoare: grupe(["A",[10,8]],["B",[9]]) */
+function grupe(...gr) {
+  const out = []; let i = 0;
+  gr.forEach(([sec, kgs]) => kgs.forEach(kg => {
+    i++; out.push({ id: sec + i, sector: sec, stand: sec + i, nume: sec + i, prenume: "",
+                    m: { 1: { catches: [kg], extras: [] } } });
+  }));
+  real.state.participants = out;
+}
+const pts1 = () => JSON.parse(vm.runInContext("JSON.stringify(pointsMapS(1))", real));
+/** suma punctelor unui sector, din harta de puncte */
+const sumaSec = (m, sec) => real.state.participants
+  .filter(p => p.sector === sec).reduce((s, p) => s + m[p.id], 0);
+const nSec = sec => real.state.participants.filter(p => p.sector === sec).length;
+const nMaxSec = () => Math.max(...[...new Set(real.state.participants.map(p => p.sector))].map(nSec));
+/** invariantul, pentru fiecare sector în joc */
+function invariant(eticheta) {
+  const m = pts1(), nMax = nMaxSec();
+  const sectoare = [...new Set(real.state.participants.map(p => p.sector))];
+  const toate = sectoare.every(sec => Math.abs(sumaSec(m, sec) - nSec(sec) * (nMax + 1) / 2) <= 1e-9);
+  t(eticheta + ": suma fiecărui sector = n × (nMax+1)/2", toate, true);
+}
+
+// sectoare egale: normalizarea trebuie să fie complet neutră
+grupe(["A", [10, 8, 6, 4]], ["B", [10, 8, 6, 4]]);
+t("sectoare egale: punctele rămân exact locurile",
+  pts1(), {A1:1, A2:2, A3:3, A4:4, B5:1, B6:2, B7:3, B8:4});
+invariant("sectoare egale");
+
+// 4 vs 2: primul fiecărui sector ia 1, ultimul ia 4 în ambele
+grupe(["A", [10, 8, 6, 4]], ["B", [10, 8]]);
+t("4 vs 2: locurile sectorului mic se întind pe scala celui mare",
+  pts1(), {A1:1, A2:2, A3:3, A4:4, B5:1, B6:4});
+t("câștigătorii ambelor sectoare iau 1 punct", pts1().A1 === pts1().B5, true);
+t("ultimii ambelor sectoare iau la fel", pts1().A4 === pts1().B6, true);
+invariant("4 vs 2");
+
+// sector cu un singur om: n-are cu cine se compara, deci ia media, nu locul 1 pe gratis
+grupe(["A", [10, 8, 6, 4, 2]], ["B", [9]]);
+t("sectorul de un om ia media scalei, nu 1 punct", pts1().B6, 3);
+t("…adică nu bate câștigătorul sectorului mare", pts1().B6 > pts1().A1, true);
+invariant("5 vs 1");
+
+// egalitățile supraviețuiesc normalizării
+grupe(["A", [10, 5, 5, 1]], ["B", [7, 7]]);
+t("egalitate în sectorul mare: media locurilor 2-3", [pts1().A2, pts1().A3], [2.5, 2.5]);
+t("egalitate în sectorul mic: amândoi la mijlocul scalei", [pts1().B5, pts1().B6], [2.5, 2.5]);
+invariant("egalități");
+
+// scală mare, sector mic: apar fracții mai fine de jumătatea de punct
+grupe(["A", [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]], ["B", [9, 3, 3]]);
+t("10 vs 3: ultimii doi din sectorul mic, la egalitate, iau 7,75",
+  [pts1().B12, pts1().B13], [7.75, 7.75]);
+t("fmtPts arată sferturile, nu le rotunjește la jumătate",
+  vm.runInContext("fmtPts(7.75)", real), "7,75");
+invariant("10 vs 3");
+
+// un singur sector: nMax = n, deci iar identitate
+grupe(["A", [10, 8, 6]]);
+t("un singur sector: punctele rămân locurile", pts1(), {A1:1, A2:2, A3:3});
+invariant("un singur sector");
+
+real.state.numManse = 2;
 
 /* ================================================================
    10. CODUL REAL din sezon.html — locurile la egalitate.

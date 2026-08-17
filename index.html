@@ -765,8 +765,14 @@
   // ---------- helpers ----------
   function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
   function fmt(n){ if(!n) return "0"; return (Math.round(n*1000)/1000).toFixed(3).replace(".",","); }
-  // punctele pot fi fracționare (media locurilor la egalitate): 2 → "2", 2.5 → "2,5"
-  function fmtPts(n){ return (Math.round((+n||0)*2)/2).toString().replace(".",","); }
+  // Punctele pot fi fracționare: media locurilor la egalitate dă jumătăți (2,5), iar
+  // normalizarea sectoarelor inegale dă și sferturi sau mai fin (3,25). Rotunjirea la
+  // jumătate de punct ar arăta două punctaje diferite cu aceeași cifră, așa că se taie la
+  // două zecimale, fără zerouri la coadă: 2 → "2", 2,5 → "2,5", 3,25 → "3,25".
+  function fmtPts(n){
+    var v=(Math.round((+n||0)*100)/100).toFixed(2);
+    return v.replace(/\.?0+$/,"").replace(".",",");
+  }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
@@ -1279,6 +1285,7 @@
       '<ul style="margin:0; padding-left:20px; font-size:14px; line-height:1.5;">'+
       '<li><b>Totalul unui pescar</b> = cantitatea cântărită + peștii extra. Cel mai mare pește (CMMC) <b>nu</b> se adună separat, ca să nu fie numărat de două ori.</li>'+
       '<li><b>Punctele pe sector:</b> locul 1 ia 1 punct, locul 2 ia 2 și așa mai departe. Câștigă cel cu punctaj mic.</li>'+
+      '<li><b>Sectoare de mărimi diferite</b> se aduc pe aceeași scală, cea a sectorului cel mai numeros: primul din sector ia 1 punct, ultimul ia cât are cel mai mare sector, restul între ele. Altfel ultimul dintr-un sector de 10 lua 10 puncte, iar ultimul dintr-unul de 5 doar 5, deși amândoi și-au închis sectorul — cine nimerea sectorul mic era avantajat de tragerea la sorți. Dacă toate sectoarele au același număr de oameni, punctele rămân exact locurile.</li>'+
       '<li><b>La greutăți egale</b> se împarte media locurilor ocupate: doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte. Așa suma punctelor pe sector rămâne corectă și cei fără captură nu sunt avantajați (convenția FIPS/CIPS).</li>'+
       '<li><b>La General</b> se adună punctele din fiecare manșă. O manșă în care nu s-a cântărit încă nimic nu intră în sumă — altfel ar da tuturor media locurilor din sector, iar sectoarele cu mai puțini oameni ar ieși avantajate.</li>'+
       '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma manșelor.</li>'+
@@ -2258,19 +2265,42 @@
     document.getElementById("fm-pct").classList.toggle("on",m==="pct");
     renderRank();
   }
-  // puncte pe sector: loc 1 = 1 punct; la greutăți egale se împarte media locurilor (FIPS/CIPS)
+  // puncte pe sector: loc 1 = 1 punct; la greutăți egale se împarte media locurilor (FIPS/CIPS).
+  //
+  // Locurile brute nu se pot compara între sectoare de mărimi diferite: ultimul dintr-un
+  // sector de 10 încasa 10 puncte, ultimul dintr-unul de 5 doar 5, deși amândoi și-au
+  // închis sectorul. Cine nimerea sectorul mic era avantajat de tragerea la sorți, nu de
+  // pescuit. Așa că locurile fiecărui sector se întind pe o scală comună — cea a
+  // sectorului cel mai numeros: primul ia 1 punct, ultimul ia nMax, restul proporțional.
+  //
+  // Cu sectoare egale factorul iese exact 1 și punctele rămân locurile, ca înainte — deci
+  // normalizarea nu schimbă nimic la concursurile cu sectoare de aceeași mărime.
+  //
+  // Media pe sector iese (nMax+1)/2 oricât de mare e sectorul, adică fiecare sector
+  // contribuie la fel de mult la clasament. Ăsta e și invariantul verificat de teste:
+  // suma punctelor unui sector = n × (nMax+1) / 2.
+  //
+  // Formula e scrisă centrat pe locul din mijloc, nu pe locul 1, ca să iasă corect și
+  // sectorul cu un singur om: el n-are cu cine se compara, deci nu poate nici să câștige
+  // nici să piardă din asta și primește exact media, (nMax+1)/2. Ancorat pe locul 1 ar fi
+  // luat 1 punct — locul întâi pe gratis, adică tocmai norocul la tragerea sectoarelor pe
+  // care normalizarea vine să-l scoată.
   function pointsMapS(mi){
     var secs={};
     state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; (secs[k]=secs[k]||[]).push(p); });
+    var nMax=0;
+    Object.keys(secs).forEach(function(k){ if(secs[k].length>nMax) nMax=secs[k].length; });
     var map={};
     Object.keys(secs).forEach(function(k){
-      var arr=secs[k];
+      var arr=secs[k], n=arr.length;
+      var factor = n>1 ? (nMax-1)/(n-1) : 0;
       arr.forEach(function(p){
         var w=totalOfM(p,mi);
         var better=arr.filter(function(o){ return totalOfM(o,mi) > w+1e-9; }).length;
         var tied=arr.filter(function(o){ return Math.abs(totalOfM(o,mi)-w) <= 1e-9; }).length;
         // grupul la egalitate ocupă locurile (better+1) … (better+tied); media = better + (tied+1)/2
-        map[p.id]=better+(tied+1)/2;
+        var loc=better+(tied+1)/2;
+        map[p.id]=(loc-(n+1)/2)*factor+(nMax+1)/2;
       });
     });
     return map;
