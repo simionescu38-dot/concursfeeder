@@ -130,8 +130,14 @@
 
   function num(v){ if(v===null||v===undefined) return 0; v=(""+v).trim().replace(",","."); var n=parseFloat(v); return isNaN(n)?0:n; }
   function fmt(n){ if(!n) return "0"; return (Math.round(n*1000)/1000).toFixed(3).replace(".",","); }
-  // locurile pot fi fracționare (media locurilor la egalitate): 2 → "2", 2.5 → "2,5"
-  function fmtPts(n){ return (Math.round((+n||0)*2)/2).toString().replace(".",","); }
+  // Locurile pot fi fracționare: media locurilor la egalitate dă jumătăți (2,5), iar
+  // întinderea concursurilor mici pe scala sezonului dă și mai fin (3,25). Rotunjirea la
+  // jumătate de punct ar arăta două punctaje diferite cu aceeași cifră, deci se taie la
+  // două zecimale, fără zerouri la coadă: 2 → "2", 2,5 → "2,5", 3,25 → "3,25".
+  function fmtPts(n){
+    var v=(Math.round((+n||0)*100)/100).toFixed(2);
+    return v.replace(/\.?0+$/,"").replace(".",",");
+  }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   // Numerele scrise în fața numelui („7.Fabian Cretu") sunt o numerotare de mână, rămasă în
   // arhivele făcute înainte ca aplicația să le curețe la sursă. Fără tăierea asta, același om
@@ -183,6 +189,30 @@
   function bestFish(p){
     var chei = p.m ? Object.keys(p.m) : ((Array.isArray(p.catches)||Array.isArray(p.extras)) ? [1] : []);
     var mx=0; chei.forEach(function(mi){ var v=extrasMax(p,mi); if(v>mx) mx=v; }); return mx;
+  }
+
+  // Locurile unui concurs, întinse pe scala sezonului (`nMax` = cel mai numeros concurs).
+  //
+  // Locurile brute nu se pot compara între concursuri de mărimi diferite: ultimul dintr-un
+  // concurs de 30 încasa 30 de puncte, ultimul dintr-unul de 10 doar 10, deși amândoi au
+  // închis clasamentul la ei. Cine prindea etapele slab populate strângea puncte mici fără
+  // să pescuiască mai bine. Aceeași corecție ca la sectoarele din aplicație.
+  //
+  // La greutăți egale locul e media locurilor ocupate de grup (convenția FIPS/CIPS), la fel
+  // ca `pointsMapS` din index.html — altfel clasamentul de sezon divergea de cel de concurs.
+  //
+  // Formula e centrată pe locul din mijloc, ca un concurs cu un singur participant să dea
+  // media scalei, nu locul întâi pe gratis. Cu concursuri de aceeași mărime factorul iese 1
+  // și punctele rămân locurile. Suma unui concurs = n × (nMax+1) / 2.
+  function placesOfComp(ranked, nMax){
+    var n = ranked.length;
+    var factor = n>1 ? (nMax-1)/(n-1) : 0;
+    return ranked.map(function(row){
+      var better = ranked.filter(function(o){ return o.kg > row.kg + 1e-9; }).length;
+      var tied   = ranked.filter(function(o){ return Math.abs(o.kg - row.kg) <= 1e-9; }).length;
+      var loc = better + (tied+1)/2;
+      return (loc-(n+1)/2)*factor + (nMax+1)/2;
+    });
   }
 
   function dateLabel(ms){
@@ -359,6 +389,10 @@
     var comps = []; // list of processed competitions (for footer)
     var seasonFish = null; // {v, name, comp}
 
+    // scala comună a sezonului: concursul cu cei mai mulți participanți
+    var nMaxSezon = 0;
+    sources.forEach(function(src){ if(src.parts.length > nMaxSezon) nMaxSezon = src.parts.length; });
+
     sources.forEach(function(src){
       var ranked = src.parts.map(function(p){
         return {p:p, kg:totalKg(p), fish:bestFish(p)};
@@ -369,13 +403,7 @@
       });
       comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length, top3:top3});
 
-      // la greutăți egale, locul = media locurilor ocupate de grup — aceeași convenție
-      // ca în aplicație (pointsMapS), altfel clasamentul de sezon divergea de cel de concurs
-      var places = ranked.map(function(row){
-        var better = ranked.filter(function(o){ return o.kg > row.kg + 1e-9; }).length;
-        var tied   = ranked.filter(function(o){ return Math.abs(o.kg - row.kg) <= 1e-9; }).length;
-        return better + (tied+1)/2;
-      });
+      var places = placesOfComp(ranked, nMaxSezon);
 
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
@@ -503,7 +531,7 @@
         '<button id="sm-pts" class="'+(sortMode==="pts"?"on":"")+'" onclick="setSort(\'pts\')">După puncte</button>'+
       '</div>'+
       '<table><thead><tr><th class="pos">#</th><th>Concurent</th><th class="kg">Pct</th><th class="kg">Total kg</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<p class="hint">Puncte = suma locurilor ocupate în fiecare concurs (loc 1 = 1 punct) — câștigă cine are cele mai puține. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
+      '<p class="hint">Puncte = suma locurilor ocupate în fiecare concurs (loc 1 = 1 punct) — câștigă cine are cele mai puține. Concursurile cu mai puțini participanți se aduc pe scala celui mai numeros, ca ultimul dintr-o etapă mică să nu încaseze mai puțin decât ultimul dintr-una mare. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
       '<button class="btn btn-ghost mt" onclick="copySeasonText()">⧉ Copiază clasamentul</button>'+
       '<div class="row mt">'+
         '<button class="btn btn-ghost" onclick="printSeason()">🖨 Print / PDF</button>'+
