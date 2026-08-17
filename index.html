@@ -1280,7 +1280,7 @@
       '<li><b>Totalul unui pescar</b> = cantitatea cântărită + peștii extra. Cel mai mare pește (CMMC) <b>nu</b> se adună separat, ca să nu fie numărat de două ori.</li>'+
       '<li><b>Punctele pe sector:</b> locul 1 ia 1 punct, locul 2 ia 2 și așa mai departe. Câștigă cel cu punctaj mic.</li>'+
       '<li><b>La greutăți egale</b> se împarte media locurilor ocupate: doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte. Așa suma punctelor pe sector rămâne corectă și cei fără captură nu sunt avantajați (convenția FIPS/CIPS).</li>'+
-      '<li><b>La General</b> se adună punctele din fiecare manșă.</li>'+
+      '<li><b>La General</b> se adună punctele din fiecare manșă. O manșă în care nu s-a cântărit încă nimic nu intră în sumă — altfel ar da tuturor media locurilor din sector, iar sectoarele cu mai puțini oameni ar ieși avantajate.</li>'+
       '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma manșelor.</li>'+
       '<li><b>Departajare</b>, în ordine: puncte → kilograme → cea mai bună manșă (doar la General) → cel mai mare pește → numărul standului → nume.</li>'+
       '</ul></div>';
@@ -2275,9 +2275,18 @@
     });
     return map;
   }
-  // clasament combinat: suma punctelor din fiecare manșă (câștigă cel mai mic total)
+  // o manșă în care nu s-a cântărit absolut nimic nu s-a disputat încă
+  function mancheDisputata(mi){
+    return state.participants.some(function(p){ return totalOfM(p,mi) > 1e-9; });
+  }
+  // clasament combinat: suma punctelor din manșele DISPUTATE (câștigă cel mai mic total).
+  // O manșă nepescuită ar pune toată lumea la egalitate pe zero, deci fiecare ar primi
+  // media locurilor din sectorul lui — adică (nr. concurenți din sector + 1) / 2. Cum
+  // sectoarele n-au mereu același număr de oameni, cei din sectoarele mici ar încasa mai
+  // puține puncte fantomă și ar urca nemeritat la General. Până se cântărește ceva în ea,
+  // manșa nu intră în sumă.
   function pointsCombo(){
-    var maps=[]; for(var i=1;i<=(state.numManse||2);i++) maps.push(pointsMapS(i));
+    var maps=[]; for(var i=1;i<=(state.numManse||2);i++) if(mancheDisputata(i)) maps.push(pointsMapS(i));
     var map={};
     state.participants.forEach(function(p){
       var s=0; maps.forEach(function(m){ s+=(m[p.id]||0); });
