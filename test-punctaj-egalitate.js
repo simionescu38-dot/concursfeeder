@@ -428,6 +428,74 @@ t("fmtPts din sezon: 3,5", vm.runInContext("fmtPts(3.5)", sez), "3,5");
 t("fmtPts din sezon: 3,25 nu devine 3,5", vm.runInContext("fmtPts(3.25)", sez), "3,25");
 t("fmtPts din sezon: întregii rămân întregi", vm.runInContext("fmtPts(6)", sez), "6");
 
+/* ---------- 10c. media pe etapă și pragul de participări ---------- */
+console.log("\n=== 10c. Sezon: media pe etapă, nu suma ===");
+vm.runInContext(["pragSezon", "sortSeason", "ptsAfisat", "pozitiiSezon"]
+  .map(n => H2.grabFunction(sezSrc, n)).join("\n"), sez);
+
+// pragul: jumătate din etape, rotunjit în sus, minim 2, dar niciodată peste câte s-au ținut
+const prag = n => vm.runInContext(`pragSezon(${n})`, sez);
+t("prag: 1 etapă => 1 (altfel nimeni n-ar fi clasat)", prag(1), 1);
+t("prag: 2 etape => 2",  prag(2),  2);
+t("prag: 3 etape => 2",  prag(3),  2);
+t("prag: 4 etape => 2",  prag(4),  2);
+t("prag: 5 etape => 3",  prag(5),  3);
+t("prag: 6 etape => 3",  prag(6),  3);
+t("prag: 10 etape => 5", prag(10), 5);
+
+/** construiește o listă de sezon din [nume, sumaLocurilor, etape, kg] */
+function sezLista(rows, nrEtape) {
+  const p = vm.runInContext(`pragSezon(${nrEtape})`, sez);
+  return rows.map(([name, totalPoints, competitions, totalKg]) => ({
+    name, totalPoints, competitions, totalKg,
+    avgPoints: competitions ? totalPoints / competitions : 0,
+    clasat: competitions >= p
+  }));
+}
+/** numele în ordinea clasamentului, cu locul (null = neclasat) */
+function ordine(rows, nrEtape, mod) {
+  vm.runInContext(`sortMode=${JSON.stringify(mod || "pts")};`, sez);
+  sez.__l = sezLista(rows, nrEtape);
+  return JSON.parse(vm.runInContext(
+    "JSON.stringify(pozitiiSezon(sortSeason(__l)).map(function(p){return [p.rec.name, p.loc];}))", sez));
+}
+
+// scenariul care motivează schimbarea: X vine la o etapă și o câștigă, Y vine la ambele
+// și le câștigă pe amândouă. Cu suma, X ieșea primul. Cu media + prag, Y câștigă.
+const doiTrei = [["X", 1, 1, 5], ["Y", 2, 2, 20], ["Z", 5.5, 2, 15]];
+t("media + prag: câștigă cine a câștigat ambele etape, nu cine a venit o dată",
+  ordine(doiTrei, 2), [["Y",1], ["Z",2], ["X",null]]);
+t("cine e sub prag rămâne în listă, dar fără loc",
+  ordine(doiTrei, 2).find(r => r[0] === "X")[1], null);
+
+// suma ar fi dat exact invers — dovada că testul prinde regresia
+t("(control) pe sumă, X ar fi ieșit înaintea lui Y",
+  [...doiTrei].sort((a, b) => a[1] - b[1]).map(r => r[0]), ["X", "Y", "Z"]);
+
+// la medii egale departajează numărul de etape, apoi kg
+t("medii egale: mai multe etape câștigă",
+  ordine([["A", 2, 2, 10], ["B", 4, 4, 10]], 4), [["B",1], ["A",2]]);
+t("medii egale și etape egale: departajează kilogramele",
+  ordine([["A", 4, 4, 10], ["B", 4, 4, 30]], 4), [["B",1], ["A",2]]);
+
+// cu o singură etapă în sezon, pragul e 1 și toți sunt clasați
+t("sezon cu o etapă: toți clasați",
+  ordine([["A", 1, 1, 9], ["B", 2, 1, 5]], 1), [["A",1], ["B",2]]);
+
+// clasamentul pe kg nu are prag: e alt criteriu, suma capturilor
+t("pe kg pragul nu se aplică: toți poartă loc",
+  ordine(doiTrei, 2, "kg").every(r => r[1] !== null), true);
+t("pe kg ordinea e după kilograme",
+  ordine(doiTrei, 2, "kg").map(r => r[0]), ["Y", "Z", "X"]);
+
+// coloana de puncte arată media la clasamentul pe puncte, suma la cel pe kg
+sez.__r = { totalPoints: 6, avgPoints: 2, competitions: 3, totalKg: 1, clasat: true };
+vm.runInContext('sortMode="pts";', sez);
+t("pe puncte se afișează media", vm.runInContext("ptsAfisat(__r)", sez), 2);
+vm.runInContext('sortMode="kg";', sez);
+t("pe kg se afișează suma locurilor", vm.runInContext("ptsAfisat(__r)", sez), 6);
+vm.runInContext('sortMode="pts";', sez);
+
 /* ================================================================
    11. Pagina de Regulament trebuie să spună ADEVĂRUL despre punctaj.
    Textul e citit de pescari ca să înțeleagă clasamentul; dacă regula
