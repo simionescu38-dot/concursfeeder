@@ -9,7 +9,7 @@ const path = require("path");
 
 const FISIERE = ["index.html", "sezon.html", "concursuri.html"];
 const FISIERE_JS = ["qr.js", "sw.js"];
-const ROOT = "D:/concursfeeder-repo";
+const ROOT = __dirname;
 
 let ok = 0, fail = 0;
 for (const f of FISIERE_JS) {

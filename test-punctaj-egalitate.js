@@ -10,7 +10,7 @@ const fs = require("fs");
 const vm = require("vm");
 const H2 = require("./test-helpers.js"); // extractor care sare peste comentarii/șiruri/regex
 
-const HTML = "D:/concursfeeder-repo/index.html";
+const HTML = require("path").join(H2.RADACINA, "index.html");
 const src = fs.readFileSync(HTML, "utf8");
 
 /** extrage `function nume(...){...}` cu echilibrare de acolade */
@@ -236,7 +236,7 @@ t("fmtPts real: 8.5 → \"8,5\"", F(8.5), "8,5");
    10. CODUL REAL din sezon.html — locurile la egalitate.
    ================================================================ */
 console.log("\n=== 10. Codul REAL din sezon.html ===");
-const sezSrc = fs.readFileSync("D:/concursfeeder-repo/sezon.html", "utf8");
+const sezSrc = H2.citeste("sezon.html");
 function grabParen(hay, marker){
   const i = hay.indexOf(marker);
   if (i < 0) throw new Error("nu găsesc în sezon.html: " + marker);
