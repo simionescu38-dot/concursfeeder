@@ -7,6 +7,10 @@
  * rupe extragerea și testul pică din motive care n-au legătură cu codul.
  */
 const fs = require("fs");
+const path = require("path");
+
+/** rădăcina depozitului: fișierele de test stau lângă cele livrate */
+const RADACINA = __dirname;
 
 /** întoarce indicele delimitatorului de închidere care echilibrează pe cel de la `from` */
 function balance(src, from, open, close) {
@@ -67,7 +71,9 @@ function grabAssignment(src, marker) {
   return src.slice(start, balance(src, paren, "(", ")") + 1) + ";";
 }
 
-const citeste = p => fs.readFileSync(p, "utf8");
+/** citește un fișier livrat; căile relative se socotesc de la rădăcina depozitului,
+    ca testele să ruleze de oriunde și pe orice sistem */
+const citeste = p => fs.readFileSync(path.resolve(RADACINA, p), "utf8");
 
 /** mic ajutor de asertare, comun tuturor testelor */
 function creeazaVerificator() {
@@ -92,4 +98,4 @@ function creeazaVerificator() {
   return t;
 }
 
-module.exports = { balance, grabFunction, grabIIFE, grabAssignment, citeste, creeazaVerificator };
+module.exports = { RADACINA, balance, grabFunction, grabIIFE, grabAssignment, citeste, creeazaVerificator };

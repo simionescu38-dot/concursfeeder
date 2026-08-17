@@ -8,8 +8,8 @@
 const vm = require("vm");
 const H = require("./test-helpers.js");
 
-const src = H.citeste("D:/concursfeeder-repo/index.html");
-const raspuns = JSON.parse(H.citeste("D:/concursfeeder-repo/test-fixtures/meteo-raspuns.json"));
+const src = H.citeste("index.html");
+const raspuns = JSON.parse(H.citeste("test-fixtures/meteo-raspuns.json"));
 
 const sandbox = { console };
 vm.createContext(sandbox);

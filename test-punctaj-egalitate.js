@@ -10,7 +10,7 @@ const fs = require("fs");
 const vm = require("vm");
 const H2 = require("./test-helpers.js"); // extractor care sare peste comentarii/șiruri/regex
 
-const HTML = "D:/concursfeeder-repo/index.html";
+const HTML = require("path").join(H2.RADACINA, "index.html");
 const src = fs.readFileSync(HTML, "utf8");
 
 /** extrage `function nume(...){...}` cu echilibrare de acolade */
@@ -188,15 +188,15 @@ t("la egalitate perfectă de kg, câștigă peștele mai mare (a: 2,5)", ord, ["
    ================================================================ */
 console.log("\n=== 9. Codul REAL din index.html ===");
 const realSrc = ["mOf","cantOfM","extraOfM","cmmcOfM","totalOfM","cmmcAward","standKey","nameKey",
-                 "byStand","pointsMapS","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
+                 "byStand","pointsMapS","mancheDisputata","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
                  "regPunctajHtml"]
   .map(grab).join("\n");
-const real = { state: { participants: [] }, console };
+const real = { state: { participants: [], numManse: 2 }, console };
 vm.createContext(real);
 vm.runInContext(`
   function ensureManche(p){
     if(!p.m) p.m={};
-    [1,2].forEach(function(i){ if(!p.m[i]) p.m[i]={catches:[],extras:[]}; });
+    for(var i=1;i<=(state.numManse||2);i++){ if(!p.m[i]) p.m[i]={catches:[],extras:[]}; }
   }
   ${realSrc}
 `, real);
@@ -233,10 +233,64 @@ t("fmtPts real: 2.5 → \"2,5\"", F(2.5), "2,5");
 t("fmtPts real: 8.5 → \"8,5\"", F(8.5), "8,5");
 
 /* ================================================================
+   9b. Manșele nedisputate nu intră la General.
+   O manșă în care nu s-a cântărit nimic ar pune toată lumea la egalitate pe
+   zero, deci fiecare ar încasa media locurilor din sectorul lui — adică
+   (oameni în sector + 1) / 2. Sectoarele n-au mereu același număr de oameni,
+   așa că punctele fantomă ar fi mai mici în sectoarele mici și cei de acolo ar
+   urca nemeritat la General. Regula rămâne „cele mai puține puncte = locul 1",
+   dar se aplica pe numere greșite.
+   ================================================================ */
+console.log("\n=== 9b. Manșe nedisputate (General) ===");
+const comboReal = () => JSON.parse(vm.runInContext("JSON.stringify(pointsCombo())", real));
+/** concurent cu o captură per manșă, în ordinea dată */
+function pesc(id, sector, kgPerManse) {
+  const m = {};
+  kgPerManse.forEach((kg, i) => { m[i + 1] = { catches: kg ? [kg] : [], extras: [] }; });
+  return { id, sector, stand: id, nume: id, prenume: "", m };
+}
+
+// 3 manșe configurate, doar prima pescuită; sector A are 4 oameni, sector B doar 2
+real.state.numManse = 3;
+real.state.participants = [pesc("a1","A",[10,0,0]), pesc("a2","A",[8,0,0]),
+                           pesc("a3","A",[6,0,0]), pesc("a4","A",[4,0,0]),
+                           pesc("b1","B",[10,0,0]), pesc("b2","B",[8,0,0])];
+t("manșa nepescuită nu e disputată", vm.runInContext("mancheDisputata(2)", real), false);
+t("manșa pescuită e disputată",      vm.runInContext("mancheDisputata(1)", real), true);
+t("General = punctele manșei pescuite, fără puncte fantomă",
+  comboReal(), {a1:1, a2:2, a3:3, a4:4, b1:1, b2:2});
+t("câștigătorii celor două sectoare rămân la egalitate, nu îi separă mărimea sectorului",
+  comboReal().a1 === comboReal().b1, true);
+
+// două manșe pescuite din trei: General e suma lor exactă
+real.state.participants = [pesc("a1","A",[10,4,0]), pesc("a2","A",[8,6,0]), pesc("a3","A",[6,8,0])];
+t("2 din 3 manșe: General e suma celor două disputate",
+  comboReal(), {a1:4, a2:4, a3:4});
+
+// într-o manșă disputată, cine n-a prins nimic ia locurile de la urmă — asta e corect
+real.state.participants = [pesc("x1","A",[10,0,0]), pesc("x2","A",[0,0,0]), pesc("x3","A",[0,0,0])];
+t("în manșa disputată, cei fără captură iau media locurilor rămase",
+  comboReal(), {x1:1, x2:2.5, x3:2.5});
+
+// niciun cântar deschis încă: nimeni nu pornește cu puncte
+real.state.participants = [pesc("y1","A",[0,0,0]), pesc("y2","B",[0,0,0])];
+t("înainte de primul cântar, toți au 0 puncte", comboReal(), {y1:0, y2:0});
+
+// o manșă cu doar pești extra (fără captură la cantar) tot s-a disputat
+real.state.participants = [
+  {id:"z1",sector:"A",stand:"z1",nume:"z1",prenume:"",m:{1:{catches:[],extras:[]},2:{catches:[],extras:[3]},3:{catches:[],extras:[]}}},
+  {id:"z2",sector:"A",stand:"z2",nume:"z2",prenume:"",m:{1:{catches:[],extras:[]},2:{catches:[],extras:[]},3:{catches:[],extras:[]}}}
+];
+t("manșa cu doar pești extra contează ca disputată", vm.runInContext("mancheDisputata(2)", real), true);
+t("…și punctele ei intră la General", comboReal(), {z1:1, z2:2});
+
+real.state.numManse = 2; // starea implicită, pentru orice verificare care urmează
+
+/* ================================================================
    10. CODUL REAL din sezon.html — locurile la egalitate.
    ================================================================ */
 console.log("\n=== 10. Codul REAL din sezon.html ===");
-const sezSrc = fs.readFileSync("D:/concursfeeder-repo/sezon.html", "utf8");
+const sezSrc = H2.citeste("sezon.html");
 function grabParen(hay, marker){
   const i = hay.indexOf(marker);
   if (i < 0) throw new Error("nu găsesc în sezon.html: " + marker);

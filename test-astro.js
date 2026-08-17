@@ -10,11 +10,17 @@
  *  3. Simetria răsărit/apus față de amiaza solară.
  *  4. Luna: întârzierea zilnică a răsăritului, faza la lună nouă/plină cunoscute.
  *  5. Cazuri-limită: soare polar (nu crapă), latitudini extreme.
+ *
+ * Zilele de răsărit/apus se socotesc pe ziua LOCALĂ, deci verificările depind de
+ * fusul orar: pe 7 aug 2026 luna răsare la 00:17 pe 8 august la Iași, dar pe un
+ * calculator pus pe UTC aceeași clipă cade încă în ziua de 7. Fixăm fusul la cel
+ * al bălții, ca testul să dea același verdict pe orice mașină.
  */
+process.env.TZ = "Europe/Bucharest";
 const vm = require("vm");
 const H = require("./test-helpers.js");
 
-const src = H.citeste("D:/concursfeeder-repo/index.html");
+const src = H.citeste("index.html");
 const sandbox = { console };
 vm.createContext(sandbox);
 vm.runInContext(H.grabIIFE(src, "var Astro = (function(){"), sandbox);

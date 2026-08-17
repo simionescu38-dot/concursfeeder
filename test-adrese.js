@@ -27,7 +27,7 @@ const MOARTE = ["cantar-remuslake.netlify.app", "netlify.app",
                 "wandering-shadow-e011", "concursremuslake.simionescu38.workers.dev",
                 "concursiasi.simionescu38.workers.dev", "api.qrserver.com"];
 for (const f of FISIERE) {
-  const cod = faraComentarii(H.citeste("D:/concursfeeder-repo/" + f));
+  const cod = faraComentarii(H.citeste(f));
   for (const gazda of MOARTE) {
     const i = cod.indexOf(gazda);
     const unde = i >= 0 ? " (linia " + cod.slice(0, i).split("\n").length + ")" : "";
@@ -37,7 +37,7 @@ for (const f of FISIERE) {
 
 /* ---------- 2. adresele se derivă din location ---------- */
 console.log("\n=== 2. Adresele se iau din bara browserului ===");
-const src = H.citeste("D:/concursfeeder-repo/index.html");
+const src = H.citeste("index.html");
 const sandbox = { console, location: {} };
 vm.createContext(sandbox);
 vm.runInContext(["installLink", "adresaAfisata", "liveLink"].map(n => H.grabFunction(src, n)).join("\n"), sandbox);
