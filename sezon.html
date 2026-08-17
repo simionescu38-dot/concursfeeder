@@ -184,6 +184,11 @@
     var mx=0; chei.forEach(function(mi){ var v=extrasMax(p,mi); if(v>mx) mx=v; }); return mx;
   }
 
+  // Pragul de participări pentru a fi clasat pe puncte: jumătate din etapele ținute,
+  // rotunjit în sus, minim 2 — dar niciodată mai mult decât s-a ținut, altfel într-un sezon
+  // cu o singură etapă nimeni n-ar fi clasat.
+  function pragSezon(nrEtape){ return Math.min(nrEtape, Math.max(2, Math.ceil(nrEtape/2))); }
+
   // Locurile unui concurs, întinse pe scala sezonului (`nMax` = cel mai numeros concurs).
   //
   // Locurile brute nu se pot compara între concursuri de mărimi diferite: ultimul dintr-un
@@ -401,27 +406,28 @@
     list.forEach(function(r){ if(r.competitions>maxComp) maxComp=r.competitions; });
     var mostLoyal = list.filter(function(r){ return r.competitions===maxComp; });
 
-    return {list:list, comps:comps, seasonFish:seasonFish, standList:standList, mostLoyal:mostLoyal};
+    var prag = pragSezon(comps.length);
+    list.forEach(function(r){
+      r.avgPoints = r.competitions ? r.totalPoints/r.competitions : 0;
+      r.clasat = r.competitions >= prag;
+    });
+
+    return {list:list, comps:comps, seasonFish:seasonFish, standList:standList,
+            mostLoyal:mostLoyal, prag:prag};
   }
 
   function renderTable(){
-    var list = season.list.slice();
-    if(sortMode==="kg"){
-      list.sort(function(a,b){ return b.totalKg - a.totalKg; });
-    } else {
-      list.sort(function(a,b){
-        var d=a.totalPoints-b.totalPoints; if(Math.abs(d)>1e-9) return d;
-        return b.totalKg-a.totalKg; // la egalitate de puncte, departajează cantitatea totală mai mare
-      });
-    }
     var rows = "";
-    list.forEach(function(rec, i){
-      var cls = i===0?"p1":i===1?"p2":i===2?"p3":"";
-      var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+    pozitiiSezon(currentSeasonSorted()).forEach(function(p, i){
+      var rec=p.rec, loc=p.loc;
+      var cls = p.clasat && loc===1?"p1":p.clasat && loc===2?"p2":p.clasat && loc===3?"p3":"";
+      var medal = !p.clasat ? "–" : loc===1?"🥇":loc===2?"🥈":loc===3?"🥉":loc;
+      var subsol = rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+
+        (p.clasat ? '' : ' · sub pragul de '+season.prag+', neclasat')+' · atinge pentru istoric';
       rows += '<tr class="'+cls+' pclick" onclick="toggleHist('+i+')">'+
         '<td class="pos">'+medal+'</td>'+
-        '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+' · atinge pentru istoric</div></td>'+
-        '<td class="kg num">'+fmtPts(rec.totalPoints)+'</td>'+
+        '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+subsol+'</div></td>'+
+        '<td class="kg num">'+fmtPts(ptsAfisat(rec))+'</td>'+
         '<td class="kg num">'+fmt(rec.totalKg)+'</td>'+
       '</tr>';
       var histRows = rec.rows.slice().sort(function(a,b){ return (b.date||0)-(a.date||0); }).map(function(r){
@@ -480,7 +486,8 @@
         '<button id="sm-pts" class="'+(sortMode==="pts"?"on":"")+'" onclick="setSort(\'pts\')">După puncte</button>'+
       '</div>'+
       '<table><thead><tr><th class="pos">#</th><th>Concurent</th><th class="kg">Pct</th><th class="kg">Total kg</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-      '<p class="hint">Puncte = suma locurilor ocupate în fiecare concurs (loc 1 = 1 punct) — câștigă cine are cele mai puține. Concursurile cu mai puțini participanți se aduc pe scala celui mai numeros, ca ultimul dintr-o etapă mică să nu încaseze mai puțin decât ultimul dintr-una mare. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
+      '<p class="hint">Puncte = <b>media</b> locurilor ocupate în etapele la care ai fost (loc 1 = 1 punct) — câștigă cine are media mai mică. Se ia media, nu suma, ca prezența să nu te coste: cu suma, cine venea la o etapă și o câștiga bătea pe cine venea la toate și le câștiga pe toate. Etapele cu mai puțini participanți se aduc pe scala celei mai numeroase, ca ultimul dintr-o etapă mică să nu încaseze mai puțin decât ultimul dintr-una mare.</p>'+
+      '<p class="hint">Ca să fii clasat îți trebuie minim <b>'+(season.prag||2)+'</b> '+((season.prag||2)===1?'etapă':'etape')+' — jumătate din cele ținute, rotunjit în sus. Altfel o singură apariție câștigată ar da media perfectă 1, pe care nimeni n-ar putea-o întrece. Cine e sub prag rămâne în tabel, cu rezultatele lui, dar fără loc. La medii egale departajează numărul de etape, apoi kilogramele. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
       '<button class="btn btn-ghost mt" onclick="copySeasonText()">⧉ Copiază clasamentul</button>'+
       '<div class="row mt">'+
         '<button class="btn btn-ghost" onclick="printSeason()">🖨 Print / PDF</button>'+
@@ -497,11 +504,41 @@
   function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f1b2d;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
   function fallbackCopy(txt){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Clasament copiat");}catch(e){toast("Nu am putut copia");} document.body.removeChild(ta); }
   function sortLabel(){ return sortMode==="kg" ? "După kg" : "După puncte"; }
-  function currentSeasonSorted(){
-    var list = season.list.slice();
-    if(sortMode==="kg"){ list.sort(function(a,b){ return b.totalKg - a.totalKg; }); }
-    else { list.sort(function(a,b){ var d=a.totalPoints-b.totalPoints; if(Math.abs(d)>1e-9) return d; return b.totalKg-a.totalKg; }); }
-    return list;
+  // Sortarea clasamentului de sezon, un singur loc pentru toate afișările (tabel, text
+  // copiat, print, imagine) — cât era duplicată în patru, era ușor să divergă între ele.
+  //
+  // La puncte contează MEDIA locurilor pe etapele la care ai fost, nu suma: suma pedepsea
+  // prezența, fiindcă fiecare etapă în plus adăuga puncte iar câștigă cine are mai puține.
+  // Cine venea la o etapă și o câștiga bătea pe cine venea la toate și le câștiga pe toate.
+  //
+  // Media singură are însă o gaură: o singură apariție câștigată dă media perfectă 1, pe
+  // care nimeni nu o poate întrece. De asta cei sub pragul de participări sunt scoși din
+  // clasament (dar rămân în tabel, cu rezultatele lor) — vezi `clasat`.
+  //
+  // La medii egale departajează numărul de etape (mai multe câștigă), apoi kilogramele.
+  // Altfel prezența ar fi pedepsită din nou, pe altă cale.
+  function sortSeason(list){
+    if(sortMode==="kg") return list.sort(function(a,b){ return b.totalKg - a.totalKg; });
+    return list.sort(function(a,b){
+      // neclasații stau la urmă, oricât de bună le-ar fi media
+      if(a.clasat !== b.clasat) return a.clasat ? -1 : 1;
+      var d=a.avgPoints-b.avgPoints; if(Math.abs(d)>1e-9) return d;
+      var c=b.competitions-a.competitions; if(c) return c;
+      return b.totalKg-a.totalKg;
+    });
+  }
+  function currentSeasonSorted(){ return sortSeason(season.list.slice()); }
+  /** valoarea din coloana de puncte: media pe etapă la clasamentul pe puncte, suma la kg */
+  function ptsAfisat(rec){ return sortMode==="kg" ? rec.totalPoints : rec.avgPoints; }
+  /** numerotează doar clasații; neclasatul nu poartă loc. Un singur loc, ca tabelul,
+      textul copiat, print-ul și imaginea să spună toate același lucru. */
+  function pozitiiSezon(list){
+    var loc=0, peP=sortMode!=="kg";
+    return list.map(function(rec){
+      var clasat = !peP || rec.clasat;
+      if(clasat) loc++;
+      return {rec:rec, clasat:clasat, loc:clasat?loc:null};
+    });
   }
 
   function copySeasonText(){
@@ -509,7 +546,10 @@
     var lines=["Clasament de sezon — "+sortLabel(), ""];
     if(season.seasonFish) lines.push("CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg ("+season.seasonFish.comp+")");
     lines.push("");
-    list.forEach(function(rec,i){ lines.push((i+1)+". "+rec.name+" — "+fmtPts(rec.totalPoints)+" pct, "+fmt(rec.totalKg)+" kg ("+rec.competitions+" concursuri)"); });
+    pozitiiSezon(list).forEach(function(p){
+      lines.push((p.clasat ? p.loc+"." : "–")+" "+p.rec.name+" — "+fmtPts(ptsAfisat(p.rec))+" pct, "+
+                 fmt(p.rec.totalKg)+" kg ("+p.rec.competitions+" concursuri"+(p.clasat?"":", neclasat")+")");
+    });
     var txt=lines.join("\n");
     try{ navigator.clipboard.writeText(txt).then(function(){toast("Clasament copiat");},function(){fallbackCopy(txt);}); }
     catch(e){ fallbackCopy(txt); }
@@ -520,7 +560,10 @@
     var h='<div class="pr-h1">Clasament de sezon</div><div class="pr-sub">'+esc(sortLabel())+' · '+season.comps.length+' concursuri · '+roDate()+'</div>';
     if(season.seasonFish) h+='<div class="pr-sub"><b>CMMC sezon:</b> '+esc(season.seasonFish.name)+' — '+fmt(season.seasonFish.v)+' kg</div>';
     h+='<div class="pr-sec">Clasament general</div><table class="pr-t"><tr><th>Loc</th><th>Concurent</th><th>Concursuri</th><th>Pct</th><th>Total kg</th></tr>';
-    list.forEach(function(rec,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(rec.name)+'</td><td class="c">'+rec.competitions+'</td><td class="c">'+fmtPts(rec.totalPoints)+'</td><td class="r">'+fmt(rec.totalKg)+'</td></tr>'; });
+    pozitiiSezon(list).forEach(function(p){
+      h+='<tr><td class="c">'+(p.clasat?p.loc:'–')+'</td><td>'+esc(p.rec.name)+'</td><td class="c">'+p.rec.competitions+'</td>'+
+         '<td class="c">'+fmtPts(ptsAfisat(p.rec))+'</td><td class="r">'+fmt(p.rec.totalKg)+'</td></tr>';
+    });
     h+='</table>';
     document.getElementById("printArea").innerHTML=h;
     window.print();
@@ -562,7 +605,9 @@
       x.fillText("🐟 CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg", W/2, y0+32, W-160);
       y0+=100;
     }
-    var arr=currentSeasonSorted().slice(0,10);
+    // imaginea e podiumul sezonului: neclasații nu apar deloc, ca numerotarea să nu mintă
+    var arr=pozitiiSezon(currentSeasonSorted()).filter(function(p){ return p.clasat; })
+      .slice(0,10).map(function(p){ return p.rec; });
     arr.forEach(function(rec,i){
       var y=y0+i*94;
       x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
