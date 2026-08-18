@@ -229,6 +229,9 @@
   .lockbar{display:none; background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   body.locked .lockbar{display:block;}
+  /* pescarii fără sector formează un sector-fantomă care falsifică punctajul */
+  #warn-sector{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
+    border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   /* bara de vizualizare din antet: și semn că telefonul doar privește, și ieșirea */
   #viewerBar{background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12; border-radius:12px;
     padding:8px 10px; margin-top:8px; font-size:12px; font-weight:700; cursor:pointer;}
@@ -411,6 +414,7 @@
       <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
     </div>
 
+    <div id="warn-sector" style="display:none;"></div>
     <input id="search-part" placeholder="🔎 Caută după nume sau stand…" oninput="renderList()" style="margin-bottom:12px;">
     <div id="list"></div>
   </section>
@@ -789,6 +793,35 @@
     manseRange().forEach(function(i){ if(!p.m[i]) p.m[i]=emptyManche(); });
   }
   function mOf(p, mi){ ensureManche(p); return p.m[mi]; }
+  // Standul și sectorul aparțin MANȘEI, nu pescarului: între manșe se trage din nou
+  // la sorți, tocmai ca să se anuleze norocul standului. Cât timp erau un singur câmp
+  // pe participant, o tragere nouă rescria retroactiv clasamentele manșelor încheiate —
+  // cine nimerea un sector slab la manșa 2 devenea, pe hârtie, câștigătorul manșei 1.
+  // p.stand / p.sector rămân „unde stă acum", pentru căutare, editare și departajare.
+  function sectorOfM(p, mi){
+    if(mi==='total') return sectorOfM(p, mancheDeAfisat());
+    var m=mOf(p,mi);
+    return (m.sector!==undefined && m.sector!==null) ? m.sector : (p.sector||"");
+  }
+  function standOfM(p, mi){
+    if(mi==='total') return standOfM(p, mancheDeAfisat());
+    var m=mOf(p,mi);
+    return (m.stand!==undefined && m.stand!==null && m.stand!=="") ? m.stand : (p.stand||"");
+  }
+  // La General nu există „sectorul" cuiva — a stat în altul la fiecare manșă. Arătăm
+  // ultima manșă în care s-a cântărit ceva, adică acolo unde stau oamenii acum.
+  function mancheDeAfisat(){
+    var last=1;
+    manseRange().forEach(function(i){ if(mancheDisputata(i)) last=i; });
+    return last;
+  }
+  // scrie standul și sectorul în manșa dată (tragerea la sorți, editarea manuală)
+  function setStandSector(p, mi, stand, sector){
+    var m=mOf(p,mi);
+    m.stand=(stand===undefined||stand===null)?"":String(stand);
+    m.sector=(sector===undefined||sector===null)?"":sector;
+    if(mi===(state.manche||1)){ p.stand=m.stand; p.sector=m.sector; }
+  }
   function cantOfM(p, mi){
     if(mi==='total'){ var s=0; for(var i=1;i<=(state.numManse||2);i++) s+=cantOfM(p,i); return s; }
     var s=0; (mOf(p,mi).catches||[]).forEach(function(v){ s+=(+v||0); }); return s;
@@ -1979,6 +2012,10 @@
         while(m.catchPhotos.length<m.catches.length) m.catchPhotos.push(null);
         if(m.catchPhotos.length>m.catches.length) m.catchPhotos.length=m.catches.length;
         if(!Array.isArray(m.extras)) m.extras=[];
+        // datele vechi n-aveau stand/sector pe manșă: le îngheață pe cele de acum, ca
+        // rezultatele deja cântărite să nu se mai clatine la următoarea tragere la sorți
+        if(m.sector===undefined || m.sector===null) m.sector=p.sector||"";
+        if(m.stand===undefined || m.stand===null) m.stand=p.stand||"";
         delete m.cmmc; // câmp vechi: CMMC se calculează acum din extras
       });
     });
@@ -2008,7 +2045,10 @@
   function setManche(mi){
     state.manche=mi; save();
     [1,2,3].forEach(function(i){ var b=document.getElementById("mc-"+i); if(b) b.classList.toggle("on", mi===i); });
-    renderList();
+    // „unde stă acum" e standul din manșa activă: altfel formularul de editare ar arăta
+    // standul manșei trecute și l-ar scrie peste cel bun la prima salvare
+    state.participants.forEach(function(p){ p.stand=standOfM(p,mi); p.sector=sectorOfM(p,mi); });
+    renderList(); renderRank();
     toast("Manșa "+mi+" activă pentru cântărire");
   }
   function setNumManse(n){
@@ -2037,7 +2077,11 @@
     var nume=document.getElementById("in-nume").value.trim();
     var sec=document.getElementById("in-sector").value;
     if(!pre && !nume && !stand){ return; }
-    state.participants.push({id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{1:emptyManche(),2:emptyManche()}});
+    var np={id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{}};
+    ensureManche(np);
+    // pescarul nou stă pe același stand în toate manșele până la următoarea tragere
+    manseRange().forEach(function(i){ np.m[i].stand=stand; np.m[i].sector=sec; });
+    state.participants.push(np);
     document.getElementById("in-stand").value="";
     document.getElementById("in-prenume").value="";
     document.getElementById("in-nume").value="";
@@ -2164,14 +2208,29 @@
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var g=function(f){ var el=document.getElementById(f+"-"+id); return el?el.value:undefined; };
     p.stand=(g("ed-stand")||"").trim();
+    mOf(p, state.manche||1).stand=p.stand; // standul editat e al manșei active
     p.prenume=(g("ed-prenume")||"").trim();
     p.nume=(g("ed-nume")||"").trim();
-    var sec=g("ed-sector"); if(sec!==undefined) p.sector=sec;
+    var sec=g("ed-sector"); if(sec!==undefined){ p.sector=sec; mOf(p, state.manche||1).sector=sec; }
     editingId=null; queueSave(); renderList();
   }
 
+  // Cine rămâne fără sector intră într-un sector-fantomă „Fără sector", tratat de punctaj
+  // ca oricare altul: cel mai bun dintre ei ia 1 punct, adică punctajul maxim, chiar dacă
+  // a prins cel mai puțin din tot concursul. Se vede abia la premiere, când e prea târziu.
+  function updateWarnSector(){
+    var w=document.getElementById("warn-sector");
+    if(!w) return;
+    var mi=state.manche||1;
+    var fara=state.participants.filter(function(p){ return !sectorOfM(p,mi); });
+    if(!fara.length){ w.style.display="none"; return; }
+    var cine=fara.slice(0,3).map(function(p){ return nameOf(p); }).join(", ");
+    w.textContent="⚠ "+fara.length+(fara.length===1?" participant fără sector":" participanți fără sector")+" în manșa "+mi+": "+cine+(fara.length>3?" și încă "+(fara.length-3):"")+". Îi pune la un loc într-un sector separat, iar cel mai bun dintre ei ia 1 punct pe nedrept.";
+    w.style.display="block";
+  }
   function renderList(){
     var list=document.getElementById("list");
+    updateWarnSector();
     document.getElementById("st-count").textContent = state.participants.length;
     document.getElementById("st-total").textContent = fmt(sumAll());
     if(state.participants.length===0){
@@ -2211,7 +2270,7 @@
             (p.photo&&!L?'<button class="av-x" onclick="removePhoto(\''+p.id+'\')">×</button>':'')+
           '</div>'+
           '<div class="p-name"><div class="nm">'+full+'</div>'+
-            '<div class="p-sub">'+(p.ordine?'Ordine '+p.ordine+' · ':'')+(esc(p.stand)?'Stand '+esc(p.stand):'fără stand')+(p.sector?' · Sector '+esc(p.sector):'')+'</div></div>'+
+            '<div class="p-sub">'+(p.ordine?'Ordine '+p.ordine+' · ':'')+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'fără stand')+(sectorOfM(p,state.manche||1)?' · Sector '+esc(sectorOfM(p,state.manche||1)):'')+'</div></div>'+
           (L?'':'<button class="edit" onclick="editParticipant(\''+p.id+'\')">✎</button>'+
           '<button class="del" onclick="delParticipant(\''+p.id+'\')">×</button>')+
         '</div>';
@@ -2321,7 +2380,7 @@
   // care normalizarea vine să-l scoată.
   function pointsMapS(mi){
     var secs={};
-    state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; (secs[k]=secs[k]||[]).push(p); });
+    state.participants.forEach(function(p){ var k=sectorOfM(p,mi)||"Fără sector"; (secs[k]=secs[k]||[]).push(p); });
     var nMax=0;
     Object.keys(secs).forEach(function(k){ if(secs[k].length>nMax) nMax=secs[k].length; });
     var map={};
@@ -2381,7 +2440,7 @@
       var cls=i===0?"p1":i===1?"p2":i===2?"p3":"";
       var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
       var pts = opts.pmap ? '<td class="kg num" style="width:52px;color:var(--teal-d);">'+fmtPts(opts.pmap[p.id])+'</td>' : '';
-      var sub='Stand '+(esc(p.stand)||"–")+((opts.showSector&&p.sector)?' · Sec '+esc(p.sector):'');
+      var sub='Stand '+(esc(standOfM(p,mi))||"–")+((opts.showSector&&sectorOfM(p,mi))?' · Sec '+esc(sectorOfM(p,mi)):'');
       out+='<tr class="'+cls+'">'+
         '<td class="pos">'+medal+'</td>'+
         '<td>'+esc(nameOf(p))+'<div class="small">'+sub+'</div></td>'+
@@ -2419,7 +2478,7 @@
         rankRows(sortRankS(state.participants,rankScope),{showSector:true,mi:rankScope})+'</tbody></table>';
     } else {
       var secs={}; var order=[];
-      state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p); });
+      state.participants.forEach(function(p){ var k=sectorOfM(p,rankScope)||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p); });
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
       var html="";
       order.forEach(function(k){
@@ -2439,12 +2498,12 @@
     if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); lines.push("CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg"); lines.push(""); }
     if(rankMode==="fin" && finMethod==="pct"){
       lines.push("CLASAMENT FINAL (pe puncte)");
-      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+", Sec "+(p.sector||"-")+") — "+fmtPts(pmap[p.id])+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
+      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(standOfM(p,rankScope)||"-")+", Sec "+(sectorOfM(p,rankScope)||"-")+") — "+fmtPts(pmap[p.id])+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
     } else if(rankMode==="fin"){
       lines.push("CLASAMENT FINAL (pe kg)");
-      sortRankS(state.participants,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(p.stand||"-")+") — "+fmt(totalOfM(p,rankScope))+" kg"); });
+      sortRankS(state.participants,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(standOfM(p,rankScope)||"-")+") — "+fmt(totalOfM(p,rankScope))+" kg"); });
     } else {
-      var secs={},order=[]; state.participants.forEach(function(p){var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
+      var secs={},order=[]; state.participants.forEach(function(p){var k=sectorOfM(p,rankScope)||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
       order.forEach(function(k){ lines.push("SECTOR "+k); sortRankS(secs[k],rankScope).forEach(function(p,i){ lines.push("  "+(i+1)+". "+nameOf(p)+" — "+fmt(totalOfM(p,rankScope))+" kg ("+fmtPts(pmap[p.id])+" pct)"); }); lines.push(""); });
     }
@@ -2519,7 +2578,10 @@
     arr.forEach(function(x){
       if(x.sector && state.sectors.indexOf(x.sector)<0) state.sectors.push(x.sector);
       var nm=splitName(x.name);
-      state.participants.push({id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:x.sector||"", m:{1:emptyManche(),2:emptyManche()}});
+      var np={id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:x.sector||"", m:{}};
+      ensureManche(np);
+      manseRange().forEach(function(i){ np.m[i].stand=np.stand; np.m[i].sector=np.sector; });
+      state.participants.push(np);
     });
     document.getElementById("imp-text").value="";
     document.getElementById("imp-preview").innerHTML="";
@@ -2551,15 +2613,17 @@
     var el=document.getElementById("draw-stands");
     var N=parseInt(el?el.value:"",10); if(!N||N<1) N=P;
     if(N<P){ toast("Prea puține standuri: "+N+" pentru "+P+" participanți"); return; }
-    if(!confirm("Tragi la sorți? Se rescriu ordinea, standul și sectorul pentru toți cei "+P+" participanți.")) return;
+    var mi=state.manche||1;
+    // tragerea e a manșei active; manșele deja cântărite își păstrează sectoarele lor
+    if(!confirm("Tragi la sorți pentru MANȘA "+mi+"?\n\nSe rescriu ordinea, standul și sectorul celor "+P+" participanți, doar pentru manșa "+mi+". Manșele deja cântărite rămân cu sectoarele lor.")) return;
     var ranges=sectorRanges(N, state.sectors);
     var ord=[]; for(var i=1;i<=P;i++) ord.push(i); shuffle(ord);
     var pool=[]; for(var j=1;j<=N;j++) pool.push(j); shuffle(pool);
     var stands=pool.slice(0,P);
     state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
     var seq=state.participants.slice().sort(function(a,b){return a.ordine-b.ordine;});
-    seq.forEach(function(p,k){ var s=stands[k]; p.stand=String(s); p.sector=sectorForStand(s, ranges); });
-    queueSave(); renderList(); toast("Tragere făcută – ordine + standuri");
+    seq.forEach(function(p,k){ var s=stands[k]; setStandSector(p, mi, s, sectorForStand(s, ranges)); });
+    queueSave(); renderList(); renderRank(); toast("Tragere făcută pentru manșa "+mi);
     showView("cantar");
   }
   // sortare numerică după stand (stand 10 vine după stand 2); cei fără cifre în stand merg la coadă
@@ -2652,7 +2716,7 @@
     '</div>'+
     '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>';
     var secs={};
-    state.participants.forEach(function(p){ var k=p.sector||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,rankScope); });
+    state.participants.forEach(function(p){ var k=sectorOfM(p,rankScope)||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,rankScope); });
     var sk=Object.keys(secs).sort(function(a,b){return a.localeCompare(b,"ro");});
     if(sk.length>1){
       var mx=0; sk.forEach(function(k){ if(secs[k]>mx) mx=secs[k]; });
@@ -2665,7 +2729,7 @@
 
       // Media pe pescar: totalul de mai sus avantajează sectorul cu mai mulți oameni.
       var cnt={};
-      state.participants.forEach(function(p){ var kk=p.sector||"Fără sector"; cnt[kk]=(cnt[kk]||0)+1; });
+      state.participants.forEach(function(p){ var kk=sectorOfM(p,rankScope)||"Fără sector"; cnt[kk]=(cnt[kk]||0)+1; });
       var inegal=sk.some(function(k){ return cnt[k]!==cnt[sk[0]]; });
       var avg={}, mxa=0;
       sk.forEach(function(k){ avg[k]=secs[k]/Math.max(1,cnt[k]); if(avg[k]>mxa) mxa=avg[k]; });
@@ -2998,11 +3062,11 @@
     if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); h+='<div class="pr-sub"><b>CMMC (cel mai mare pește):</b> '+esc(nameOf(best))+' — '+fmt(cmmcAward(best,rankScope))+' kg</div>'; }
     h+='<div class="pr-sec">Clasament final</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Sector</th><th>Pct</th><th>Total kg</th></tr>';
     sortRankS(state.participants,rankScope).forEach(function(p,i){
-      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(p.stand||"–")+'</td><td class="c">'+esc(p.sector||"–")+'</td><td class="c">'+fmtPts(pmap[p.id])+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
+      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="c">'+esc(sectorOfM(p,rankScope)||"–")+'</td><td class="c">'+fmtPts(pmap[p.id])+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
     });
     h+='</table>';
     var secs={},order=[];
-    state.participants.forEach(function(p){var k=p.sector||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
+    state.participants.forEach(function(p){var k=sectorOfM(p,rankScope)||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
     if(order.length>1){
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
       order.forEach(function(k){

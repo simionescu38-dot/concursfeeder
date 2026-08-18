@@ -188,6 +188,8 @@ t("la egalitate perfectă de kg, câștigă peștele mai mare (a: 2,5)", ord, ["
    ================================================================ */
 console.log("\n=== 9. Codul REAL din index.html ===");
 const realSrc = ["mOf","cantOfM","extraOfM","cmmcOfM","totalOfM","cmmcAward","standKey","nameKey",
+                 // sectorul e al manșei, deci pointsMapS trece prin sectorOfM
+                 "sectorOfM","standOfM","mancheDeAfisat","manseRange","numManse",
                  "byStand","pointsMapS","mancheDisputata","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
                  "regPunctajHtml"]
   .map(grab).join("\n");
