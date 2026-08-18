@@ -229,6 +229,8 @@
   .lockbar{display:none; background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   body.locked .lockbar{display:block;}
+  .tag-plin{background:#fdecec !important; color:#a12727 !important; border-color:#f0b1b1 !important;}
+  .tag-putine{background:#fff6e5 !important; color:#8a5a12 !important; border-color:#f0d29a !important;}
   /* extragerea standurilor la baltă: un rând pe pescar, în ordinea trasă */
   .se-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
   .se-ord{flex:0 0 30px; font-weight:800; color:var(--muted); text-align:right;}
@@ -482,8 +484,9 @@
           <div><label class="f">Taxă</label><input id="ev-fee" placeholder="ex: 150 RON sau Gratuit"></div>
         </div>
         <div class="row" style="margin-bottom:8px;">
-          <div class="w-stand" style="flex:0 0 110px;"><label class="f">Locuri</label><input id="ev-slots" inputmode="numeric" placeholder="ex: 20"></div>
-          <div><label class="f">Organizator</label><input id="ev-organizer" placeholder="Nume organizator"></div>
+          <div class="w-stand" style="flex:0 0 96px;"><label class="f">Înscriși</label><input id="ev-taken" inputmode="numeric" placeholder="ex: 15"></div>
+          <div class="w-stand" style="flex:0 0 96px;"><label class="f">Locuri</label><input id="ev-slots" inputmode="numeric" placeholder="ex: 20"></div>
+          <div><label class="f">Organizator</label><input id="ev-organizer" placeholder="Nume"></div>
         </div>
         <div class="row" style="margin-bottom:8px;">
           <div><label class="f">Contact (telefon/WhatsApp)</label><input id="ev-contact" placeholder="ex: 07xx xxx xxx"></div>
@@ -1273,7 +1276,7 @@
     if(isOpen){
       f.style.display="none";
       document.getElementById("ev-edit-id").value="";
-      ["ev-name","ev-location","ev-date","ev-type","ev-fee","ev-slots","ev-organizer","ev-contact"].forEach(function(id){ document.getElementById(id).value=""; });
+      ["ev-name","ev-location","ev-date","ev-type","ev-fee","ev-slots","ev-taken","ev-organizer","ev-contact"].forEach(function(id){ document.getElementById(id).value=""; });
     } else {
       f.style.display="block";
     }
@@ -1289,6 +1292,7 @@
     document.getElementById("ev-type").value=ev.type||"";
     document.getElementById("ev-fee").value=ev.fee||"";
     document.getElementById("ev-slots").value=ev.slots_total||"";
+    document.getElementById("ev-taken").value=ev.slots_taken||"";
     document.getElementById("ev-organizer").value=ev.organizer||"";
     document.getElementById("ev-contact").value=ev.contact||"";
     document.getElementById("event-form").scrollIntoView({behavior:"smooth", block:"start"});
@@ -1303,6 +1307,9 @@
       type: document.getElementById("ev-type").value,
       fee: document.getElementById("ev-fee").value.trim(),
       slotsTotal: document.getElementById("ev-slots").value.trim() || null,
+      // Fără asta, serverul punea înscrișii înapoi pe zero la fiecare editare, iar în
+      // calendar scria veșnic „0/20" — numărul se vedea, dar nu se putea seta niciodată.
+      slotsTaken: document.getElementById("ev-taken").value.trim() || null,
       organizer: document.getElementById("ev-organizer").value.trim(),
       contact: document.getElementById("ev-contact").value.trim()
     };
@@ -1358,7 +1365,14 @@
       var tags = "";
       if(e.type) tags += '<span class="tag">'+esc(e.type)+'</span>';
       if(e.fee) tags += '<span class="tag">'+esc(e.fee)+'</span>';
-      if(e.slots_total) tags += '<span class="tag">'+(e.slots_taken||0)+'/'+e.slots_total+' locuri</span>';
+      if(e.slots_total){
+        var luate=+(e.slots_taken||0), tot=+e.slots_total, libere=Math.max(0, tot-luate);
+        // pescarul care se uită în calendar are o singură întrebare: mai prind loc?
+        var cls = libere===0 ? "tag tag-plin" : (libere<=3 ? "tag tag-putine" : "tag");
+        var txt = libere===0 ? luate+"/"+tot+" · COMPLET"
+                : (libere<=3 ? luate+"/"+tot+" · ultimele "+libere : luate+"/"+tot+" locuri");
+        tags += '<span class="'+cls+'">'+txt+'</span>';
+      }
       var contactBtn = e.contact ? '<a class="go" href="tel:'+esc(e.contact.replace(/\s+/g,""))+'">📞 '+esc(e.contact)+'</a>' : '';
       var ownBtns = mine[e.id] ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')">Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">Șterge</button>' : '';
       return '<div class="sched">'+
