@@ -229,6 +229,9 @@
   .lockbar{display:none; background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   body.locked .lockbar{display:block;}
+  /* bara de vizualizare din antet: și semn că telefonul doar privește, și ieșirea */
+  #viewerBar{background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12; border-radius:12px;
+    padding:8px 10px; margin-top:8px; font-size:12px; font-weight:700; cursor:pointer;}
   .metric .ro{ text-align:center; font-weight:700; padding:11px 4px; border:1.5px dashed var(--line); border-radius:10px; background:#f5f8fc;}
 
 
@@ -353,6 +356,7 @@
   <h1>Cântar &amp; Clasament</h1>
   <div class="comp" id="compName"></div>
   <div class="comp" id="syncBadge" style="display:none;"></div>
+  <div id="viewerBar" style="display:none;" onclick="exitViewerMode()"></div>
   <div id="timerBar"></div>
   <button id="lockBtn" onclick="toggleLock()" aria-label="Blocare editare">🔓</button>
 </header>
@@ -585,7 +589,7 @@
       <p class="hint" style="margin:0 0 10px;">Setează un cod de cameră și o cheie de scriere (o dată, pe telefonul organizatorului). De fiecare dată când cântărești, datele urcă automat în cloud. Trimite apoi linkul de mai jos celorlalți — ei văd clasamentul live, fără să poată modifica nimic.</p>
       <label class="f">Cod cameră</label>
       <div class="row">
-        <input id="sync-room" placeholder="ex: remus1" oninput="saveSyncRoom(this.value)">
+        <input id="sync-room" placeholder="ex: feedermoldova" oninput="saveSyncRoom(this.value)">
         <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="genRoomCode()">🎲 Cod nou</button>
       </div>
       <label class="f" style="margin-top:8px;">Cheie de scriere</label>
@@ -863,6 +867,35 @@
   var syncRoom = "", syncKey = "", syncT = null, syncPaused = false;
   var syncRetryT = null, syncRetryDelay = 3000;
   var viewerMode = false, viewerRoom = "", pollT = null, lastRev = 0;
+  // Camera ținută minte pentru aplicația instalată de pe linkul de vizualizare.
+  // Instalarea pornește de la start_url din manifest ("./"), adică FĂRĂ „?room=",
+  // așa că pescarul care își punea linkul live pe ecran ateriza a doua zi în
+  // aplicația goală și credea că s-a stricat clasamentul.
+  var VIEWER_ROOM_KEY = "concurs-viewer-room";
+  function saveViewerRoom(room){ try{ localStorage.setItem(VIEWER_ROOM_KEY, room||""); }catch(e){} }
+  function loadViewerRoom(){ try{ return (localStorage.getItem(VIEWER_ROOM_KEY)||"").trim(); }catch(e){ return ""; } }
+  function forgetViewerRoom(){ try{ localStorage.removeItem(VIEWER_ROOM_KEY); }catch(e){} }
+  // Reintră singur în cameră doar telefonul fără cheie de scriere: altfel i-am fi
+  // luat organizatorului cântarul doar pentru că a deschis o dată un link live.
+  // Nu ne uităm și la participanți — în vizualizare `pullState` umple oricum lista
+  // cu cei din cameră, deci condiția s-ar fi stins singură după prima privire.
+  function shouldResumeViewer(){
+    return !!loadViewerRoom() && !syncKey;
+  }
+  // Fără o cale înapoi, telefonul care reintră singur în cameră ar rămâne prins
+  // acolo: nici adresa curată nu-l mai scoate. Bara din antet e ieșirea.
+  function updateViewerBar(){
+    var b=document.getElementById("viewerBar");
+    if(!b) return;
+    if(!viewerMode){ b.style.display="none"; return; }
+    b.textContent="👁 Vizualizare live · camera "+viewerRoom+" — atinge ca să ieși";
+    b.style.display="block";
+  }
+  function exitViewerMode(){
+    if(!confirm("Ieși din vizualizarea camerei "+viewerRoom+"?\n\nTelefonul redevine aplicația ta obișnuită. Poți reveni oricând cu linkul live.")) return;
+    forgetViewerRoom();
+    location.replace(location.origin+location.pathname);
+  }
   function pad2(n){ return (n<10?"0":"")+n; }
   function nowHM(){ var d=new Date(); return pad2(d.getHours())+":"+pad2(d.getMinutes()); }
 
@@ -1831,7 +1864,8 @@
   }
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;
-    updateLockUI();
+    saveViewerRoom(room); // ca iconița instalată să reintre singură în cameră
+    updateLockUI(); updateViewerBar();
     var lb=document.querySelector(".lockbar");
     if(lb) lb.textContent="🔴 Vizualizare live – camera "+room+". Se actualizează automat.";
     showView("rank");
@@ -3077,6 +3111,7 @@
     startTimerLoop();
     var roomParam=(new URLSearchParams(location.search)).get("room");
     if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
+    else if(shouldResumeViewer()) startViewerMode(loadViewerRoom());
     else loadAcasaRegional();
   })();
 </script>
