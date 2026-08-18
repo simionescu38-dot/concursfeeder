@@ -229,6 +229,13 @@
   .lockbar{display:none; background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   body.locked .lockbar{display:block;}
+  /* clasamentul pe manșe: o coloană per manșă, punctele mari, kilogramele mici dedesubt */
+  .mcol{text-align:center; width:38px;}
+  .tcol{text-align:center; width:54px; background:#f2f7fd;}
+  .mcol .pp,.tcol .pp{font-weight:900; font-size:15px; line-height:1.1;}
+  .tcol .pp{color:var(--teal-d);}
+  .mcol .kk,.tcol .kk{font-size:10px; color:var(--muted); font-weight:700; line-height:1.2;}
+  th.mcol,th.tcol{font-size:10.5px;}
   .tag-plin{background:#fdecec !important; color:#a12727 !important; border-color:#f0b1b1 !important;}
   .tag-putine{background:#fff6e5 !important; color:#8a5a12 !important; border-color:#f0d29a !important;}
   /* extragerea standurilor la baltă: un rând pe pescar, în ordinea trasă */
@@ -2975,6 +2982,33 @@
     return out;
   }
 
+  // La General, comutatul între Manșa 1, 2 și 3 ca să afli cum s-a ajuns la un punctaj
+  // e obositor exact când te uită lumea peste umăr, la premiere. Aici manșele sunt
+  // coloane: punctele mari, kilogramele mici dedesubt, totalul la capăt.
+  function rankColumnsHtml(sorted, pmap){
+    var manse=manseRange();
+    var h='<table><thead><tr><th class="pos">#</th><th>Participant</th>'+
+      manse.map(function(i){ return '<th class="mcol">M'+i+'</th>'; }).join('')+
+      '<th class="tcol">TOTAL</th></tr></thead><tbody>';
+    sorted.forEach(function(p,idx){
+      var cls=idx===0?"p1":idx===1?"p2":idx===2?"p3":"";
+      var medal=idx===0?"🥇":idx===1?"🥈":idx===2?"🥉":(idx+1);
+      h+='<tr class="'+cls+'"><td class="pos">'+medal+'</td>'+
+         '<td>'+esc(nameOf(p))+'<div class="small">Stand '+(esc(standOfM(p,'total'))||"–")+
+         (sectorOfM(p,'total')?' · Sec '+esc(sectorOfM(p,'total')):'')+'</div></td>';
+      manse.forEach(function(i){
+        // o manșă în care nu s-a cântărit încă nimic n-are nici puncte, nici kilograme:
+        // un „0" acolo arată ca un rezultat prost, nu ca o manșă care n-a început
+        if(mancheDisputata(i)){
+          h+='<td class="mcol"><div class="pp">'+fmtPts(pointsMapS(i)[p.id])+'</div><div class="kk">'+fmt(totalOfM(p,i))+'</div></td>';
+        } else {
+          h+='<td class="mcol"><div class="pp" style="color:var(--muted);font-weight:700;">–</div></td>';
+        }
+      });
+      h+='<td class="tcol"><div class="pp">'+fmtPts(pmap[p.id])+'</div><div class="kk">'+fmt(totalOfM(p,'total'))+'</div></td></tr>';
+    });
+    return h+'</tbody></table>';
+  }
   function renderRank(){
     // CMMC winner (după scopul curent: o manșă anume sau General)
     var cbox=document.getElementById("cmmcBox");
@@ -2994,9 +3028,12 @@
       var pctHint = rankScope==='total'
         ? 'Punctele sunt suma locurilor din sector obținute în fiecare manșă (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra).'
         : 'Punctele vin din locul din sector (loc 1 = 1 punct). Câștigă cine are cele mai puține puncte; la egalitate de puncte, câștigă cantitatea totală de pește mai mare (cantitate + pești extra).';
+      var sortati=sortByPointsS(state.participants,pmap,rankScope);
       body.innerHTML='<p class="hint" style="margin:0 0 10px;">'+pctHint+'</p>'+
-        '<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
-        rankRows(sortByPointsS(state.participants,pmap,rankScope),{pmap:pmap,showSector:true,mi:rankScope})+'</tbody></table>';
+        (rankScope==='total'
+          ? rankColumnsHtml(sortati, pmap)
+          : '<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
+            rankRows(sortati,{pmap:pmap,showSector:true,mi:rankScope})+'</tbody></table>');
     } else if(rankMode==="fin"){
       body.innerHTML='<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg">Total kg</th></tr></thead><tbody>'+
         rankRows(sortRankS(state.participants,rankScope),{showSector:true,mi:rankScope})+'</tbody></table>';
