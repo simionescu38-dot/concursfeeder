@@ -576,6 +576,15 @@
     </div>
 
     <div class="card lockhide">
+      <div class="sec-title">Puncte la sectoare inegale</div>
+      <div class="seg">
+        <button id="sc-simplu" class="on" onclick="setScalaSectoare(false)">Locuri simple</button>
+        <button id="sc-scala" onclick="setScalaSectoare(true)">Aceeași scală</button>
+      </div>
+      <p class="hint"><b>Locuri simple:</b> locul 3 ia 3 puncte, oricât de mare e sectorul. <b>Aceeași scală:</b> sectoarele mai mici se întind pe scala celui mai mare, ca ultimul dintr-un sector de 5 să ia tot cât ultimul dintr-unul de 6 — mai drept la sectoare foarte inegale, dar dă puncte cu zecimale (2,25 · 3,5). Când toate sectoarele au același număr de oameni, cele două variante dau exact aceleași puncte.</p>
+    </div>
+
+    <div class="card lockhide">
       <div class="sec-title">Import participanți</div>
       <textarea id="imp-text" rows="6" placeholder="Un participant pe linie, ex:&#10;1, Ion Popescu, A&#10;2, Vasile Ionescu, A&#10;Gheorghe Marin, B"></textarea>
       <p class="hint">Un participant pe linie. Separi cu virgulă sau tab: <b>stand, nume, sector</b>. Standul și sectorul sunt opționale. Sectoarele noi se creează automat.</p>
@@ -845,6 +854,17 @@
   // ---------- manșe (concurs pe 2 sau 3 zile) ----------
   function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], stand:"", sector:""}; }
   function numManse(){ return state.numManse||2; }
+  // Implicit: locurile din sector, curat. „Locul 3 ia 3 puncte" e ce scrie în
+  // regulamentele de aici, iar punctele fracționare la premiere nu se pot explica.
+  function scalaSectoare(){ return state.scalaSectoare===true; }
+  function setScalaSectoare(v){
+    state.scalaSectoare=!!v; save();
+    var a=document.getElementById("sc-simplu"), b=document.getElementById("sc-scala");
+    if(a) a.classList.toggle("on", !v);
+    if(b) b.classList.toggle("on", !!v);
+    renderRank();
+    toast(v ? "Sectoarele se aduc pe aceeași scală" : "Punctele sunt locurile din sector");
+  }
   function manseRange(){ var a=[]; for(var i=1;i<=numManse();i++) a.push(i); return a; }
   function ensureManche(p){
     if(!p.m) p.m={};
@@ -1539,7 +1559,9 @@
       '<ul style="margin:0; padding-left:20px; font-size:14px; line-height:1.5;">'+
       '<li><b>Totalul unui pescar</b> = cantitatea cântărită + peștii extra. Cel mai mare pește (CMMC) <b>nu</b> se adună separat, ca să nu fie numărat de două ori.</li>'+
       '<li><b>Punctele pe sector:</b> locul 1 ia 1 punct, locul 2 ia 2 și așa mai departe. Câștigă cel cu punctaj mic.</li>'+
-      '<li><b>Sectoare de mărimi diferite</b> se aduc pe aceeași scală, cea a sectorului cel mai numeros: primul din sector ia 1 punct, ultimul ia cât are cel mai mare sector, restul între ele. Altfel ultimul dintr-un sector de 10 lua 10 puncte, iar ultimul dintr-unul de 5 doar 5, deși amândoi și-au închis sectorul — cine nimerea sectorul mic era avantajat de tragerea la sorți. Dacă toate sectoarele au același număr de oameni, punctele rămân exact locurile.</li>'+
+      (scalaSectoare()
+        ? '<li><b>Sectoare de mărimi diferite</b> se aduc pe aceeași scală, cea a sectorului cel mai numeros: primul din sector ia 1 punct, ultimul ia cât are cel mai mare sector, restul între ele — deci cine nimerește sectorul mic nu mai e avantajat de tragerea la sorți. Dacă toate sectoarele au același număr de oameni, punctele rămân exact locurile.</li>'
+        : '<li><b>Sectoare de mărimi diferite:</b> punctele rămân locurile din sector — locul 3 ia 3 puncte, oricât de mare e sectorul. Se poate schimba din Contul meu, la „Puncte la sectoare inegale".</li>')+
       '<li><b>La greutăți egale</b> se împarte media locurilor ocupate: doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte. Așa suma punctelor pe sector rămâne corectă și cei fără captură nu sunt avantajați (convenția FIPS/CIPS).</li>'+
       '<li><b>La General</b> se adună punctele din fiecare manșă. O manșă în care nu s-a cântărit încă nimic nu intră în sumă — altfel ar da tuturor media locurilor din sector, iar sectoarele cu mai puțini oameni ar ieși avantajate.</li>'+
       '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma manșelor.</li>'+
@@ -2234,6 +2256,7 @@
   function normalize(){
     if(!state.manche) state.manche=1;
     if(state.numManse!==2 && state.numManse!==3) state.numManse=2;
+    if(typeof state.scalaSectoare!=="boolean") state.scalaSectoare=false;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
     if(typeof state.rules!=="string") state.rules="";
     if(!Array.isArray(state.sponsors)) state.sponsors=[];
@@ -2654,14 +2677,19 @@
     var map={};
     Object.keys(secs).forEach(function(k){
       var arr=secs[k], n=arr.length;
-      var factor = n>1 ? (nMax-1)/(n-1) : 0;
+      // Scala comună întinde sectoarele mici peste toată scala celui mai mare, ca ultimul
+      // dintr-un sector de 5 să ia tot cât ultimul dintr-unul de 6. E mai corect când
+      // sectoarele diferă mult, dar dă locuri fracționare (2,25 · 3,5 · 4,75). Cu factorul
+      // 1 și mijlocul propriu, formula se reduce exact la locul din sector.
+      var factor = scalaSectoare() ? (n>1 ? (nMax-1)/(n-1) : 0) : 1;
+      var mijloc = scalaSectoare() ? (nMax+1)/2 : (n+1)/2;
       arr.forEach(function(p){
         var w=totalOfM(p,mi);
         var better=arr.filter(function(o){ return totalOfM(o,mi) > w+1e-9; }).length;
         var tied=arr.filter(function(o){ return Math.abs(totalOfM(o,mi)-w) <= 1e-9; }).length;
         // grupul la egalitate ocupă locurile (better+1) … (better+tied); media = better + (tied+1)/2
         var loc=better+(tied+1)/2;
-        map[p.id]=(loc-(n+1)/2)*factor+(nMax+1)/2;
+        map[p.id]=(loc-(n+1)/2)*factor+mijloc;
       });
     });
     return map;
@@ -3568,6 +3596,9 @@
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);
     [1,2,3].forEach(function(i){ var b=document.getElementById("mc-"+i); if(b) b.classList.toggle("on", (state.manche||1)===i); });
+    var scs=document.getElementById("sc-simplu"), scc=document.getElementById("sc-scala");
+    if(scs) scs.classList.toggle("on", !scalaSectoare());
+    if(scc) scc.classList.toggle("on", scalaSectoare());
     updateManseButtons();
     renderSectors(); updateLockUI(); updateVoiceBtn(); updatePushBtn(); renderList(); updateUploadBar();
     if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);

@@ -189,7 +189,7 @@ t("la egalitate perfectă de kg, câștigă peștele mai mare (a: 2,5)", ord, ["
 console.log("\n=== 9. Codul REAL din index.html ===");
 const realSrc = ["mOf","cantOfM","extraOfM","cmmcOfM","totalOfM","cmmcAward","standKey","nameKey",
                  // sectorul e al manșei, deci pointsMapS trece prin sectorOfM
-                 "sectorOfM","standOfM","mancheDeAfisat","manseRange","numManse",
+                 "sectorOfM","standOfM","mancheDeAfisat","manseRange","numManse","scalaSectoare",
                  "byStand","pointsMapS","mancheDisputata","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
                  "regPunctajHtml"]
   .map(grab).join("\n");
@@ -243,6 +243,9 @@ t("fmtPts real: 8.5 → \"8,5\"", F(8.5), "8,5");
    urca nemeritat la General. Regula rămâne „cele mai puține puncte = locul 1",
    dar se aplica pe numere greșite.
    ================================================================ */
+// Secțiunile 9b și 9c descriu modul „aceeași scală", care e acum o alegere, nu
+// implicitul. Îl pornim explicit, ca așteptările scrise atunci să rămână valabile.
+real.state.scalaSectoare = true;
 console.log("\n=== 9b. Manșe nedisputate (General) ===");
 const comboReal = () => JSON.parse(vm.runInContext("JSON.stringify(pointsCombo())", real));
 /** concurent cu o captură per manșă, în ordinea dată */
@@ -371,6 +374,7 @@ real.state.numManse = 2;
 /* ================================================================
    10. CODUL REAL din sezon.html — locurile la egalitate.
    ================================================================ */
+real.state.scalaSectoare = false; // înapoi la implicit pentru restul suitei
 console.log("\n=== 10. Codul REAL din sezon.html ===");
 const sezSrc = H2.citeste("sezon.html");
 function grabParen(hay, marker){

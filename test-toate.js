@@ -6,6 +6,7 @@ const { execFileSync } = require("child_process");
 const TESTE = [
   ["Sintaxa scripturilor", "test-sintaxa.js"],
   ["Punctaj la egalitate", "test-punctaj-egalitate.js"],
+  ["Scala sectoarelor", "test-scala-sectoare.js"],
   ["Camera ținută minte", "test-viewer-room.js"],
   ["Sector pe manșă", "test-sector-mansa.js"],
   ["Reparații drum de concurs", "test-reparatii.js"],

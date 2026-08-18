@@ -20,7 +20,7 @@ function aplicatie(numManse) {
   const ctx = { state: { participants: [], manche: 1, numManse: numManse || 3 }, console };
   vm.createContext(ctx);
   vm.runInContext(
-    ["emptyManche", "numManse", "manseRange", "ensureManche", "mOf",
+    ["emptyManche", "numManse", "scalaSectoare", "manseRange", "ensureManche", "mOf",
      "sectorOfM", "standOfM", "mancheDeAfisat", "setStandSector",
      "cantOfM", "extraOfM", "cmmcOfM", "totalOfM", "cmmcAward",
      "pointsMapS", "mancheDisputata", "pointsCombo", "nameOf"]
@@ -157,6 +157,8 @@ console.log("\n=== 6. Concurs cu 6 sectoare ===");
 {
   const ctx = aplicatie(3);
   ctx.state.sectors = ["A","B","C","D","E","F"];
+  // proprietatea „fiecare sector cântărește la fel" e a modului cu scală comună
+  ctx.state.scalaSectoare = true;
   vm.runInContext([grabFunction(src, "sectorRanges"), grabFunction(src, "sectorForStand")].join("\n"), ctx);
 
   const imp = JSON.parse(vm.runInContext('JSON.stringify(sectorRanges(28, state.sectors))', ctx));
