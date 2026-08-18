@@ -983,7 +983,8 @@
     renderMeniu(); // grila de pe Acasă arată altceva organizatorului față de pescar
     var b=document.getElementById("lockBtn"); if(b) b.textContent=isLocked()?"🔒":"🔓";
     var st=document.getElementById("pin-status");
-    if(st) st.innerHTML = state.pinHash ? (isLocked()?"Stare: <b>blocată</b> 🔒 – doar vizualizare.":"Stare: <b>deblocată</b> – PIN setat. Apasă lacătul din dreapta-sus ca să blochezi.") : "Niciun PIN setat – oricine are telefonul poate modifica datele.";
+    if(st && viewerMode) st.innerHTML = "Telefonul urmărește camera <b>"+esc(viewerRoom)+"</b>, deci nu poate modifica nimic. Atinge bara galbenă de sus (sau lacătul) ca să ieși din vizualizare.";
+    else if(st) st.innerHTML = state.pinHash ? (isLocked()?"Stare: <b>blocată</b> 🔒 – doar vizualizare.":"Stare: <b>deblocată</b> – PIN setat. Apasă lacătul din dreapta-sus ca să blochezi.") : "Niciun PIN setat – oricine are telefonul poate modifica datele.";
     var rm=document.getElementById("btn-removepin"); if(rm) rm.style.display = state.pinHash ? "block" : "none";
   }
   async function setPin(){
@@ -999,6 +1000,10 @@
     state.pinHash=""; state.lock=false; save(); updateLockUI(); renderList(); toast("PIN scos – aplicația e deschisă");
   }
   async function toggleLock(){
+    // În vizualizare TOT ce se poate modifica e ascuns, inclusiv câmpul de PIN. Lacătul
+    // trimitea organizatorul spre „setează un PIN, mai jos", adică spre un câmp pe care
+    // nu-l putea vedea: fundătură perfectă pentru cine deschisese o dată linkul live.
+    if(viewerMode){ exitViewerMode(); return; }
     if(!state.pinHash){ showView('set'); toast("Setează întâi un PIN, mai jos"); return; }
     if(isLocked()){
       var v=await askPin("PIN", "Deblochează", verifyPin);

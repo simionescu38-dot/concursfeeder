@@ -116,4 +116,26 @@ console.log("\n=== 4. Ordinea la pornire ===");
     init.indexOf("else loadAcasaRegional()") > init.indexOf("shouldResumeViewer()"), true);
 }
 
+/* ================================================================
+   5. Lacătul, în vizualizare, e tot o ieșire
+      În vizualizare se ascunde tot ce se poate modifica, inclusiv câmpul
+      de PIN. Lacătul trimitea spre „setează un PIN, mai jos" — adică spre
+      un câmp invizibil. Organizatorul care deschisese o dată linkul live
+      rămânea fără nicio cale de ieșire pe care s-o găsească singur.
+   ================================================================ */
+console.log("\n=== 5. Lacatul in vizualizare ===");
+{
+  const toggle = grabFunction(src, "toggleLock");
+  t("lacătul verifică întâi modul vizualizare",
+    toggle.indexOf("if(viewerMode)") >= 0, true);
+  t("…și cheamă ieșirea din cameră",
+    /if\(viewerMode\)\{ exitViewerMode\(\); return; \}/.test(toggle), true);
+  t("o face înaintea mesajului despre PIN",
+    toggle.indexOf("exitViewerMode") < toggle.indexOf("Setează întâi un PIN"), true);
+
+  const ui = grabFunction(src, "updateLockUI");
+  t("iar cardul de PIN spune de ce e gol, în loc să mintă",
+    /viewerMode.*urmărește camera/s.test(ui), true);
+}
+
 t.raport();
