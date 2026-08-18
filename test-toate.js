@@ -8,6 +8,7 @@ const TESTE = [
   ["Punctaj la egalitate", "test-punctaj-egalitate.js"],
   ["Camera ținută minte", "test-viewer-room.js"],
   ["Sector pe manșă", "test-sector-mansa.js"],
+  ["Reparații drum de concurs", "test-reparatii.js"],
   ["Banda de sincronizare", "test-banda-sync.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],

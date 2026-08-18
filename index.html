@@ -834,7 +834,7 @@
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
   // ---------- manșe (concurs pe 2 sau 3 zile) ----------
-  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[]}; }
+  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], stand:"", sector:""}; }
   function numManse(){ return state.numManse||2; }
   function manseRange(){ var a=[]; for(var i=1;i<=numManse();i++) a.push(i); return a; }
   function ensureManche(p){
@@ -2159,6 +2159,18 @@
         };
       }
       delete p.catches; delete p.catchTimes; delete p.catchPhotos; delete p.extras; delete p.cmmc; delete p.cant; delete p.extra;
+      // Migrarea din vremea când standul era al pescarului, nu al manșei: se face O
+      // SINGURĂ dată, doar pentru manșele care existau deja în date. Fără marcaj, o
+      // manșă deschisă mai târziu (trecerea de la 2 la 3) primea și ea standul de la
+      // manșa curentă și părea trasă, deși nu extrăsese nimeni nimic în ea.
+      if(!p.msv){
+        Object.keys(p.m||{}).forEach(function(k){
+          var m=p.m[k]; if(!m) return;
+          if(m.sector===undefined || m.sector===null) m.sector=p.sector||"";
+          if(m.stand===undefined || m.stand===null) m.stand=p.stand||"";
+        });
+        p.msv=1;
+      }
       ensureManche(p);
       manseRange().forEach(function(mi){
         var m=p.m[mi];
@@ -2170,12 +2182,15 @@
         while(m.catchPhotos.length<m.catches.length) m.catchPhotos.push(null);
         if(m.catchPhotos.length>m.catches.length) m.catchPhotos.length=m.catches.length;
         if(!Array.isArray(m.extras)) m.extras=[];
-        // datele vechi n-aveau stand/sector pe manșă: le îngheață pe cele de acum, ca
-        // rezultatele deja cântărite să nu se mai clatine la următoarea tragere la sorți
-        if(m.sector===undefined || m.sector===null) m.sector=p.sector||"";
-        if(m.stand===undefined || m.stand===null) m.stand=p.stand||"";
+        if(m.sector===undefined || m.sector===null) m.sector="";
+        if(m.stand===undefined || m.stand===null) m.stand="";
         delete m.cmmc; // câmp vechi: CMMC se calculează acum din extras
       });
+      // „unde stă acum" = standul manșei active. setManche făcea sincronizarea asta, dar
+      // la redeschiderea aplicației pe manșa 2 rămâneau valorile manșei 1, iar formularul
+      // de editare le scria peste tragerea bună la prima salvare.
+      p.stand=standOfM(p, state.manche||1);
+      p.sector=sectorOfM(p, state.manche||1);
     });
   }
 
@@ -2192,6 +2207,7 @@
     var tab=document.getElementById("tab-"+(TAB_PARINTE[v]||v));
     if(tab) tab.classList.add("on");
     if(v==="rank") renderRank();
+    if(v==="cantar") renderList(); // standurile se scriu din Contul meu, deci lista poate fi veche
     if(v==="set") previewDraw();
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
     if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); }
@@ -2857,7 +2873,9 @@
     var sel=document.getElementById("se-sec-"+id);
     if(sel) sel.value = sectorOfM(p,mi) || "";
     updateStandDup();
-    queueSave(); renderList();
+    // fără renderList aici: se reconstruia toată lista de cântărire la fiecare cifră
+    // tastată, iar la 30 de pescari se simțea. Lista se reface când intri în Cântar.
+    queueSave();
   }
   function setSectorManual(id, val){
     if(guard()) return;
@@ -2870,7 +2888,7 @@
     var auto = isNaN(nr) ? "" : sectorForStand(nr, currentRanges());
     mOf(p,mi).secManual = (val||"")!==auto;
     updateStandDup();
-    queueSave(); renderList();
+    queueSave();
   }
   function drawLots(){
     if(guard()) return;
@@ -2888,7 +2906,9 @@
     var stands=pool.slice(0,P);
     state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
     var seq=state.participants.slice().sort(function(a,b){return a.ordine-b.ordine;});
-    seq.forEach(function(p,k){ var s=stands[k]; setStandSector(p, mi, s, sectorForStand(s, ranges)); });
+    // tragere nouă = repartizare nouă: alegerile de sector făcute de mână pentru manșa
+    // asta nu mai au ce păzi, altfel ar bloca tăcut sectorul dat acum de intervale
+    seq.forEach(function(p,k){ var s=stands[k]; setStandSector(p, mi, s, sectorForStand(s, ranges)); delete mOf(p,mi).secManual; });
     queueSave(); renderList(); renderRank(); renderStandEntry(); toast("Tragere făcută pentru manșa "+mi);
     showView("cantar");
   }
