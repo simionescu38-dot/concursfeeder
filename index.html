@@ -234,7 +234,7 @@
   .se-ord{flex:0 0 30px; font-weight:800; color:var(--muted); text-align:right;}
   .se-nume{flex:1 1 auto; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .se-row input{flex:0 0 64px; margin:0; text-align:center;}
-  .se-sec{flex:0 0 74px; font-size:12px; font-weight:800; color:var(--teal-d);}
+  .se-sec{flex:0 0 74px; font-size:13px; font-weight:800; color:var(--teal-d); margin:0; padding:8px 4px;}
   .se-dup{color:#a12727;}
   #se-warn{margin-top:8px; font-size:13px; font-weight:700; color:#a12727;}
   /* pescarii fără sector formează un sector-fantomă care falsifică punctajul */
@@ -570,7 +570,7 @@
         <button class="btn btn-primary" onclick="drawOrder()">🎲 Trage ordinea</button>
         <button class="btn btn-ghost" onclick="copyDraw()">Copiază</button>
       </div>
-      <p class="hint" style="margin-top:10px;">Întâi se trage <b>ordinea</b>. Apoi, la baltă, fiecare își extrage standul în ordinea asta — scrie-l mai jos pe măsură ce se strigă. Sectorul se completează singur, după intervalele de mai sus.</p>
+      <p class="hint" style="margin-top:10px;">Întâi se trage <b>ordinea</b>. Apoi, la baltă, fiecare își extrage standul în ordinea asta — scrie-l mai jos pe măsură ce se strigă. Sectorul se completează singur după intervalele de mai sus, dar îl poți schimba din dreapta: dacă îl alegi tu, rămâne cum l-ai pus și nu se mai rescrie când corectezi standul.</p>
       <div id="stand-entry"></div>
       <p class="hint" style="margin-top:12px;">Dacă la baltă nu extrageți standurile manual, poți lăsa aplicația să le dea ea:</p>
       <button class="btn btn-ghost" onclick="drawLots()">🎲 Trage și standurile automat</button>
@@ -2649,6 +2649,17 @@
   function standEntryOrder(){
     return state.participants.slice().sort(function(a,b){ return (a.ordine||9999)-(b.ordine||9999); });
   }
+  // sectorul se poate și alege de mână: la unele bălți sectoarele nu sunt blocuri
+  // consecutive de standuri, iar organizatorul le trece singur
+  function seOptions(sel){
+    var out='<option value=""'+(sel?"":" selected")+'>–</option>';
+    state.sectors.forEach(function(x){
+      out+='<option value="'+esc(x)+'"'+(x===sel?" selected":"")+'>'+esc(x)+'</option>';
+    });
+    // un sector rămas dintr-o împărțire veche, scos între timp din listă
+    if(sel && state.sectors.indexOf(sel)<0) out+='<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>';
+    return out;
+  }
   function renderStandEntry(){
     var box=document.getElementById("stand-entry"); if(!box) return;
     if(!state.participants.length){ box.innerHTML=""; return; }
@@ -2660,7 +2671,9 @@
          '<div class="se-ord">'+(p.ordine||"–")+'.</div>'+
          '<div class="se-nume">'+esc(nameOf(p))+'</div>'+
          '<input inputmode="numeric" value="'+esc(st)+'" placeholder="stand" oninput="setStandManual(\''+p.id+'\', this.value)">'+
-         '<div class="se-sec" id="se-sec-'+p.id+'">'+esc(sectorOfM(p,mi)||"–")+'</div>'+
+         '<select class="se-sec" id="se-sec-'+p.id+'" onchange="setSectorManual(\''+p.id+'\', this.value)">'+
+           seOptions(sectorOfM(p,mi))+
+         '</select>'+
          '</div>';
     });
     h+='<div id="se-warn"></div>';
@@ -2681,17 +2694,38 @@
     if(faraSector) probleme.push(faraSector+(faraSector===1?" stand cade":" standuri cad")+" în afara sectoarelor");
     w.textContent = probleme.length ? "⚠ "+probleme.join(" · ") : "";
   }
+  function participantById(id){
+    var out=null;
+    state.participants.forEach(function(x){ if(x.id===id) out=x; });
+    return out;
+  }
   function setStandManual(id, val){
     if(guard()) return;
-    var p=null;
-    state.participants.forEach(function(x){ if(x.id===id) p=x; });
-    if(!p) return;
-    var mi=state.manche||1;
+    var p=participantById(id); if(!p) return;
+    var mi=state.manche||1, m=mOf(p,mi);
     var st=(""+(val||"")).trim();
     var nr=parseInt(st,10);
-    setStandSector(p, mi, st, st && !isNaN(nr) ? sectorForStand(nr, currentRanges()) : "");
-    var lbl=document.getElementById("se-sec-"+id);
-    if(lbl) lbl.textContent = sectorOfM(p,mi) || "–";
+    // sectorul ales de mână nu se pierde când se corectează o cifră la stand
+    var sec = m.secManual ? (m.sector||"")
+            : (st && !isNaN(nr) ? sectorForStand(nr, currentRanges()) : "");
+    var eraManual = !!m.secManual;
+    setStandSector(p, mi, st, sec);
+    if(eraManual) mOf(p,mi).secManual=true;
+    var sel=document.getElementById("se-sec-"+id);
+    if(sel) sel.value = sectorOfM(p,mi) || "";
+    updateStandDup();
+    queueSave(); renderList();
+  }
+  function setSectorManual(id, val){
+    if(guard()) return;
+    var p=participantById(id); if(!p) return;
+    var mi=state.manche||1;
+    setStandSector(p, mi, standOfM(p,mi), val||"");
+    // ales de mână: de acum standul nu-l mai rescrie. Revenind la sectorul pe care
+    // l-ar da intervalele, alegerea se consideră retrasă.
+    var nr=parseInt(standOfM(p,mi),10);
+    var auto = isNaN(nr) ? "" : sectorForStand(nr, currentRanges());
+    mOf(p,mi).secManual = (val||"")!==auto;
     updateStandDup();
     queueSave(); renderList();
   }
