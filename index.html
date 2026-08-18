@@ -743,6 +743,28 @@
   <section class="view" id="view-strat">
     <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
     <div class="card">
+      <div class="sec-title">Distanța cu picheții</div>
+      <label class="f">Distanța dintre picheți</label>
+      <div class="seg">
+        <button id="pk-3" onclick="setPasPicheti(3)">3 m</button>
+        <button id="pk-4" class="on" onclick="setPasPicheti(4)">4 m</button>
+        <button id="pk-5" onclick="setPasPicheti(5)">5 m</button>
+      </div>
+      <div class="row" style="margin-top:10px;">
+        <div><label class="f">Înfășurări</label><input id="pk-wraps" inputmode="decimal" placeholder="ex: 12" oninput="calcPicheti()"></div>
+        <div><label class="f">Distanța la clips</label><div class="ro" id="pk-out" style="font-size:20px;">–</div></div>
+      </div>
+      <p class="hint" style="margin-top:8px;">O înfășurare = <b>dus-întors</b> între picheți, adică de două ori distanța dintre ei. Jumătățile se scriu cu virgulă: <b>12,5</b>.</p>
+      <button class="btn btn-ghost mt" onclick="pichetiInStrategie()">↓ Pune distanța în însemnare</button>
+
+      <label class="f" style="margin-top:14px;">Invers: câte înfășurări pentru o distanță</label>
+      <div class="row">
+        <div><label class="f">Vreau (m)</label><input id="pk-tinta" inputmode="decimal" placeholder="ex: 38" oninput="calcPicheti()"></div>
+        <div><label class="f">Îmi trebuie</label><div class="ro" id="pk-out2" style="font-size:20px;">–</div></div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="sec-title">Carnetul meu de strategie</div>
       <p class="hint" style="margin:0;">Ce ai găsit pe fiecare stand: distanța la clip, adâncimea, structura, nada, momeala și orele când a mușcat. <b>Rămâne doar pe telefonul tău</b> — nu se trimite nicăieri, nu intră în clasament și nu-l vede niciun alt pescar.</p>
     </div>
@@ -1593,6 +1615,50 @@
   var STRAT_KEY="concurs-strategie-v1";
   var stratLista=[], stratOre=[];
 
+  // Pescarii măsoară pe uscat cu doi picheți înfipți la o distanță știută și înfășoară
+  // firul între ei până la clips. O înfășurare e dus-întors, deci de două ori pasul.
+  // Socoteala se face în cap, la baltă, cu mâinile ude — de aici greșelile.
+  var PAS_PICHETI_KEY = "concurs-pas-picheti";
+  var pasPicheti = 4;
+  function setPasPicheti(m){
+    pasPicheti = m;
+    try{ localStorage.setItem(PAS_PICHETI_KEY, String(m)); }catch(e){}
+    [3,4,5].forEach(function(x){ var b=document.getElementById("pk-"+x); if(b) b.classList.toggle("on", x===m); });
+    calcPicheti();
+  }
+  function loadPasPicheti(){
+    var v=4;
+    try{ v=parseFloat(localStorage.getItem(PAS_PICHETI_KEY))||4; }catch(e){}
+    if([3,4,5].indexOf(v)<0) v=4;
+    setPasPicheti(v);
+  }
+  function calcPicheti(){
+    var o=document.getElementById("pk-out"), o2=document.getElementById("pk-out2");
+    if(o){
+      var w=num(document.getElementById("pk-wraps").value);
+      o.textContent = w>0 ? fmtM(w*2*pasPicheti)+" m" : "–";
+    }
+    if(o2){
+      var d=num(document.getElementById("pk-tinta").value);
+      if(d>0){
+        var w2=d/(2*pasPicheti);
+        // la baltă nu numeri sferturi de înfășurare: rotunjim la jumătate și spunem
+        // ce distanță iese de fapt, ca să nu creadă nimeni că a nimerit fix
+        var rot=Math.round(w2*2)/2;
+        o2.innerHTML = fmtM(rot)+" înf.<div class=\"small\" style=\"font-weight:600;\">= "+fmtM(rot*2*pasPicheti)+" m</div>";
+      } else o2.textContent="–";
+    }
+  }
+  /** metri fără zerouri inutile: 32 → „32", 32,5 → „32,5" */
+  function fmtM(v){
+    return (Math.round(v*100)/100).toFixed(2).replace(/\.?0+$/,"").replace(".",",");
+  }
+  function pichetiInStrategie(){
+    var w=num(document.getElementById("pk-wraps").value);
+    if(!(w>0)){ toast("Scrie întâi câte înfășurări"); return; }
+    var d=document.getElementById("st-dist");
+    if(d){ d.value=fmtM(w*2*pasPicheti); toast("Distanța trecută în însemnare"); d.scrollIntoView({behavior:"smooth", block:"center"}); }
+  }
   function stratLoad(){
     try{ var v=localStorage.getItem(STRAT_KEY); stratLista=v?JSON.parse(v):[]; }catch(e){ stratLista=[]; }
     if(!Array.isArray(stratLista)) stratLista=[];
@@ -2488,7 +2554,7 @@
     if(v==="set") previewDraw();
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
     if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); }
-    if(v==="strat") renderStrat();
+    if(v==="strat"){ renderStrat(); loadPasPicheti(); }
     if(v==="reg") renderReg();
     if(v==="spons") renderSpons();
     window.scrollTo(0,0);
