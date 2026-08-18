@@ -642,6 +642,7 @@
         <input id="sync-room" placeholder="ex: feedermoldova" oninput="saveSyncRoom(this.value)">
         <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="genRoomCode()">🎲 Cod nou</button>
       </div>
+      <p class="hint" id="room-info" style="margin:6px 0 0;"></p>
       <label class="f" style="margin-top:8px;">Cheie de scriere</label>
       <div class="row">
         <input id="sync-key" type="password" name="cheie-camera" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="cheia primită la activare" oninput="saveSyncKey(this.value)">
@@ -713,6 +714,12 @@
         <button class="btn btn-ghost mt" id="btn-removepin" style="display:none;" onclick="removePin()">Scoate PIN-ul</button>
       </div>
       <p class="hint">Când e blocată, aplicația poate fi doar privită: nimeni nu poate adăuga sau modifica cântăriri fără PIN. Deblochezi de pe lacătul din dreapta-sus.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title">Adu înapoi ce era</div>
+      <p class="hint" id="undo-info" style="margin:0 0 10px;"></p>
+      <button class="btn btn-ghost" id="btn-undo" style="display:none;" onclick="aduInapoi()">↩ Adu înapoi copia dinainte</button>
     </div>
 
     <div class="card lockhide">
@@ -1059,6 +1066,44 @@
   // Instalarea pornește de la start_url din manifest ("./"), adică FĂRĂ „?room=",
   // așa că pescarul care își punea linkul live pe ecran ateriza a doua zi în
   // aplicația goală și credea că s-a stricat clasamentul.
+  // Pe 18 august telefonul organizatorului s-a golit cu o zi înainte de concurs și n-a
+  // existat niciun „înapoi": lista a trebuit recuperată din cameră, de pe server. Acum,
+  // înainte de orice ștergere sau înlocuire, starea de dinainte se pune deoparte pe
+  // telefon. Una singură — cea mai recentă e și cea care contează.
+  var UNDO_KEY = "concurs-undo";
+  function puneDeoParte(motiv){
+    try{
+      if(!state.participants || !state.participants.length) return; // nimic de salvat
+      localStorage.setItem(UNDO_KEY, JSON.stringify({
+        cand: Date.now(), motiv: motiv||"", nume: state.name||"", n: state.participants.length, data: state
+      }));
+    }catch(e){}
+  }
+  function citesteDeoParte(){
+    try{ var v=localStorage.getItem(UNDO_KEY); return v ? JSON.parse(v) : null; }catch(e){ return null; }
+  }
+  function updateUndoUI(){
+    var b=document.getElementById("btn-undo"), h=document.getElementById("undo-info");
+    if(!b || !h) return;
+    var u=citesteDeoParte();
+    if(!u || !u.data){ b.style.display="none"; h.textContent="Nu e nimic de adus înapoi."; return; }
+    var d=new Date(u.cand);
+    var ora=("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+    b.style.display="block";
+    h.textContent="Ultima copie: "+(u.nume||"concurs fără nume")+", "+u.n+" participanți — "+(u.motiv||"salvată")+" la "+ora+".";
+  }
+  function aduInapoi(){
+    if(guard()) return;
+    var u=citesteDeoParte();
+    if(!u || !u.data){ toast("Nu e nimic de adus înapoi"); return; }
+    if(!confirm("Aduci înapoi „"+(u.nume||"concurs fără nume")+"” cu "+u.n+" participanți?\n\nCe e acum pe telefon se pierde.")) return;
+    puneDeoParte("schimbat cu o copie mai veche"); // ca să se poată reveni și din asta
+    state=u.data; normalize(); save();
+    var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
+    var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
+    renderSectors(); renderList(); renderRank(); updateManseButtons(); updateUndoUI();
+    toast("Adus înapoi – verifică lista în Cântar");
+  }
   var VIEWER_ROOM_KEY = "concurs-viewer-room";
   function saveViewerRoom(room){ try{ localStorage.setItem(VIEWER_ROOM_KEY, room||""); }catch(e){} }
   function loadViewerRoom(){ try{ return (localStorage.getItem(VIEWER_ROOM_KEY)||"").trim(); }catch(e){ return ""; } }
@@ -1369,7 +1414,37 @@
     b.style.cursor="pointer";
     b.onclick=function(){ meniuGo("set","card-sync"); };
   }
-  function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} syncPaused=false; syncProblem=""; updateLiveQr(); updateUploadBar(); }
+  // Codul ajunge într-o adresă web dictată la baltă. „brăila rediu galian" devine acolo
+  // br%C4%83ila%20rediu%20galian — merge, dar nu se poate citi la telefon nimănui. Îl
+  // curățăm la scriere: fără diacritice, fără spații, doar litere mici, cifre și liniuțe.
+  var DIACRITICE = {"ă":"a","â":"a","î":"i","ș":"s","ş":"s","ț":"t","ţ":"t","Ă":"a","Â":"a","Î":"i","Ș":"s","Ş":"s","Ț":"t","Ţ":"t"};
+  function curataCodCamera(v){
+    var out="";
+    (""+(v||"")).split("").forEach(function(c){ out += (DIACRITICE[c]!==undefined ? DIACRITICE[c] : c); });
+    return out.toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")   // spații și orice altceva devin liniuță
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+  function updateRoomInfo(){
+    var h=document.getElementById("room-info"); if(!h) return;
+    var ultima="";
+    try{ ultima=localStorage.getItem(SYNC_ROOM_KEY+"-ultima")||""; }catch(e){}
+    if(!syncRoom){ h.textContent=""; return; }
+    if(ultima && ultima!==syncRoom){
+      h.innerHTML="⚠ Ultima cameră folosită era <b>"+esc(ultima)+"</b>. Datele <b>nu se mută</b> între camere — după ce schimbi codul, apasă „Trimite datele acum”.";
+      return;
+    }
+    h.textContent="";
+  }
+  function saveSyncRoom(v){
+    var curat=curataCodCamera(v);
+    var el=document.getElementById("sync-room");
+    if(el && el.value!==curat) el.value=curat; // arată pe loc ce s-a păstrat
+    syncRoom=curat;
+    try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){}
+    syncPaused=false; syncProblem=""; updateLiveQr(); updateUploadBar(); updateRoomInfo();
+  }
   // Câmpul e de tip parolă, deci o cheie cu o literă lipsă sau cu un spațiu lipit la
   // copiere arată exact ca una bună. Fără s-o poți citi, nu ai cum să-ți dai seama de ce
   // ești respins — iar cheia nu se poate citi înapoi de pe server, deci nici n-are cine
@@ -1407,6 +1482,8 @@
     updateLiveQr();
     updateInstallQr();
     updateInstallUI();
+    updateUndoUI();
+    updateRoomInfo();
   }
   // ---------- grila de meniu de pe Acasă ----------
   // Se schimbă după lacăt: organizatorul vede uneltele de concurs, pescarul nu vede
@@ -2124,7 +2201,9 @@
       body: JSON.stringify({data: state})
     }).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       syncBusy=false;
-      if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM(); setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
+      if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM();
+        try{ localStorage.setItem(SYNC_ROOM_KEY+"-ultima", syncRoom); }catch(e){}
+        updateRoomInfo(); setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
       else {
         // cel mai probabil motiv, spus pe limba organizatorului
         syncProblem=(j&&j.error) ? "cheia de scriere e greșită?" : "eroare la server";
@@ -3540,6 +3619,7 @@
       var mode=document.getElementById("imp-mode").value;
       if(mode==="replace"){
         if(!confirm("Înlocuiești TOATE datele de pe acest telefon cu cele din fișier ("+data.participants.length+" participanți)?")) return;
+        puneDeoParte("înainte de import");
         state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1, numManse:data.numManse||2, rules:data.rules||"", sponsors:Array.isArray(data.sponsors)?data.sponsors:[] };
         normalize(); save();
         document.getElementById("nm-2").classList.toggle("on", numManse()===2);
@@ -3573,6 +3653,7 @@
       ? "Ștergi toți participanții și datele? Concursul curent se arhivează automat în sezon înainte, deci rezultatele rămân. Nu se poate reveni."
       : "Ștergi toți participanții și datele? Nu se poate reveni.";
     if(!confirm(msg)) return;
+    puneDeoParte("înainte de ștergere");
     if(willArchive) archiveToSeason(function(){ saveArchiveId(""); });
     // sponsorii sunt o listă de parteneri, nu rezultate: supraviețuiesc ștergerii,
     // altfel ar trebui retastați la fiecare concurs. Regulamentul, fiind al
@@ -3582,7 +3663,7 @@
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);
     updateManseButtons();
-    renderSectors(); renderList(); renderRank();
+    renderSectors(); renderList(); renderRank(); updateUndoUI();
   }
 
   // ---------- init ----------
