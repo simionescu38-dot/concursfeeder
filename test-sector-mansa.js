@@ -150,4 +150,45 @@ console.log("\n=== 5. Avertismentul pentru cei fara sector ===");
   t("spune în ce manșă", /manșa 1/.test(bara.textContent), true);
 }
 
+/* ================================================================
+   6. Mai multe sectoare (unele bălți au și 6)
+   ================================================================ */
+console.log("\n=== 6. Concurs cu 6 sectoare ===");
+{
+  const ctx = aplicatie(3);
+  ctx.state.sectors = ["A","B","C","D","E","F"];
+  vm.runInContext([grabFunction(src, "sectorRanges"), grabFunction(src, "sectorForStand")].join("\n"), ctx);
+
+  const imp = JSON.parse(vm.runInContext('JSON.stringify(sectorRanges(28, state.sectors))', ctx));
+  t("28 de standuri se împart în 6 sectoare", imp.length, 6);
+  t("…fără să se piardă vreun stand", imp.reduce(function(s,x){ return s+(x.to-x.from+1); },0), 28);
+  t("…iar resturile merg la primele sectoare (5,5,5,5,4,4)",
+    imp.map(function(x){ return x.to-x.from+1; }), [5,5,5,5,4,4]);
+
+  // 28 de pescari, sectoare de 5 și de 4
+  const parts=[]; let id=0;
+  [5,5,5,5,4,4].forEach(function(n, si){
+    for(let i=0;i<n;i++){
+      id++;
+      const sec=ctx.state.sectors[si];
+      parts.push({ id:"p"+id, sector:sec, stand:String(id), nume:"p"+id, prenume:"",
+        m:{ 1:{catches:[100-i],extras:[],sector:sec,stand:String(id)},
+            2:{catches:[0],extras:[],sector:sec,stand:String(id)},
+            3:{catches:[0],extras:[],sector:sec,stand:String(id)} } });
+    }
+  });
+  ctx.state.participants = parts;
+  const pm = P(ctx, 1);
+  const medii = {};
+  parts.forEach(function(p){ (medii[p.sector]=medii[p.sector]||[]).push(pm[p.id]); });
+  const listaMedii = Object.keys(medii).map(function(k){
+    const a=medii[k]; return Math.round(a.reduce(function(x,y){return x+y;},0)/a.length*1000)/1000;
+  });
+  t("toate cele 6 sectoare cântăresc la fel în clasament (media 3)",
+    listaMedii, [3,3,3,3,3,3]);
+  t("nimeni nu coboară sub 1 punct", Math.min.apply(null, Object.values(pm)), 1);
+  t("iar ultimul dintr-un sector mic ia tot cât ultimul dintr-unul mare",
+    Math.max.apply(null, Object.values(pm)), 5);
+}
+
 t.raport();

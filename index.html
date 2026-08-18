@@ -2535,8 +2535,12 @@
   function delSector(i){
     if(guard()) return;
     var s=state.sectors[i];
-    var used=state.participants.filter(function(p){return p.sector===s;}).length;
-    if(used>0 && !confirm("Sectorul "+s+" are "+used+" participanți. Îl ștergi oricum? (participanții rămân, doar fără sector)")) return;
+    // sectorul poate fi folosit într-o manșă trecută, nu doar în cea activă: numărăm peste
+    // toate manșele, altfel ștergerea pare fără urmări deși strică lista unei manșe cântărite
+    var used=state.participants.filter(function(p){
+      return manseRange().some(function(mi){ return sectorOfM(p,mi)===s; });
+    }).length;
+    if(used>0 && !confirm("Sectorul "+s+" e folosit de "+used+" participanți (în oricare dintre manșe). Îl ștergi oricum? (participanții rămân, doar fără sector)")) return;
     state.sectors.splice(i,1); queueSave(); renderSectors();
   }
 
