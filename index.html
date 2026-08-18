@@ -754,7 +754,7 @@
         <div><label class="f">Înfășurări</label><input id="pk-wraps" inputmode="decimal" placeholder="ex: 12" oninput="calcPicheti()"></div>
         <div><label class="f">Distanța la clips</label><div class="ro" id="pk-out" style="font-size:20px;">–</div></div>
       </div>
-      <p class="hint" style="margin-top:8px;">O înfășurare = <b>dus-întors</b> între picheți, adică de două ori distanța dintre ei. Jumătățile se scriu cu virgulă: <b>12,5</b>.</p>
+      <p class="hint" style="margin-top:8px;">Se numără <b>fiecare trecere</b>: dus 1, întors 2. O înfășurare = exact distanța dintre picheți. Jumătățile se scriu cu virgulă: <b>12,5</b>.</p>
       <button class="btn btn-ghost mt" onclick="pichetiInStrategie()">↓ Pune distanța în însemnare</button>
 
       <label class="f" style="margin-top:14px;">Invers: câte înfășurări pentru o distanță</label>
@@ -1616,7 +1616,9 @@
   var stratLista=[], stratOre=[];
 
   // Pescarii măsoară pe uscat cu doi picheți înfipți la o distanță știută și înfășoară
-  // firul între ei până la clips. O înfășurare e dus-întors, deci de două ori pasul.
+  // firul între ei până la clips. Se numără FIECARE TRECERE: dus 1, întors 2 — deci o
+  // înfășurare e exact pasul dintre picheți, nu dublul lui. (Confirmat de user pe 18 aug;
+  // prima variantă socotea dus-întors și dădea distanțe duble.)
   // Socoteala se face în cap, la baltă, cu mâinile ude — de aici greșelile.
   var PAS_PICHETI_KEY = "concurs-pas-picheti";
   var pasPicheti = 4;
@@ -1636,16 +1638,16 @@
     var o=document.getElementById("pk-out"), o2=document.getElementById("pk-out2");
     if(o){
       var w=num(document.getElementById("pk-wraps").value);
-      o.textContent = w>0 ? fmtM(w*2*pasPicheti)+" m" : "–";
+      o.textContent = w>0 ? fmtM(w*pasPicheti)+" m" : "–";
     }
     if(o2){
       var d=num(document.getElementById("pk-tinta").value);
       if(d>0){
-        var w2=d/(2*pasPicheti);
+        var w2=d/pasPicheti;
         // la baltă nu numeri sferturi de înfășurare: rotunjim la jumătate și spunem
         // ce distanță iese de fapt, ca să nu creadă nimeni că a nimerit fix
         var rot=Math.round(w2*2)/2;
-        o2.innerHTML = fmtM(rot)+" înf.<div class=\"small\" style=\"font-weight:600;\">= "+fmtM(rot*2*pasPicheti)+" m</div>";
+        o2.innerHTML = fmtM(rot)+" înf.<div class=\"small\" style=\"font-weight:600;\">= "+fmtM(rot*pasPicheti)+" m</div>";
       } else o2.textContent="–";
     }
   }
@@ -1657,7 +1659,7 @@
     var w=num(document.getElementById("pk-wraps").value);
     if(!(w>0)){ toast("Scrie întâi câte înfășurări"); return; }
     var d=document.getElementById("st-dist");
-    if(d){ d.value=fmtM(w*2*pasPicheti); toast("Distanța trecută în însemnare"); d.scrollIntoView({behavior:"smooth", block:"center"}); }
+    if(d){ d.value=fmtM(w*pasPicheti); toast("Distanța trecută în însemnare"); d.scrollIntoView({behavior:"smooth", block:"center"}); }
   }
   function stratLoad(){
     try{ var v=localStorage.getItem(STRAT_KEY); stratLista=v?JSON.parse(v):[]; }catch(e){ stratLista=[]; }
