@@ -2,6 +2,10 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, x-write-key, x-manage-token",
+  // Ora concursului e a serverului, nu a telefonului: fără linia asta, browserul nu
+  // poate citi antetul "Date" al răspunsului (nu e printre antetele expuse implicit),
+  // iar fiecare telefon numără pe ceasul lui.
+  "Access-Control-Expose-Headers": "Date",
 };
 function json(o, s = 200) {
   return new Response(JSON.stringify(o), {

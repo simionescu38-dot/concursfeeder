@@ -2003,11 +2003,12 @@
     clearTimeout(syncRetryT);
     syncBusy=true; syncProblem=""; updateUploadBar();
     setSyncStatus("Se sincronizează…", true);
+    var t0=Date.now();
     fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
       method:"PUT",
       headers:{"Content-Type":"application/json","x-write-key":syncKey},
       body: JSON.stringify({data: state})
-    }).then(function(r){ return r.json(); }).then(function(j){
+    }).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       syncBusy=false;
       if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM(); setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
       else {
@@ -2064,7 +2065,8 @@
     pollT=setInterval(pullState, 4000);
   }
   function pullState(){
-    fetch(API_BASE+"/api/state?room="+encodeURIComponent(viewerRoom)).then(function(r){ return r.json(); }).then(function(j){
+    var t0=Date.now();
+    fetch(API_BASE+"/api/state?room="+encodeURIComponent(viewerRoom)).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       if(!j || !j.ok) return;
       if(!j.data){ setSyncStatus("Se așteaptă date de la organizator…", true); return; }
       if(j.rev===lastRev) return;
@@ -3104,6 +3106,28 @@
   }
 
   // ---------- cronometru concurs ----------
+  // ---------- ceasul concursului ----------
+  // Orele se sincronizează, dar numărătoarea mergea pe ceasul fiecărui telefon: două
+  // telefoane cu ceasuri diferite arătau timpi rămași diferiți, iar claxonul de final
+  // suna la momente diferite. Ora concursului e acum a serverului, luată din antetul
+  // „Date" al răspunsurilor (îl întoarce orice răspuns, se citește și de pe alt domeniu).
+  // Fără legătură la server decalajul e 0, adică exact comportamentul de dinainte.
+  var clockSkew = 0, clockSet = false;
+  function nowSync(){ return Date.now() + clockSkew; }
+  function adoptServerClock(t0, resp){
+    try{
+      var d = resp && resp.headers && resp.headers.get("Date");
+      if(!d) return;
+      var srv = Date.parse(d);
+      if(!srv) return;
+      // antetul spune ora la care a răspuns serverul; o punem la mijlocul dus-întorsului,
+      // altfel latența ar trece drept decalaj de ceas
+      var nou = srv - (t0 + Date.now())/2;
+      // rezoluția antetului e de o secundă: fără prag, afișajul ar sări înainte și înapoi
+      // cu câte o secundă la fiecare interogare
+      if(!clockSet || Math.abs(nou - clockSkew) > 2000){ clockSkew = nou; clockSet = true; }
+    }catch(e){}
+  }
   var timerInt=null, timerWasRunning=false, nadireAlerted=false, startAlerted=false;
   // avertismente înainte de final, în minute (descrescător)
   var WARN_MIN=[30,10,5,1], warnAlerted={};
@@ -3112,7 +3136,7 @@
   function resetWarnings(){
     warnAlerted={};
     if(!state.endAt) return;
-    var leftMin=(state.endAt-Date.now())/60000;
+    var leftMin=(state.endAt-nowSync())/60000;
     WARN_MIN.forEach(function(m){ if(leftMin<=m) warnAlerted[m]=true; });
   }
   // preia orele venite prin sincronizare (telefonul care privește camera live).
@@ -3121,7 +3145,7 @@
   // 30, 10, 5 și 1 minut, în secunde consecutive.
   function adoptTimer(){
     resetWarnings();
-    var now=Date.now(), ndMin=state.nadireMin||0;
+    var now=nowSync(), ndMin=state.nadireMin||0;
     var nadireAt = (state.startAt && ndMin>0) ? (state.startAt - ndMin*60000) : null;
     nadireAlerted = !!(nadireAt && now>=nadireAt);
     startAlerted  = !!(state.startAt && now>=state.startAt);
@@ -3165,7 +3189,7 @@
   }
   function timerTick(){
     var bar=document.getElementById("timerBar");
-    var now=Date.now(), txt="", show=false;
+    var now=nowSync(), txt="", show=false;
     if(state.endAt){
       show=true;
       var ndMin=state.nadireMin||0;

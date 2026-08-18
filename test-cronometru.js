@@ -53,6 +53,9 @@ function mediu(stare) {
   vm.createContext(ctx);
   vm.runInContext([
     "var timerInt=null, timerWasRunning=false, nadireAlerted=false, startAlerted=false;",
+    // ceasul concursului: în test decalajul e 0, deci ceasul fals rămâne stăpân
+    "var clockSkew=0, clockSet=false;",
+    grabFunction(src, "nowSync"),
     pragurileReale,
     grabFunction(src, "resetWarnings"),
     grabFunction(src, "adoptTimer"),
