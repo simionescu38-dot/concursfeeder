@@ -84,4 +84,16 @@ const UNUL = [{ id: 1 }];
   const b = banda({ participanti: UNUL, viewerMode: true, viewerRoom: "r", syncRoom: "r", syncKey: "cheie-bună" });
   t("cheia completată nu păcălește banda în mod vizualizare", b.ascunsa, true);
 }
+// 6. butonul de trimitere imediata: banda spunea „inca n-a plecat nimic" fara sa
+//    dea nimanui ce sa apese
+{
+  const { grabFunction } = require("./test-helpers");
+  const trimite = grabFunction(src, "trimiteAcum");
+  t("exista un buton de trimitere imediata", /onclick="trimiteAcum\(\)"/.test(src), true);
+  t("nu trimite din modul vizualizare", /if\(viewerMode\)/.test(trimite), true);
+  t("cere camera si cheia", /!syncRoom \|\| !syncKey/.test(trimite), true);
+  t("si chiar urca starea", /pushState\(\)/.test(trimite), true);
+  t("repornind sincronizarea daca era oprita", /syncPaused=false/.test(trimite), true);
+}
+
 t.raport();
