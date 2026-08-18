@@ -1146,13 +1146,33 @@
     var el=document.getElementById("cal-live-list"); if(!el) return;
     fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).then(function(j){
       if(!j || !j.ok) throw new Error("bad response");
-      var rooms=j.rooms||[];
-      if(!rooms.length){ el.innerHTML='<p class="hint">Niciun concurs live momentan.</p>'; return; }
-      el.innerHTML = rooms.map(function(r){
-        return '<div class="evt"><div><div class="nm">'+esc(r.name||"Concurs fără nume")+'</div>'+
-          '<div class="meta">🔴 live · actualizat '+timeAgoCal(r.updated_at)+'</div></div>'+
-          '<a class="go" href="index.html?room='+encodeURIComponent(r.code)+'">Vezi →</a></div>';
-      }).join("");
+      /* Lista asta o citesc pescarii ca să vadă unde se pescuiește acum. Arăta TOATE
+         camerele, fără nicio condiție: și cele rămase de la probe, și cele pregătite
+         dinainte, și cele de acum trei zile — toate cu bulină roșie de „live". Un concurs
+         în desfășurare are oameni în el și a fost scris de curând. */
+      var proaspete=(j.rooms||[]).filter(function(r){
+        if(!r.code || !r.code.trim()) return false;
+        if(r.archived || r.deleted) return false;
+        if(r.name && /test|mock|demo/i.test(r.name)) return false;
+        if(!r.updated_at) return false;
+        try{ return (Date.now()-new Date(r.updated_at).getTime()) < 2*60*60*1000; }catch(e){ return false; }
+      });
+      if(!proaspete.length){ el.innerHTML='<p class="hint">Niciun concurs live momentan.</p>'; return; }
+      Promise.all(proaspete.map(function(r){
+        return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code))
+          .then(function(res){ return res.json(); }).catch(function(){ return null; });
+      })).then(function(states){
+        var rooms=proaspete.filter(function(r,i){
+          var st=states[i];
+          return st && st.ok && st.data && (st.data.participants||[]).length>0;
+        });
+        if(!rooms.length){ el.innerHTML='<p class="hint">Niciun concurs live momentan.</p>'; return; }
+        el.innerHTML = rooms.map(function(r){
+          return '<div class="evt"><div><div class="nm">'+esc(r.name||"Concurs fără nume")+'</div>'+
+            '<div class="meta">🔴 live · actualizat '+timeAgoCal(r.updated_at)+'</div></div>'+
+            '<a class="go" href="index.html?room='+encodeURIComponent(r.code)+'">Vezi →</a></div>';
+        }).join("");
+      });
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca lista de concursuri live.</p>'; });
   }
 
@@ -1173,7 +1193,17 @@
       '<div class="kg num">'+fmt(fish.kg)+' kg</div></div>'+
       '<button class="btn btn-ghost mt" onclick="downloadFishSpotlight()">🖼 Descarcă imagine</button>';
   }
-  function loadAcasaRegional(){ Promise.all([ fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).catch(function(){ return null; }), fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).catch(function(){ return null; }) ]).then(function(results){ var evJ=results[0], roomJ=results[1]; var events = (evJ && evJ.ok) ? (evJ.events||[]) : []; var rooms = (roomJ && roomJ.ok) ? (roomJ.rooms||[]) : []; var orgSet={}; events.forEach(function(e){ if(e.organizer) orgSet[e.organizer.trim().toLowerCase()]=1; }); var now = Date.now(); var twoHoursAgo = now - (2*60*60*1000); var activeRooms = rooms.filter(function(room){ if (room.name && (room.name.toLowerCase().includes("test") || room.name.toLowerCase().includes("mock") || room.name.toLowerCase().includes("demo"))) return false; if (!room.code || room.code.trim() === "") return false; if (room.archived || room.deleted) return false; if (room.updated_at) { try { var lastUpdate = new Date(room.updated_at).getTime(); if (lastUpdate < twoHoursAgo) return false; } catch(e){} } return true; }); renderHeroStats({upcoming:events.length, live:activeRooms.length, organizers:Object.keys(orgSet).length}); if(!activeRooms.length){ heroFish=null; renderHeroSpotlight(null); return; } Promise.all(activeRooms.map(function(r){ return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code)).then(function(res){ return res.json(); }).catch(function(){ return null; }); })).then(function(states){ var best=null; states.forEach(function(res, i){ if(!res || !res.ok || !res.data) return; var compName = res.data.name || activeRooms[i].name || activeRooms[i].code; (res.data.participants||[]).forEach(function(p){ [1,2].forEach(function(mi){ var m = p.m && p.m[mi]; if(!m) return; (m.extras||[]).forEach(function(v){ var kg = +v||0; if(kg>0 && (!best || kg>best.kg)){ best = {kg:kg, name: ((p.prenume||"")+" "+(p.nume||"")).trim()||"—", comp: compName}; } }); }); }); }); heroFish=best; renderHeroSpotlight(best); }); }); }
+  function loadAcasaRegional(){ Promise.all([ fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).catch(function(){ return null; }), fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).catch(function(){ return null; }) ]).then(function(results){ var evJ=results[0], roomJ=results[1]; var events = (evJ && evJ.ok) ? (evJ.events||[]) : []; var rooms = (roomJ && roomJ.ok) ? (roomJ.rooms||[]) : []; var orgSet={}; events.forEach(function(e){ if(e.organizer) orgSet[e.organizer.trim().toLowerCase()]=1; }); var now = Date.now(); var twoHoursAgo = now - (2*60*60*1000); var activeRooms = rooms.filter(function(room){ if (room.name && (room.name.toLowerCase().includes("test") || room.name.toLowerCase().includes("mock") || room.name.toLowerCase().includes("demo"))) return false; if (!room.code || room.code.trim() === "") return false; if (room.archived || room.deleted) return false; if (room.updated_at) { try { var lastUpdate = new Date(room.updated_at).getTime(); if (lastUpdate < twoHoursAgo) return false; } catch(e){} } return true; }); if(!activeRooms.length){ renderHeroStats({upcoming:events.length, live:0, organizers:Object.keys(orgSet).length}); heroFish=null; renderHeroSpotlight(null); return; } Promise.all(activeRooms.map(function(r){ return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code)).then(function(res){ return res.json(); }).catch(function(){ return null; }); })).then(function(states){
+      /* O cameră proaspătă dar goală nu e un concurs în desfășurare. Filtrul se uita doar
+         la ora ultimei scrieri, așa că o cameră pregătită dinainte — sau una rămasă de la o
+         probă — se anunța pe pagina de Acasă drept „LIVE ACUM". Pe 18 august scria trei,
+         toate goale. Numărăm acum doar camerele în care chiar e cineva înscris. */
+      var live=0;
+      states.forEach(function(res){
+        if(res && res.ok && res.data && (res.data.participants||[]).length) live++;
+      });
+      renderHeroStats({upcoming:events.length, live:live, organizers:Object.keys(orgSet).length});
+      var best=null; states.forEach(function(res, i){ if(!res || !res.ok || !res.data) return; var compName = res.data.name || activeRooms[i].name || activeRooms[i].code; (res.data.participants||[]).forEach(function(p){ [1,2].forEach(function(mi){ var m = p.m && p.m[mi]; if(!m) return; (m.extras||[]).forEach(function(v){ var kg = +v||0; if(kg>0 && (!best || kg>best.kg)){ best = {kg:kg, name: ((p.prenume||"")+" "+(p.nume||"")).trim()||"—", comp: compName}; } }); }); }); }); heroFish=best; renderHeroSpotlight(best); }); }); }
   function downloadFishSpotlight(){
     if(!heroFish){ toast("Niciun pește de partajat momentan"); return; }
     var logo=new Image();
