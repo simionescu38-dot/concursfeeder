@@ -555,6 +555,13 @@
   <!-- SETĂRI -->
   <section class="view" id="view-set">
     <div class="card lockhide">
+      <div class="sec-title">Versiunea aplicației</div>
+      <p class="hint" id="app-ver" style="margin:0 0 10px;">se verifică…</p>
+      <button class="btn btn-ghost" onclick="aduVariantaNoua()">🔄 Adu varianta nouă acum</button>
+      <p class="hint" style="margin-top:8px;">Aplicația se actualizează singură — verifică la fiecare deschidere și se reîncarcă atunci când apare ceva nou. Butonul e doar pentru cazul în care nu vrei să aștepți.</p>
+    </div>
+
+    <div class="card">
       <div class="sec-title">Numele concursului</div>
       <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
     </div>
@@ -1526,6 +1533,13 @@
     updateLiveQr();
     updateInstallQr();
     updateInstallUI();
+    updateVersiune();
+    try{
+      if(localStorage.getItem("concurs-tocmai-actualizat")){
+        localStorage.removeItem("concurs-tocmai-actualizat");
+        setTimeout(function(){ toast("Aplicația s-a actualizat singură"); }, 600);
+      }
+    }catch(e){}
     updateUndoUI();
     updateRoomInfo();
   }
@@ -2071,6 +2085,29 @@
   window.addEventListener("appinstalled", function(){
     promptInstalare=null; updateInstallUI(); toast("Gata – iconița e pe ecran");
   });
+  // Versiunea nu se ține de mână nicăieri: se citește din numele memoriei pe care o
+  // folosește chiar acum telefonul. Așa nu poate să mintă și nu poate rămâne în urmă
+  // față de ce rulează — iar când cineva întreabă „ce versiune ai?", răspunsul e acolo.
+  function updateVersiune(){
+    var el=document.getElementById("app-ver"); if(!el) return;
+    if(!("caches" in window)){ el.textContent="Aplicația rulează din browser, fără memorie proprie."; return; }
+    caches.keys().then(function(k){
+      var v=""; k.forEach(function(x){ var m=/concurs-pescuit-v(\d+)/.exec(x); if(m) v=m[1]; });
+      el.innerHTML = v ? ("Ai <b>versiunea "+v+"</b>.") : "Încă nu s-a salvat nimic în telefon — deschide aplicația o dată cu internet.";
+    }).catch(function(){ el.textContent=""; });
+  }
+  // Ultima soluție, când telefonul rămâne agățat de o variantă veche: șterge tot ce ține
+  // aplicația în memorie și o cere din nou de pe server.
+  function aduVariantaNoua(){
+    toast("Aduc varianta nouă…");
+    var gata=function(){ location.replace(location.origin+location.pathname); };
+    if(!("serviceWorker" in navigator)){ gata(); return; }
+    navigator.serviceWorker.getRegistrations()
+      .then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })
+      .then(function(){ return caches.keys(); })
+      .then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })
+      .then(gata).catch(gata);
+  }
   function installLink(){ return location.origin+location.pathname; }
   // adresa scrisă pe imaginile distribuite: fără protocol, fără slash final
   function adresaAfisata(){
@@ -3748,7 +3785,12 @@ if('serviceWorker' in navigator){
     // când versiunea nouă preia controlul, reîncarcă pagina automat
     var hadController=!!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange',function(){
-      if(hadController){ location.reload(); }
+      // Reîncărcarea era tăcută și părea o pâlpâire fără motiv. Un rând scurt înainte
+      // spune ce se întâmplă, ca nimeni să nu creadă că s-a blocat aplicația.
+      if(hadController){
+        try{ localStorage.setItem('concurs-tocmai-actualizat','1'); }catch(e){}
+        location.reload();
+      }
       hadController=true;
     });
   });
