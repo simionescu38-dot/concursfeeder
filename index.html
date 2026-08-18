@@ -240,6 +240,30 @@
   /* pescarii fără sector formează un sector-fantomă care falsifică punctajul */
   #warn-sector{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
+  /* tastatură de PIN – taste mari, se apasă cu degetul ud, în picioare, la baltă */
+  #pinPad{position:fixed; inset:0; z-index:220; display:none; align-items:center; justify-content:center; background:rgba(8,26,46,.96); padding:16px;}
+  #pinPad.on{display:flex;}
+  .pin-box{width:100%; max-width:340px;}
+  .pin-title{color:#fff; font-size:19px; font-weight:800; text-align:center; margin-bottom:12px;}
+  .pin-dots{display:flex; justify-content:center; gap:10px; height:20px; margin-bottom:18px;}
+  .pin-dots i{width:14px; height:14px; border-radius:50%; background:#fff; display:block;}
+  .pin-dots.err i{background:#ff8b7d;}
+  .pin-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .pin-grid button{height:62px; font-size:26px; font-weight:800; color:#fff; background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.28); border-radius:14px; cursor:pointer; font-family:inherit;}
+  .pin-grid button:active{background:rgba(255,255,255,.32);}
+  .pin-grid button.pin-empty{visibility:hidden;}
+  .pin-actions{display:flex; gap:10px; margin-top:14px;}
+  .pin-actions button{flex:1; height:50px; font-size:16px; font-weight:800; border-radius:12px; cursor:pointer; font-family:inherit; border:0;}
+  .pin-cancel{background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3) !important;}
+  .pin-ok{background:#12703c; color:#fff;}
+  .pin-ok:disabled{opacity:.45; cursor:default;}
+
+  /* Banda urcării: răspunde la o singură întrebare — pleacă datele de pe telefon? */
+  #uploadBar{margin-top:8px; border-radius:10px; padding:7px 12px; font-weight:800; font-size:12.5px; line-height:1.35; display:none;}
+  #uploadBar.ub-on{background:#12703c; color:#fff;}
+  #uploadBar.ub-off{background:#fff; color:#123252;}
+  #uploadBar.ub-bad{background:#b3241a; color:#fff;}
   /* bara de vizualizare din antet: și semn că telefonul doar privește, și ieșirea */
   #viewerBar{background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12; border-radius:12px;
     padding:8px 10px; margin-top:8px; font-size:12px; font-weight:700; cursor:pointer;}
@@ -367,6 +391,7 @@
   <h1>Cântar &amp; Clasament</h1>
   <div class="comp" id="compName"></div>
   <div class="comp" id="syncBadge" style="display:none;"></div>
+  <div id="uploadBar"></div>
   <div id="viewerBar" style="display:none;" onclick="exitViewerMode()"></div>
   <div id="timerBar"></div>
   <button id="lockBtn" onclick="toggleLock()" aria-label="Blocare editare">🔓</button>
@@ -763,6 +788,18 @@
   <div id="photoCap"></div>
 </div>
 
+<div id="pinPad" role="dialog" aria-modal="true" aria-labelledby="pin-title">
+  <div class="pin-box">
+    <div class="pin-title" id="pin-title">PIN</div>
+    <div class="pin-dots" id="pin-dots" aria-live="polite"></div>
+    <div class="pin-grid" id="pin-grid"></div>
+    <div class="pin-actions">
+      <button type="button" class="pin-cancel" onclick="pinCancel()">Renunță</button>
+      <button type="button" class="pin-ok" id="pin-ok" onclick="pinOk()" disabled>Deblochează</button>
+    </div>
+  </div>
+</div>
+
 <nav class="tabs">
   <button id="tab-part" class="on" onclick="showView('part')"><span class="ic">🏠</span>Acasă</button>
   <button id="tab-cantar" onclick="showView('cantar')"><span class="ic">🎣</span>Cântar</button>
@@ -860,6 +897,75 @@
   function extraOf(p){ return extraOfM(p, state.manche||1); }
   function totalOf(p){ return totalOfM(p, state.manche||1); }
 
+  // ---------- tastatura de PIN ----------
+  // prompt() deschidea tastatura cu litere pentru un cod numeric și întârzia în
+  // aplicația instalată. Rămâne totuși rezerva: dacă ecranul lipsește din pagină,
+  // organizatorul nu are voie să rămână blocat la baltă fără să poată cântări.
+  var pinValue="", pinResolve=null, pinCheck=null, pinBusy=false;
+  function pinRender(){
+    var d=document.getElementById("pin-dots");
+    if(d){ d.className="pin-dots"; d.innerHTML=new Array(pinValue.length+1).join("<i></i>"); }
+    var ok=document.getElementById("pin-ok");
+    if(ok) ok.disabled = pinValue.length<4;
+  }
+  function pinTap(c){
+    if(pinBusy || pinValue.length>=6) return;
+    pinValue+=c; pinRender();
+    if(navigator.vibrate){ try{ navigator.vibrate(12); }catch(e){} }
+  }
+  function pinBack(){ if(pinBusy) return; pinValue=pinValue.slice(0,-1); pinRender(); }
+  function pinCancel(){ pinClose(null); }
+  // La PIN greșit ecranul NU se închide: la baltă, cu mâinile ude, se greșește des
+  // și redeschiderea de fiecare dată era exact partea obositoare.
+  async function pinOk(){
+    if(pinBusy || pinValue.length<4) return;
+    var v=pinValue;
+    if(!pinCheck){ pinClose(v); return; }
+    pinBusy=true;
+    var bun=false;
+    try{ bun=await pinCheck(v); }catch(e){}
+    if(bun){ pinBusy=false; pinClose(v); return; }
+    pinGresit();
+    setTimeout(function(){ pinValue=""; pinBusy=false; pinRender(); }, 700);
+  }
+  function pinClose(v){
+    var el=document.getElementById("pinPad");
+    if(el) el.classList.remove("on");
+    document.removeEventListener("keydown", pinKey);
+    var r=pinResolve; pinResolve=null; pinCheck=null; pinValue=""; pinBusy=false;
+    if(r) r(v);
+  }
+  function pinKey(e){
+    if(e.key>="0" && e.key<="9"){ pinTap(e.key); e.preventDefault(); }
+    else if(e.key==="Backspace"){ pinBack(); e.preventDefault(); }
+    else if(e.key==="Enter"){ pinOk(); e.preventDefault(); }
+    else if(e.key==="Escape"){ pinCancel(); e.preventDefault(); }
+  }
+  function askPin(titlu, buton, verifica){
+    var el=document.getElementById("pinPad"), grid=document.getElementById("pin-grid");
+    if(!el || !grid){ return Promise.resolve(prompt(titlu+":")); } // rezerva veche
+    if(pinResolve) pinClose(null);
+    pinCheck=verifica||null;
+    var taste=["1","2","3","4","5","6","7","8","9","","0","⌫"];
+    grid.innerHTML=taste.map(function(t){
+      if(t==="") return '<button type="button" class="pin-empty" tabindex="-1"></button>';
+      if(t==="⌫") return '<button type="button" onclick="pinBack()" aria-label="Șterge o cifră">⌫</button>';
+      return '<button type="button" onclick="pinTap(\''+t+'\')">'+t+'</button>';
+    }).join("");
+    document.getElementById("pin-title").textContent=titlu;
+    document.getElementById("pin-ok").textContent=buton||"Deblochează";
+    pinValue=""; pinRender();
+    el.classList.add("on");
+    document.addEventListener("keydown", pinKey);
+    return new Promise(function(res){ pinResolve=res; });
+  }
+  // scutură punctele la PIN greșit, ca să se vadă că a fost citit, nu ignorat
+  function pinGresit(){
+    var d=document.getElementById("pin-dots");
+    if(d) d.className="pin-dots err";
+    if(navigator.vibrate){ try{ navigator.vibrate([60,60,60]); }catch(e){} }
+    toast("PIN greșit");
+  }
   // ---------- blocare cu PIN ----------
   async function pinHashSecure(pin) { try { const pinStr = String(pin || "").trim(); const encoder = new TextEncoder(); const data = encoder.encode(pinStr); const hashBuffer = await crypto.subtle.digest("SHA-256", data); const hashArray = Array.from(new Uint8Array(hashBuffer)); const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join(""); return "h" + hashHex; } catch(err) { var h = 5381; var p = "" + pin; for(var i = 0; i < p.length; i++) { h = ((h * 33) ^ p.charCodeAt(i)) >>> 0; } return "h" + h; } } function pinHash(p){ var h=5381; p=""+p; for(var i=0;i<p.length;i++){ h=((h*33)^p.charCodeAt(i))>>>0; } return "h"+h; }
   async function verifyPin(input){
@@ -888,15 +994,15 @@
     save(); updateLockUI(); renderList(); toast("PIN setat – aplicația e blocată 🔒");
   }
   async function removePin(){
-    var v=prompt("PIN-ul actual:"); if(v===null) return;
-    if(!(await verifyPin(v.trim()))){ toast("PIN greșit"); return; }
+    var v=await askPin("PIN-ul actual", "Scoate PIN-ul", verifyPin);
+    if(v===null) return;
     state.pinHash=""; state.lock=false; save(); updateLockUI(); renderList(); toast("PIN scos – aplicația e deschisă");
   }
   async function toggleLock(){
     if(!state.pinHash){ showView('set'); toast("Setează întâi un PIN, mai jos"); return; }
     if(isLocked()){
-      var v=prompt("PIN:"); if(v===null) return;
-      if(!(await verifyPin(v.trim()))){ toast("PIN greșit"); return; }
+      var v=await askPin("PIN", "Deblochează", verifyPin);
+      if(v===null) return;
       state.lock=false; toast("Deblocat – poți edita");
     } else { state.lock=true; toast("Blocat 🔒 – doar vizualizare"); }
     save(); updateLockUI(); renderList();
@@ -904,7 +1010,7 @@
 
   // ---------- persistence (localStorage) ----------
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast("Stocare plină – șterge câteva poze"); } }
-  function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); queueSync(); }
+  function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); queueSync(); updateUploadBar(); }
   function load(){ try{ var v=localStorage.getItem(KEY); if(v){ var d=JSON.parse(v); if(d&&typeof d==="object"){ state=Object.assign(state,d); } } }catch(e){} normalize(); }
 
   // ---------- sincronizare live (cloud) ----------
@@ -1200,8 +1306,37 @@
   function loadSyncCfg(){
     try{ syncRoom=(localStorage.getItem(SYNC_ROOM_KEY)||"").trim(); syncKey=localStorage.getItem(SYNC_WKEY_KEY)||""; }catch(e){}
   }
-  function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} syncPaused=false; updateLiveQr(); }
-  function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} syncPaused=false; }
+  // Sincronizarea a stat moartă zile întregi fără să observe nimeni: în Setări scria
+  // „rev 12", ceea ce nu spune nimănui dacă datele au plecat de pe telefon. Banda din
+  // antet răspunde la întrebarea asta în cuvinte, tot timpul, fără să fie căutată.
+  // În vizualizare tace: acolo vorbește bara ei, care e și ieșirea din cameră.
+  var syncLastOk="", syncProblem="", syncBusy=false;
+  function updateUploadBar(){
+    var b=document.getElementById("uploadBar");
+    if(!b) return;
+    if(viewerMode){ b.style.display="none"; return; }
+    var cls, txt;
+    if(!syncRoom || !syncKey){
+      // pe un telefon fără participanți nu e nimic de pierdut: banda ar speria degeaba
+      if(!state.participants.length){ b.style.display="none"; return; }
+      cls="ub-off"; txt="📴 DATELE RĂMÂN PE TELEFON — nimeni nu le vede. Atinge ca să pornești.";
+    } else if(syncPaused){
+      cls="ub-bad"; txt="⏸ SINCRONIZARE OPRITĂ — atinge ca să vezi de ce";
+    } else if(syncProblem){
+      cls="ub-bad"; txt="⚠ NU S-A TRIMIS — "+syncProblem+(syncLastOk ? " · ultima urcare "+syncLastOk : "");
+    } else if(syncBusy){
+      cls="ub-on"; txt="⬆ SE TRIMITE… — camera "+syncRoom;
+    } else {
+      cls="ub-on"; txt="✅ TRIMIȚI ÎN CAMERA "+syncRoom+(syncLastOk ? " · ultima urcare "+syncLastOk : " · încă n-a plecat nimic");
+    }
+    b.className=cls;
+    b.textContent=txt;
+    b.style.display="block";
+    b.style.cursor="pointer";
+    b.onclick=function(){ meniuGo("set","card-sync"); };
+  }
+  function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} syncPaused=false; syncProblem=""; updateLiveQr(); updateUploadBar(); }
+  function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} syncPaused=false; syncProblem=""; updateUploadBar(); }
   function genRoomCode(){
     var code=Math.random().toString(36).slice(2,7);
     var el=document.getElementById("sync-room"); if(el) el.value=code;
@@ -1866,15 +2001,23 @@
   function pushState(){
     if(!syncRoom || !syncKey) return;
     clearTimeout(syncRetryT);
+    syncBusy=true; syncProblem=""; updateUploadBar();
     setSyncStatus("Se sincronizează…", true);
     fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
       method:"PUT",
       headers:{"Content-Type":"application/json","x-write-key":syncKey},
       body: JSON.stringify({data: state})
     }).then(function(r){ return r.json(); }).then(function(j){
-      if(j && j.ok){ syncRetryDelay=3000; setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
-      else setSyncStatus("Eroare sincronizare: "+((j&&j.error)||"necunoscută"), true);
+      syncBusy=false;
+      if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM(); setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
+      else {
+        // cel mai probabil motiv, spus pe limba organizatorului
+        syncProblem=(j&&j.error) ? "cheia de scriere e greșită?" : "eroare la server";
+        setSyncStatus("Eroare sincronizare: "+((j&&j.error)||"necunoscută"), true);
+      }
+      updateUploadBar();
     }).catch(function(){
+      syncBusy=false; syncProblem="fără semnal, reîncerc"; updateUploadBar();
       setSyncStatus("Fără semnal – reîncerc automat…", true);
       syncRetryT = setTimeout(pushState, syncRetryDelay);
       syncRetryDelay = Math.min(syncRetryDelay*2, 30000);
@@ -1913,7 +2056,7 @@
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;
     saveViewerRoom(room); // ca iconița instalată să reintre singură în cameră
-    updateLockUI(); updateViewerBar();
+    updateLockUI(); updateViewerBar(); updateUploadBar();
     var lb=document.querySelector(".lockbar");
     if(lb) lb.textContent="🔴 Vizualizare live – camera "+room+". Se actualizează automat.";
     showView("rank");
@@ -3290,7 +3433,7 @@
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);
     [1,2,3].forEach(function(i){ var b=document.getElementById("mc-"+i); if(b) b.classList.toggle("on", (state.manche||1)===i); });
     updateManseButtons();
-    renderSectors(); updateLockUI(); updateVoiceBtn(); updatePushBtn(); renderList();
+    renderSectors(); updateLockUI(); updateVoiceBtn(); updatePushBtn(); renderList(); updateUploadBar();
     if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);
     if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
     document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;

@@ -49,8 +49,10 @@ function balance(src, from, open, close) {
 
 /** extrage `function nume(...){...}` întreg */
 function grabFunction(src, name) {
-  const i = src.indexOf("function " + name + "(");
+  let i = src.indexOf("function " + name + "(");
   if (i < 0) throw new Error("nu găsesc funcția " + name);
+  // păstrează „async" din față: fără el, o funcție cu await nu mai compilează
+  if (src.slice(i - 6, i) === "async ") i -= 6;
   const brace = src.indexOf("{", src.indexOf(")", i));
   return src.slice(i, balance(src, brace, "{", "}") + 1);
 }
