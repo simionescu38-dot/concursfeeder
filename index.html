@@ -635,7 +635,7 @@
       </div>
       <label class="f" style="margin-top:8px;">Cheie de scriere</label>
       <div class="row">
-        <input id="sync-key" type="password" autocomplete="off" placeholder="cheia primită la activare" oninput="saveSyncKey(this.value)">
+        <input id="sync-key" type="password" name="cheie-camera" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="cheia primită la activare" oninput="saveSyncKey(this.value)">
         <button class="btn btn-ghost" style="flex:0 0 78px;" id="btn-vezi-cheie" onclick="vedeCheia()">👁 Vezi</button>
       </div>
       <p class="hint" id="cheie-info" style="margin:6px 0 0;"></p>
@@ -1367,7 +1367,11 @@
     var probleme=[];
     if(v!==v.trim()) probleme.push("are spațiu la început sau la sfârșit");
     if(/\s/.test(v.trim())) probleme.push("are spațiu în mijloc");
-    h.textContent = v.length+" caractere"+(probleme.length ? " · ⚠ "+probleme.join(" și ") : "");
+    // Chrome completează singur câmpurile de parolă, iar valoarea pusă de el NU trece
+    // prin oninput, deci nu ajunge în memoria aplicației: câmpul arată plin, aplicația
+    // trimite altceva, iar serverul răspunde „forbidden" fără ca nimic să pară greșit.
+    if(v!==syncKey) probleme.push("nu e cheia salvată — pare pusă de browser; șterge tot și scrie-o de mână");
+    h.textContent = v.length+" caractere"+(probleme.length ? " · ⚠ "+probleme.join(" · ") : "");
   }
   function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} syncPaused=false; syncProblem=""; updateUploadBar(); }
   function genRoomCode(){
