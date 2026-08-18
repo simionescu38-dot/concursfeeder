@@ -634,7 +634,11 @@
         <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="genRoomCode()">🎲 Cod nou</button>
       </div>
       <label class="f" style="margin-top:8px;">Cheie de scriere</label>
-      <input id="sync-key" type="password" autocomplete="off" placeholder="cheia primită la activare" oninput="saveSyncKey(this.value)">
+      <div class="row">
+        <input id="sync-key" type="password" autocomplete="off" placeholder="cheia primită la activare" oninput="saveSyncKey(this.value)">
+        <button class="btn btn-ghost" style="flex:0 0 78px;" id="btn-vezi-cheie" onclick="vedeCheia()">👁 Vezi</button>
+      </div>
+      <p class="hint" id="cheie-info" style="margin:6px 0 0;"></p>
       <button class="btn btn-primary mt" onclick="trimiteAcum()">⬆ Trimite datele acum în cameră</button>
       <button class="btn btn-ghost mt" onclick="shareLiveLink()">🔗 Trimite linkul live celorlalți</button>
       <p class="hint" id="sync-status" style="margin-top:8px;"></p>
@@ -1346,6 +1350,25 @@
     b.onclick=function(){ meniuGo("set","card-sync"); };
   }
   function saveSyncRoom(v){ syncRoom=(v||"").trim().toLowerCase(); try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){} syncPaused=false; syncProblem=""; updateLiveQr(); updateUploadBar(); }
+  // Câmpul e de tip parolă, deci o cheie cu o literă lipsă sau cu un spațiu lipit la
+  // copiere arată exact ca una bună. Fără s-o poți citi, nu ai cum să-ți dai seama de ce
+  // ești respins — iar cheia nu se poate citi înapoi de pe server, deci nici n-are cine
+  // să ți-o spună. E secretul tău, pe telefonul tău: îl poți vedea.
+  function vedeCheia(){
+    var i=document.getElementById("sync-key"), b=document.getElementById("btn-vezi-cheie"), h=document.getElementById("cheie-info");
+    if(!i) return;
+    var ascunsa = i.type==="password";
+    i.type = ascunsa ? "text" : "password";
+    if(b) b.textContent = ascunsa ? "🙈 Ascunde" : "👁 Vezi";
+    if(!h) return;
+    if(!ascunsa){ h.textContent=""; return; }
+    var v=i.value||"";
+    if(!v){ h.textContent="Câmpul e gol — nu e nicio cheie pe telefonul ăsta."; return; }
+    var probleme=[];
+    if(v!==v.trim()) probleme.push("are spațiu la început sau la sfârșit");
+    if(/\s/.test(v.trim())) probleme.push("are spațiu în mijloc");
+    h.textContent = v.length+" caractere"+(probleme.length ? " · ⚠ "+probleme.join(" și ") : "");
+  }
   function saveSyncKey(v){ syncKey=v||""; try{ localStorage.setItem(SYNC_WKEY_KEY, syncKey); }catch(e){} syncPaused=false; syncProblem=""; updateUploadBar(); }
   function genRoomCode(){
     var code=Math.random().toString(36).slice(2,7);
