@@ -227,6 +227,7 @@
         compDate: data.startAt || (r.updated_at && Date.parse(r.updated_at)) || null,
         startAt: data.startAt || null,
         updatedAt: (r.updated_at && Date.parse(r.updated_at)) || null,
+        balta: (data.balta||"").trim(),
         code: r.code,
         parts: parts
       });
@@ -265,6 +266,7 @@
         compDate: data.startAt || (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
         startAt: data.startAt || null,
         updatedAt: (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
+        balta: (data.balta||"").trim(),
         code: "arhiva:"+paths[i],
         parts: parts
       });
@@ -285,6 +287,7 @@
         compDate: data.startAt || (a.archived_at && Date.parse(a.archived_at)) || null,
         startAt: data.startAt || null,
         updatedAt: (a.archived_at && Date.parse(a.archived_at)) || null,
+        balta: (data.balta||"").trim(),
         code: "arhiva-api:"+a.id,
         parts: parts
       });
@@ -313,6 +316,12 @@
              : (src.compDate ? ("z"+new Date(src.compDate).toISOString().slice(0,10)) : "");
     return oameni+"@"+cand;
   }
+  /* Balta e scrisă de organizator, în Contul meu. Concursurile de dinainte de câmpul
+     ăsta n-o au — pentru ele cade pe numele concursului, ca listele lor de standuri
+     să apară totuși, sub un nume pe care omul îl recunoaște. */
+  function cheiaLocatiei(src){
+    return (src.balta||"").trim() || (src.compName||"").trim() || "Fără locație";
+  }
   function faraDubluri(sources){
     var vazute = {}, out = [];
     sources.forEach(function(s){
@@ -337,7 +346,11 @@
     }
 
     var byKey = {}; // name key -> aggregated record
-    var byStand = {}; // stand -> aggregat pe toate locațiile
+    /* Standurile se numără PE BALTĂ. Standul 46 de la Remus Lake și standul 46 de la
+       Rediu Galian sunt două locuri diferite; adunate la un loc, „cel mai productiv
+       stand" nu spunea nimic despre nicio baltă. Concursurile de dinainte de câmpul
+       „Balta" cad pe numele lor, ca să nu rămână o listă goală în urmă. */
+    var byLoc = {}; // baltă -> { stand -> agregat }
     var comps = []; // list of processed competitions (for footer)
     var seasonFish = null; // {v, name, comp}
 
@@ -380,23 +393,31 @@
 
         var stand = (row.p.stand || "").toString().trim();
         if(stand){
-          if(!byStand[stand]) byStand[stand] = {stand:stand, totalKg:0, uses:0};
-          byStand[stand].totalKg += row.kg;
-          byStand[stand].uses += 1;
+          var loc = cheiaLocatiei(src);
+          if(!byLoc[loc]) byLoc[loc] = {};
+          var st = byLoc[loc];
+          if(!st[stand]) st[stand] = {stand:stand, totalKg:0, uses:0};
+          st[stand].totalKg += row.kg;
+          st[stand].uses += 1;
         }
       });
     });
 
     var list = Object.keys(byKey).map(function(k){ return byKey[k]; });
-    var standList = Object.keys(byStand).map(function(k){ return byStand[k]; })
-      .sort(function(a,b){ return b.totalKg - a.totalKg; });
+    // o listă de standuri pentru fiecare baltă, băltile cele mai pescuite primele
+    var locStands = Object.keys(byLoc).map(function(loc){
+      var standuri = Object.keys(byLoc[loc]).map(function(k){ return byLoc[loc][k]; })
+        .sort(function(a,b){ return b.totalKg - a.totalKg; });
+      var cantariri = standuri.reduce(function(a,x){ return a+x.uses; }, 0);
+      return {loc:loc, standuri:standuri, cantariri:cantariri};
+    }).sort(function(a,b){ return b.cantariri - a.cantariri; });
     comps.sort(function(a,b){ return (b.date||0)-(a.date||0); });
 
     var maxComp = 0;
     list.forEach(function(r){ if(r.competitions>maxComp) maxComp=r.competitions; });
     var mostLoyal = list.filter(function(r){ return r.competitions===maxComp; });
 
-    return {list:list, comps:comps, seasonFish:seasonFish, standList:standList, mostLoyal:mostLoyal};
+    return {list:list, comps:comps, seasonFish:seasonFish, locStands:locStands, mostLoyal:mostLoyal};
   }
 
   function renderTable(){
@@ -453,15 +474,17 @@
       '</div>';
     }).join("");
 
-    var standRows = season.standList.slice(0,15).map(function(s,i){
-      var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
-      return '<tr><td class="pos">'+medal+'</td><td>Stand '+esc(s.stand)+'</td><td class="kg num">'+s.uses+'</td><td class="kg num">'+fmt(s.totalKg)+'</td></tr>';
+    var standHtml = season.locStands.map(function(L){
+      var randuri = L.standuri.slice(0,15).map(function(s,i){
+        var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+        return '<tr><td class="pos">'+medal+'</td><td>Stand '+esc(s.stand)+'</td><td class="kg num">'+s.uses+'</td><td class="kg num">'+fmt(s.totalKg)+'</td></tr>';
+      }).join("");
+      return '<div class="card" style="margin-top:14px;"><div class="sec-title">Cel mai productiv stand · '+esc(L.loc)+'</div>'+
+        '<table><thead><tr><th class="pos">#</th><th>Stand</th><th class="kg">Cântăriri</th><th class="kg">Total kg</th></tr></thead><tbody>'+randuri+'</tbody></table></div>';
     }).join("");
-    var standHtml = season.standList.length
-      ? '<div class="card" style="margin-top:14px;"><div class="sec-title">Cel mai productiv stand (toate locațiile)</div>'+
-        '<table><thead><tr><th class="pos">#</th><th>Stand</th><th class="kg">Cântăriri</th><th class="kg">Total kg</th></tr></thead><tbody>'+standRows+'</tbody></table>'+
-        '<p class="hint">Suma kg prinse de pe fiecare număr de stand, indiferent de concurs sau locație — arată ce standuri sunt constant productive.</p></div>'
-      : '';
+    if(standHtml){
+      standHtml += '<p class="hint" style="margin-top:8px;">Suma kg prinse de pe fiecare stand, socotită separat pentru fiecare baltă — standul 46 de la o baltă n-are nimic de-a face cu standul 46 de la alta. Balta se scrie în Contul meu; concursurile de dinainte apar sub numele lor.</p>';
+    }
 
     body.innerHTML =
       '<div class="summary">'+
