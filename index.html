@@ -2277,7 +2277,7 @@
              '<div class="row" style="width:100%; margin-top:8px;">'+
                '<input id="arh-balta-'+esc(a.id)+'" placeholder="Balta (ex: Remus Lake)" value="'+esc(d.balta||"")+'">'+
                '<button class="btn btn-ghost" style="flex:0 0 104px; margin:0;" onclick="setArhivaBalta(\''+esc(a.id)+'\')">Salvează</button>'+
-             '</div></div>';
+             '</div><div class="hint" id="arh-stare-'+esc(a.id)+'" style="width:100%; margin:4px 0 0;"></div></div>';
       });
       h+='<button class="btn btn-danger mt" onclick="delArhiveToate()">Șterge TOATE arhivele online ('+list.length+')</button>';
       el.innerHTML=h;
@@ -2288,14 +2288,24 @@
   // asta, o pică de rețea la mijloc lasă o dublură, nu un concurs pierdut. Iar dublura o
   // contopește filtrul din sezon, fiindcă are aceiași pescari și aceeași oră de start.
   function setArhivaBalta(id){
-    if(!syncKey){ toast("Îți trebuie cheia de scriere, completată mai sus"); return; }
+    // Răspunsul stă lângă rând, nu într-un toast: toastul trece în două secunde, iar omul
+    // se uită la câmp, nu la mijlocul ecranului. Cine rata mesajul credea că a salvat,
+    // vedea câmpul gol la reîncărcare și n-avea de unde ști de ce.
+    var stare=document.getElementById("arh-stare-"+id);
+    var spune=function(txt, rau){
+      if(!stare) return;
+      stare.textContent=txt;
+      stare.style.color = rau ? "#a12727" : "";
+      stare.style.fontWeight = rau ? "700" : "";
+    };
+    if(!syncKey){ spune("⚠ Nu s-a salvat: completează întâi cheia de scriere, la Clasament live pe alte telefoane.", true); toast("Îți trebuie cheia de scriere"); return; }
     var camp=document.getElementById("arh-balta-"+id); if(!camp) return;
     var balta=(camp.value||"").trim();
-    toast("Salvez balta…");
+    spune("Se salvează…");
     fetch(API_BASE+"/api/archive").then(function(r){ return r.json(); }).then(function(j){
       var list=(j&&j.ok&&j.archives)?j.archives:[];
       var a=null; list.forEach(function(x){ if(x.id===id) a=x; });
-      if(!a){ toast("Nu mai găsesc arhiva — reîncarcă lista"); return; }
+      if(!a){ spune("⚠ Nu mai găsesc arhiva — încarcă lista din nou.", true); return; }
       var d=a.data||{};
       d.balta=balta;
       // data concursului se citește din startAt; fără el, copia ar părea de azi
@@ -2305,10 +2315,10 @@
         headers:{"Content-Type":"application/json","x-write-key":syncKey},
         body: JSON.stringify({data: d})
       }).then(function(r){ return r.json(); }).then(function(res){
-        if(!(res&&res.ok)){ toast("Nu s-a putut salva – cheia e greșită?"); return; }
-        return delArhiva(id, true).then(function(){ toast(balta?("Balta pusă: "+balta):"Balta ștearsă"); loadArhive(); });
+        if(!(res&&res.ok)){ spune("⚠ Serverul a refuzat salvarea — cheia de scriere e greșită?", true); return; }
+        return delArhiva(id, true).then(function(){ spune(balta?("✅ Balta pusă: "+balta):"✅ Balta ștearsă"); setTimeout(loadArhive, 1500); });
       });
-    }).catch(function(){ toast("Eroare de rețea"); });
+    }).catch(function(){ spune("⚠ Eroare de rețea — încearcă din nou.", true); });
   }
   function delArhiva(id, tacut){
     if(!syncKey){ toast("Îți trebuie cheia de scriere, completată mai sus"); return Promise.resolve(false); }
