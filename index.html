@@ -2151,7 +2151,11 @@
   // aplicația în memorie și o cere din nou de pe server.
   function aduVariantaNoua(){
     toast("Aduc varianta nouă…");
-    var gata=function(){ location.replace(location.origin+location.pathname); };
+    // Butonul ștergea cache-ul aplicației, dar reîncărca aceeași adresă — iar cache-ul
+    // propriu al browserului nu se șterge de aici. GitHub Pages trimite max-age=600,
+    // deci navigarea putea servi exact fișierul vechi încă zece minute, adică fix ce
+    // voia omul să evite. O adresă pe care browserul n-a mai văzut-o nu are ce lua din cache.
+    var gata=function(){ location.replace(location.origin+location.pathname+"?nou="+Date.now()); };
     if(!("serviceWorker" in navigator)){ gata(); return; }
     navigator.serviceWorker.getRegistrations()
       .then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })
@@ -3688,10 +3692,18 @@
     document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
     resetWarnings();
     startTimerLoop();
-    var roomParam=(new URLSearchParams(location.search)).get("room");
+    var qp=new URLSearchParams(location.search);
+    var roomParam=qp.get("room");
     if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
     else if(shouldResumeViewer()) startViewerMode(loadViewerRoom());
     else loadAcasaRegional();
+    // „?nou=..." e doar cheia cu care ocolim cache-ul browserului; odată pagina
+    // încărcată n-are ce căuta într-o adresă pe care omul o copiază sau o pune în QR
+    if(qp.has("nou") && history.replaceState){
+      qp.delete("nou");
+      var rest=qp.toString();
+      history.replaceState(null, "", location.pathname+(rest?"?"+rest:"")+location.hash);
+    }
   })();
 </script>
 <script>

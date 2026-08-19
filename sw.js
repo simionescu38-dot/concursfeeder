@@ -1,13 +1,18 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v69";
+var CACHE = "concurs-pescuit-v70";
 var ASSETS = ["./", "./index.html", "./qr.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./sezon.html", "./concursuri.html"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(
     caches.open(CACHE)
-      .then(function (c) { return c.addAll(ASSETS); })
+      .then(function (c) {
+        /* Fără cache:"reload", addAll ia fișierele din cache-ul browserului: versiunea
+           nouă a service worker-ului putea salva în cache-ul ei exact index.html-ul
+           vechi, și totul părea actualizat fără să fie. */
+        return c.addAll(ASSETS.map(function (u) { return new Request(u, { cache: "reload" }); }));
+      })
       .then(function () { return self.skipWaiting(); })
   );
 });
