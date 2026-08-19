@@ -1,7 +1,7 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v79";
+var CACHE = "concurs-pescuit-v80";
 var ASSETS = ["./", "./index.html", "./qr.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./sezon.html", "./concursuri.html"];
 
 self.addEventListener("install", function (e) {
@@ -72,7 +72,13 @@ self.addEventListener("fetch", function (e) {
           caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
         }
         return res;
-      }).catch(function () { return cached; });
+      }).catch(function () {
+        /* Paginile surori sunt cerute cu ?v=<versiune>, ca browserul să nu le poată servi
+           dintr-un cache vechi. Prima cerere a unei versiuni noi are deci nevoie de rețea —
+           iar fără internet n-ar găsi nimic. Atunci ne mulțumim cu ultima copie a aceleiași
+           pagini, oricare i-ar fi fost adresa: mai bine varianta de ieri decât nimic. */
+        return cached || caches.match(e.request, { ignoreSearch: true });
+      });
       return cached || fetched;
     })
   );

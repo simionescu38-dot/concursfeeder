@@ -1568,7 +1568,20 @@
       if(el) el.scrollIntoView({block:"start", behavior:"smooth"});
     }, 60);
   }
-  function meniuLink(href){ location.href=href; }
+  // „Adu varianta nouă" reîncarcă index.html, dar sezon.html și concursuri.html sunt
+  // pagini separate: browserul le poate servi din cache-ul lui încă zece minute, așa că
+  // omul vedea aplicația nouă și clasamentul de sezon vechi. Legăturile poartă acum
+  // versiunea aplicației, deci după fiecare actualizare sunt adrese pe care browserul
+  // nu le-a mai văzut și nu are ce servi din cache.
+  var appVer="";
+  function catrePagina(href){ return appVer ? (href+"?v="+appVer) : href; }
+  function legaPaginileSurori(){
+    document.querySelectorAll('a[href="sezon.html"], a[href^="sezon.html?"], a[href="concursuri.html"], a[href^="concursuri.html?"]').forEach(function(a){
+      var baza=a.getAttribute("href").split("?")[0];
+      a.setAttribute("href", catrePagina(baza));
+    });
+  }
+  function meniuLink(href){ location.href=catrePagina(href); }
   function renderMeniu(){
     var g=document.getElementById("meniu-grila");
     if(!g) return;
@@ -2154,6 +2167,7 @@
     if(!("caches" in window)){ el.textContent="Aplicația rulează din browser, fără memorie proprie."; return; }
     caches.keys().then(function(k){
       var v=""; k.forEach(function(x){ var m=/concurs-pescuit-v(\d+)/.exec(x); if(m) v=m[1]; });
+      if(v){ appVer=v; legaPaginileSurori(); }
       el.innerHTML = v ? ("Ai <b>versiunea "+v+"</b>.") : "Încă nu s-a salvat nimic în telefon — deschide aplicația o dată cu internet.";
     }).catch(function(){ el.textContent=""; });
   }
