@@ -918,7 +918,7 @@
     manseRange().forEach(function(i){ if(mancheDisputata(i)) last=i; });
     return last;
   }
-  // scrie standul și sectorul în manșa dată (tragerea la sorți, editarea manuală)
+  // scrie standul și sectorul în manșa dată (formularul de editare al pescarului)
   function setStandSector(p, mi, stand, sector){
     var m=mOf(p,mi);
     m.stand=(stand===undefined||stand===null)?"":String(stand);
@@ -1550,7 +1550,7 @@
   }
   // ---------- grila de meniu de pe Acasă ----------
   // Se schimbă după lacăt: organizatorul vede uneltele de concurs, pescarul nu vede
-  // niciodată cântărirea sau tragerea la sorți. Trimite doar către ecrane care există.
+  // niciodată cântărirea. Trimite doar către ecrane care există.
   function meniuGo(view, elId, inainte){
     if(inainte) inainte();
     showView(view);
@@ -1571,7 +1571,8 @@
       ["📅","Calendar","meniuGo('cal')"],
       ["📓","Strategie","meniuGo('strat')"],
       ["📜","Regulament","meniuGo('reg')"],
-      ["🤝","Sponsori","meniuGo('spons')"]
+      ["🤝","Sponsori","meniuGo('spons')"],
+      ["🥇","Sezon","meniuLink('sezon.html')"]
     ];
     var pescar=[
       ["🏆","Clasament","meniuGo('rank')"],
