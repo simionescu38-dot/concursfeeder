@@ -2529,6 +2529,11 @@
       p.stand=standOfM(p, state.manche||1);
       p.sector=sectorOfM(p, state.manche||1);
     });
+    // Concursurile numerotate de mână se curăță o dată. Salvarea e pe loc, altfel
+    // curățenia ar trăi doar în memorie și s-ar reface la fiecare deschidere.
+    var curatate=0;
+    (state.participants||[]).forEach(function(p){ if(curataNumarul(p)) curatate++; });
+    if(curatate) save();
   }
 
   // ---------- views ----------
@@ -2588,6 +2593,7 @@
     var sec=document.getElementById("in-sector").value;
     if(!pre && !nume && !stand){ return; }
     var np={id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{}};
+    curataNumarul(np);
     ensureManche(np);
     // pescarul nou stă pe același stand în toate manșele până la următoarea tragere
     manseRange().forEach(function(i){ np.m[i].stand=stand; np.m[i].sector=sec; });
@@ -2724,6 +2730,7 @@
     p.prenume=(g("ed-prenume")||"").trim();
     p.nume=(g("ed-nume")||"").trim();
     var sec=g("ed-sector"); if(sec!==undefined){ p.sector=sec; mOf(p, state.manche||1).sector=sec; }
+    curataNumarul(p);
     editingId=null; queueSave(); renderList();
   }
 
@@ -2878,6 +2885,17 @@
     });
   }
   function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
+  // Numerele scrise în fața numelui („6.Cristi") sunt o numerotare de mână, de pe vremea
+  // când ordinea nu se vedea nicăieri. Clasamentul își arată singur locurile, iar standul
+  // scrie sub nume — deci numărul din nume e dublură, și ajunge așa pe ecranele tuturor,
+  // prin camera live. Se taie doar din capul numelui afișat, niciodată din mijlocul lui.
+  function curataNumarul(p){
+    var re=/^\s*\d{1,3}\s*[.)]\s*/;
+    var pre=p.prenume||"", num=p.nume||"";
+    if(re.test(pre)){ p.prenume=pre.replace(re,""); return true; }
+    if(!pre.trim() && re.test(num)){ p.nume=num.replace(re,""); return true; }
+    return false;
+  }
   // cheie de sortare tolerantă la nume/prenume lipsă (altfel undefined+undefined => NaN, iar NaN.localeCompare crapă)
   function nameKey(p){ return ((p.nume||"")+" "+(p.prenume||"")).trim(); }
 
@@ -3212,6 +3230,7 @@
       var sec=x.sector||"";
       if(!sec && x.stand){ var nr=parseInt(x.stand,10); if(!isNaN(nr)) sec=sectorForStand(nr, ranges); }
       var np={id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:sec, m:{}};
+      curataNumarul(np);
       ensureManche(np);
       manseRange().forEach(function(i){ np.m[i].stand=np.stand; np.m[i].sector=np.sector; });
       state.participants.push(np);

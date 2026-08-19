@@ -203,7 +203,7 @@ console.log("\n=== 7. Standul scris din formular ===");
   // formularul de editare al pescarului „a"
   const camp = { "ed-stand-a":"5", "ed-prenume-a":"", "ed-nume-a":"a", "ed-sector-a":"C" };
   ctx.document = { getElementById: function(id){ return (id in camp) ? { value: camp[id] } : null; } };
-  vm.runInContext(grabFunction(src, "saveEdit"), ctx);
+  vm.runInContext(["saveEdit", "curataNumarul"].map(function(n){ return grabFunction(src, n); }).join("\n"), ctx);
 
   pune(ctx, [["a","A","1",0], ["b","A","2",0]]);
   ctx.state.participants.forEach(function(p){ p.m[2].stand=""; p.m[2].sector=""; });
