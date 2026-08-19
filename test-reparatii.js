@@ -296,8 +296,16 @@ console.log("\n=== 8. Balta pe o arhivă veche ===");
   t("data concursului se păstrează, ca să nu pară de azi",
     /if\(!d\.startAt && a\.archived_at\) d\.startAt=/.test(fn), true);
   t("camera concursului se păstrează", /a\.room\?\("\?room="/.test(fn), true);
-  t("fără cheie de scriere nu se atinge nimic",
-    /if\(!syncKey\)\{ toast\([^)]*\); return; \}/.test(fn), true);
+  t("fără cheie de scriere se oprește înainte de orice cerere",
+    fn.indexOf("if(!syncKey)") > -1 && fn.indexOf("if(!syncKey)") < fn.indexOf("fetch("), true);
+
+  // Un toast trece în două secunde, iar omul se uită la câmp. Cine rata mesajul credea
+  // că a salvat, vedea câmpul gol la reîncărcare și n-avea de unde ști de ce.
+  t("răspunsul se scrie lângă rând, nu doar în toast", /function\(txt, rau\)/.test(fn), true);
+  t("…și fiecare ieșire îl folosește",
+    (fn.match(/spune\(/g) || []).length >= 5, true);
+  t("rândul chiar are unde să-l scrie",
+    /id="arh-stare-/.test(grabFunction(src, "loadArhive")), true);
 }
 
 t.raport();
