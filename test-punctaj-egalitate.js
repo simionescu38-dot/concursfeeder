@@ -454,7 +454,7 @@ console.log("\n=== 12. Filtrul de dubluri din sezon.html ===");
   const ctx = { console };
   vm.createContext(ctx);
   vm.runInContext(
-    ["nameOf", "mOf", "catchesSum", "extrasSum", "totalKg", "semnatura", "faraDubluri"]
+    ["nameOf", "mOf", "catchesSum", "extrasSum", "totalKg", "semnatura", "faraDubluri", "cheiaLocatiei"]
       .map(n => H2.grabFunction(sezSrc, n)).join("\n"),
     ctx);
   ctx.faraDubluri = vm.runInContext("faraDubluri", ctx);
@@ -512,6 +512,21 @@ console.log("\n=== 12. Filtrul de dubluri din sezon.html ===");
     numeOf({ prenume: "7.Fabian", nume: "Cretu" }) === numeOf({ prenume: "Fabian", nume: "Cretu" }), true);
   t("o inițială nu e o numerotare",
     numeOf({ prenume: "I.", nume: "Popescu" }), "I. Popescu");
+
+  // Standul 46 de la o baltă n-are nimic de-a face cu standul 46 de la alta, deci
+  // „cel mai productiv stand" se socotește pe baltă. Balta o scrie organizatorul;
+  // concursurile de dinainte de câmpul ăsta cad pe numele lor.
+  const locOf = vm.runInContext("cheiaLocatiei", ctx);
+  t("balta scrisă de organizator e locația",
+    locOf({ balta: "Remus Lake", compName: "Cupa de Miercuri etapa 3" }), "Remus Lake");
+  t("fără baltă, cade pe numele concursului",
+    locOf({ balta: "", compName: "Brăila Rediu Galian" }), "Brăila Rediu Galian");
+  t("spațiile nu fac o baltă nouă",
+    locOf({ balta: "  Remus Lake  ", compName: "x" }), "Remus Lake");
+  t("două etape la aceeași baltă sunt aceeași locație",
+    locOf({ balta: "Remus Lake", compName: "etapa 1" }) === locOf({ balta: "Remus Lake", compName: "etapa 2" }), true);
+  t("fără nimic, tot are unde sta",
+    locOf({ balta: "", compName: "" }), "Fără locație");
 }
 
 /* ================================================================

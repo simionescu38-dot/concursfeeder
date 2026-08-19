@@ -564,6 +564,9 @@
     <div class="card">
       <div class="sec-title">Numele concursului</div>
       <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
+      <label class="f" style="margin-top:12px;">Balta</label>
+      <input id="set-balta" placeholder="ex: Remus Lake" oninput="saveBalta(this.value)">
+      <p class="hint">Numele bălții, scris la fel de fiecare dată. După el se grupează standurile în clasamentul de sezon — ca „cel mai productiv stand" să fie al bălții, nu un amestec de la toate.</p>
     </div>
 
     <div class="card lockhide">
@@ -1119,6 +1122,7 @@
     puneDeoParte("schimbat cu o copie mai veche"); // ca să se poată reveni și din asta
     state=u.data; normalize(); save();
     var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
+    var sb=document.getElementById("set-balta"); if(sb) sb.value=state.balta||"";
     var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
     renderSectors(); renderList(); renderRank(); updateManseButtons(); updateUndoUI();
     toast("Adus înapoi – verifică lista în Cântar");
@@ -2318,6 +2322,7 @@
           if(sj && sj.ok && sj.data){
             state=sj.data; normalize();
             var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
+    var sb=document.getElementById("set-balta"); if(sb) sb.value=state.balta||"";
             var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
             document.getElementById("nm-2").classList.toggle("on", numManse()===2);
             document.getElementById("nm-3").classList.toggle("on", numManse()===3);
@@ -2479,6 +2484,7 @@
     if(typeof state.scalaSectoare!=="boolean") state.scalaSectoare=false;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
     if(typeof state.rules!=="string") state.rules="";
+    if(typeof state.balta!=="string") state.balta="";
     if(state.numStanduri===undefined || state.numStanduri===null) state.numStanduri="";
     if(!Array.isArray(state.sponsors)) state.sponsors=[];
     (state.participants||[]).forEach(function(p){
@@ -3768,6 +3774,7 @@
         toast(added+" adăugați, "+updated+" actualizați");
       }
       document.getElementById("set-name").value=state.name||"";
+      document.getElementById("set-balta").value=state.balta||"";
       document.getElementById("compName").textContent=state.name||"";
       renderSectors(); renderList();
     };
@@ -3775,6 +3782,9 @@
   }
 
   function saveCompName(v){ if(isLocked()) return; state.name=v; document.getElementById("compName").textContent=v; queueSave(); }
+  // Balta e a locului, nu a etapei: numele concursului se schimbă de la o etapă la alta,
+  // dar standul 46 e același stand. Sezonul grupează standurile după balta asta.
+  function saveBalta(v){ if(isLocked()) return; state.balta=(""+(v||"")).trim(); queueSave(); }
   function wipe(){
     if(guard()) return;
     var willArchive = state.participants.length>0 && !!syncKey;
@@ -3786,8 +3796,10 @@
     if(willArchive) archiveToSeason(function(){ saveArchiveId(""); });
     // sponsorii sunt o listă de parteneri, nu rezultate: supraviețuiesc ștergerii,
     // altfel ar trebui retastați la fiecare concurs. Regulamentul, fiind al
-    // concursului, se șterge odată cu el.
-    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice(), numManse:state.numManse };
+    // concursului, se șterge odată cu el. Balta la fel: e a locului, iar etapa
+    // următoare e de obicei tot acolo — rămâne scrisă în câmp, deci se vede și se
+    // schimbă dintr-o atingere când chiar se mută concursul.
+    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice(), numManse:state.numManse, balta:state.balta||"" };
     save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);
@@ -3802,6 +3814,7 @@
     wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
     stratLoad();
     document.getElementById("set-name").value = state.name||"";
+    document.getElementById("set-balta").value = state.balta||"";
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);
