@@ -19,7 +19,8 @@ function aplicatie(numManse, manche) {
   vm.runInContext(
     ["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
      "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM",
-     "cmmcAward", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize"]
+     "cmmcAward", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize",
+     "nameOf", "updateWarnStand"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
@@ -123,6 +124,60 @@ console.log("\n=== 4. Nicio rescriere în masă ===");
   t("…și nu trece prin toți", /state\.participants\.forEach/.test(ed), false);
   t("iar standul scris merge în manșa activă",
     /mOf\(p, state\.manche\|\|1\)\.stand\s*=/.test(ed), true);
+}
+
+/* ================================================================
+   5. Două bilete cu același număr
+      Se văd altfel abia la baltă, când doi oameni ajung pe același stand —
+      sau, mai rău, abia la cântar, unde captura se poate trece pe cine nu
+      trebuie. Avertismentul stătea în lista de standuri; lista a plecat,
+      greșeala nu.
+   ================================================================ */
+console.log("\n=== 5. Standuri duble ===");
+{
+  const ctx = aplicatie(2);
+  let cutie = { style: {}, textContent: "" };
+  ctx.document = { getElementById: function(id){ return id === "warn-stand" ? cutie : null; } };
+  const arata = () => { vm.runInContext("updateWarnStand()", ctx); return cutie; };
+  const pune = rows => {
+    ctx.state.participants = rows.map((r,i) => ({
+      id:"p"+i, nume:r[0], prenume:"",
+      m:{ 1:{catches:[],extras:[],stand:r[1],sector:"A"},
+          2:{catches:[],extras:[],stand:r[2]||"",sector:"A"} }
+    }));
+  };
+
+  pune([["Ion","5"], ["Vlad","7"], ["Radu","9"]]);
+  t("cu standuri diferite, nu apare nimic", arata().style.display, "none");
+
+  pune([["Ion","5"], ["Vlad","5"], ["Radu","9"]]);
+  const w = arata();
+  t("cu două bilete la fel, avertismentul apare", w.style.display, "block");
+  t("spune care stand", /standul 5 e dat de 2 ori/.test(w.textContent), true);
+  t("spune pe cine", /\(Ion, Vlad\)/.test(w.textContent), true);
+  t("spune în ce manșă", /manșa 1/.test(w.textContent), true);
+  t("spune și de ce contează", /captura se poate trece pe cine nu trebuie/.test(w.textContent), true);
+  t("nu pomenește standul curat", /standul 9/.test(w.textContent), false);
+
+  // avertismentul e al manșei active: manșa 2 are altă repartizare
+  pune([["Ion","5","1"], ["Vlad","5","2"], ["Radu","9","3"]]);
+  ctx.state.manche = 2;
+  t("pe manșa 2, curată, nu mai apare", arata().style.display, "none");
+  ctx.state.manche = 1;
+  t("iar pe manșa 1 e tot acolo", arata().style.display, "block");
+
+  // cine n-a primit încă standul nu e „dublură" cu ceilalți care n-au primit
+  pune([["Ion",""], ["Vlad",""], ["Radu","9"]]);
+  t("doi fără stand nu sunt un stand dublu", arata().style.display, "none");
+
+  // trei pe același stand, și un al doilea stand dublu
+  pune([["Ion","5"], ["Vlad","5"], ["Radu","5"], ["Dan","12"], ["Emil","12"]]);
+  const w2 = arata();
+  t("numără corect când sunt trei pe același stand",
+    /standul 5 e dat de 3 ori/.test(w2.textContent), true);
+  t("le arată pe amândouă", /standul 12 e dat de 2 ori/.test(w2.textContent), true);
+  t("iar standurile ies în ordine numerică",
+    w2.textContent.indexOf("standul 5") < w2.textContent.indexOf("standul 12"), true);
 }
 
 t.raport();
