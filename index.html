@@ -433,12 +433,12 @@
     <div class="card lockhide">
       <div class="sec-title">Adaugă participant</div>
       <div class="row" style="margin-bottom:8px;">
-        <div class="w-stand"><label class="f">Stand</label><input id="in-stand" inputmode="numeric" placeholder="Nr"></div>
+        <div class="w-stand"><label class="f">Stand</label><input id="in-stand" inputmode="numeric" placeholder="Nr" oninput="sectorDinStand(this, document.getElementById('in-sector'))"></div>
         <div><label class="f">Prenume</label><input id="in-prenume" placeholder="Prenume"></div>
       </div>
       <div class="row" style="margin-bottom:8px;">
         <div><label class="f">Nume</label><input id="in-nume" placeholder="Nume"></div>
-        <div><label class="f">Sector</label><select id="in-sector"></select></div>
+        <div><label class="f">Sector</label><select id="in-sector" onchange="this.dataset.man='1'"></select></div>
       </div>
       <button class="btn btn-primary" onclick="addParticipant()">+ Adaugă la listă</button>
     </div>
@@ -573,7 +573,10 @@
         <input id="in-newsec" placeholder="ex: A, B, C..." maxlength="12">
         <button class="btn btn-primary" style="flex:0 0 96px;" onclick="addSector()">Adaugă</button>
       </div>
-      <p class="hint">Standurile se împart pe sectoare. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
+      <label class="f" style="margin-top:12px;">Număr de standuri la baltă</label>
+      <input id="in-standuri" inputmode="numeric" placeholder="= nr. participanți" oninput="setNumStanduri(this.value)">
+      <p class="hint" id="sec-preview" style="margin-top:8px;"></p>
+      <p class="hint">Standurile se împart pe sectoare în ordine, după intervalele de mai sus, iar sectorul se completează singur când scrii standul unui pescar. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
     </div>
 
     <div class="card lockhide">
@@ -2475,6 +2478,7 @@
     if(typeof state.scalaSectoare!=="boolean") state.scalaSectoare=false;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
     if(typeof state.rules!=="string") state.rules="";
+    if(state.numStanduri===undefined || state.numStanduri===null) state.numStanduri="";
     if(!Array.isArray(state.sponsors)) state.sponsors=[];
     (state.participants||[]).forEach(function(p){
       if(!p.m){
@@ -2591,6 +2595,8 @@
     document.getElementById("in-stand").value="";
     document.getElementById("in-prenume").value="";
     document.getElementById("in-nume").value="";
+    // alegerea de mână a ținut de pescarul tocmai adăugat, nu de următorul
+    delete document.getElementById("in-sector").dataset.man;
     queueSave(); renderList();
     document.getElementById("in-stand").focus();
   }
@@ -2793,8 +2799,8 @@
       var head;
       if(editingId===p.id){
         head='<div class="p-edit">'+
-          '<div class="erow"><input class="w-stand" id="ed-stand-'+p.id+'" inputmode="numeric" placeholder="Stand" value="'+esc(p.stand||"")+'"><input id="ed-prenume-'+p.id+'" placeholder="Prenume" value="'+esc(p.prenume||"")+'"></div>'+
-          '<div class="erow mt8"><input id="ed-nume-'+p.id+'" placeholder="Nume" value="'+esc(p.nume||"")+'"><select id="ed-sector-'+p.id+'">'+sectorOptions(p.sector)+'</select></div>'+
+          '<div class="erow"><input class="w-stand" id="ed-stand-'+p.id+'" inputmode="numeric" placeholder="Stand" value="'+esc(p.stand||"")+'" oninput="sectorDinStand(this, document.getElementById(\'ed-sector-'+p.id+'\'))"><input id="ed-prenume-'+p.id+'" placeholder="Prenume" value="'+esc(p.prenume||"")+'"></div>'+
+          '<div class="erow mt8"><input id="ed-nume-'+p.id+'" placeholder="Nume" value="'+esc(p.nume||"")+'"><select id="ed-sector-'+p.id+'" onchange="this.dataset.man=\'1\'">'+sectorOptions(p.sector)+'</select></div>'+
           '<div class="erow mt8"><button class="btn btn-primary" onclick="saveEdit(\''+p.id+'\')">Salvează</button><button class="btn btn-ghost" onclick="cancelEdit()">Renunță</button></div>'+
         '</div>';
       } else {
@@ -3085,6 +3091,48 @@
   function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#10263c;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
 
   // ---------- sectors ----------
+  // Standurile se împart pe sectoare în ordine: cu 28 de standuri și 6 sectoare ies
+  // blocuri de 5,5,5,5,4,4 — resturile merg la primele, ca la baltă.
+  function sectorRanges(N, secs){
+    var k=secs.length; if(k===0||N<=0) return [];
+    var base=Math.floor(N/k), rem=N%k, start=1, out=[];
+    secs.forEach(function(s,i){ var size=base+(i<rem?1:0); out.push({sector:s, from:start, to:start+size-1}); start+=size; });
+    return out;
+  }
+  function sectorForStand(s, ranges){ for(var q=0;q<ranges.length;q++){ if(s>=ranges[q].from && s<=ranges[q].to) return ranges[q].sector; } return ""; }
+  // câte standuri are balta. Nescris, presupunem unul de fiecare pescar — la concursurile
+  // mici e chiar așa, iar cine are balta mai mare decât lista scrie numărul o dată.
+  function currentRanges(){
+    var N=parseInt(state.numStanduri,10);
+    if(!N || N<1) N=state.participants.length;
+    return sectorRanges(N, state.sectors);
+  }
+  function setNumStanduri(v){
+    if(guard()) return;
+    state.numStanduri=(""+(v||"")).trim();
+    previewSectoare();
+    queueSave();
+  }
+  function previewSectoare(){
+    var el=document.getElementById("in-standuri");
+    if(el && el.value!==(state.numStanduri||"")) el.value=state.numStanduri||"";
+    var box=document.getElementById("sec-preview"); if(!box) return;
+    if(!state.sectors.length){ box.textContent="Adaugă întâi sectoare (A, B, C...)."; return; }
+    var r=currentRanges();
+    if(!r.length){ box.textContent="Scrie numărul de standuri, ca sectorul să se completeze singur."; return; }
+    var N=r[r.length-1].to;
+    box.innerHTML=N+" standuri · "+r.map(function(x){ return "<b>"+esc(x.sector)+"</b> "+x.from+"–"+x.to; }).join(" · ");
+  }
+  // Sectorul urmează standul pe măsură ce se scrie. Ales o dată de mână, rămâne cum
+  // l-a pus omul: la unele bălți sectoarele nu sunt blocuri consecutive de standuri,
+  // iar o cifră corectată la stand nu are voie să-i șteargă alegerea.
+  function sectorDinStand(standEl, secEl){
+    if(!standEl || !secEl || secEl.dataset.man) return;
+    var nr=parseInt((standEl.value||"").trim(),10);
+    if(isNaN(nr)) return;
+    var sec=sectorForStand(nr, currentRanges());
+    if(sec && secEl.value!==sec) secEl.value=sec;
+  }
   function renderSectors(){
     var list=document.getElementById("sectors-list"); list.innerHTML="";
     state.sectors.forEach(function(s,i){
@@ -3095,6 +3143,7 @@
     var sel=document.getElementById("in-sector"); var cur=sel.value; sel.innerHTML="";
     state.sectors.forEach(function(s){ var o=document.createElement("option"); o.value=s; o.textContent="Sector "+s; sel.appendChild(o); });
     if(state.sectors.indexOf(cur)>=0) sel.value=cur;
+    previewSectoare();
   }
   function addSector(){
     if(guard()) return;
@@ -3151,8 +3200,18 @@
     if(!arr.length){ toast("Nimic de importat"); return; }
     arr.forEach(function(x){
       if(x.sector && state.sectors.indexOf(x.sector)<0) state.sectors.push(x.sector);
+    });
+    // Sectorul lipsă din import iese din intervale, exact ca atunci când scrii standul
+    // de mână. Intervalele se calculează O DATĂ, după ce lista de sectoare e completă:
+    // altfel un sector nou apărut la linia 20 ar rescrie împărțirea pentru primele 19.
+    var N=parseInt(state.numStanduri,10);
+    if(!N || N<1) N=state.participants.length+arr.length;
+    var ranges=sectorRanges(N, state.sectors);
+    arr.forEach(function(x){
       var nm=splitName(x.name);
-      var np={id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:x.sector||"", m:{}};
+      var sec=x.sector||"";
+      if(!sec && x.stand){ var nr=parseInt(x.stand,10); if(!isNaN(nr)) sec=sectorForStand(nr, ranges); }
+      var np={id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:sec, m:{}};
       ensureManche(np);
       manseRange().forEach(function(i){ np.m[i].stand=np.stand; np.m[i].sector=np.sector; });
       state.participants.push(np);

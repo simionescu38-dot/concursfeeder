@@ -19,6 +19,7 @@ const TESTE = [
   ["Adrese date mai departe", "test-adrese.js"],
   ["Cronometru sincronizat", "test-cronometru.js"],
   ["Ceasul concursului", "test-ceas.js"],
+  ["Sector automat din stand", "test-sector-automat.js"],
   ["Aducerea variantei noi", "test-actualizare.js"]
 ];
 
