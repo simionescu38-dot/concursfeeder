@@ -617,12 +617,11 @@
       <label class="f">Număr de standuri</label>
       <input id="draw-stands" inputmode="numeric" placeholder="= nr. participanți" oninput="previewDraw()">
       <p class="hint" id="draw-preview" style="margin-top:8px;"></p>
-      <div class="row">
-        <button class="btn btn-primary" onclick="drawOrder()">🎲 Trage ordinea</button>
-        <button class="btn btn-ghost" onclick="copyDraw()">Copiază</button>
-      </div>
+      <button class="btn btn-primary" onclick="drawOrder()">🎲 Trage ordinea</button>
       <p class="hint" style="margin-top:10px;">Întâi se trage <b>ordinea</b>. Apoi, la baltă, fiecare își extrage standul în ordinea asta — scrie-l mai jos pe măsură ce se strigă. Sectorul se completează singur după intervalele de mai sus, dar îl poți schimba din dreapta: dacă îl alegi tu, rămâne cum l-ai pus și nu se mai rescrie când corectezi standul.</p>
       <div id="stand-entry"></div>
+      <button class="btn btn-ghost mt" onclick="copyDraw()">⧉ Copiază lista (nume, stand, sector)</button>
+      <p class="hint">Pune lista de mai sus în clipboard, ca text — o lipești direct pe WhatsApp sau într-un mesaj. Pentru o foaie de tipărit sau PDF, mergi în <b>Clasamente</b> și apasă „🖨 Print / PDF".</p>
       <p class="hint" style="margin-top:12px;">Dacă la baltă nu extrageți standurile manual, poți lăsa aplicația să le dea ea:</p>
       <button class="btn btn-ghost" onclick="drawLots()">🎲 Trage și standurile automat</button>
       <p class="hint">Trage întâi <b>ordinea</b>, apoi <b>standul</b> pentru fiecare; sectorul iese din stand (ex: 1–20 = A). Rescrie ordinea, standul și sectorul.</p>
@@ -3304,17 +3303,28 @@
   function byStand(a,b){ var d=standKey(a)-standKey(b); if(d) return d; return nameKey(a).localeCompare(nameKey(b),"ro"); }
   function copyText(txt){ try{ navigator.clipboard.writeText(txt).then(function(){toast("Copiat");},function(){fallbackCopy(txt);}); }catch(e){ fallbackCopy(txt); } }
   function copyDraw(){
-    var arr=state.participants.filter(function(p){return p.stand;});
+    // lista se copiază exact cum se vede pe ecran: a MANȘEI active. Cât timp citea
+    // p.stand, cine intra pe manșa 1 după ce trăsese manșa 2 copia standurile manșei 2.
+    var mi=state.manche||1;
+    var arr=state.participants.filter(function(p){ return standOfM(p,mi); });
     if(!arr.length){ toast("Nicio repartizare de copiat"); return; }
-    var lines=[(state.name||"Concurs")+" – tragere la sorți",""];
-    lines.push("ORDINEA TRAGERII:");
-    arr.slice().sort(function(a,b){return (a.ordine||0)-(b.ordine||0);}).forEach(function(p){
-      lines.push((p.ordine||"-")+". "+nameOf(p)+" → Stand "+p.stand+(p.sector?" ("+p.sector+")":""));
-    });
-    lines.push("");
+    var stKey=function(p){ var m=(""+standOfM(p,mi)).match(/\d+/); return m?parseInt(m[0],10):Number.POSITIVE_INFINITY; };
+    var linie=function(p){ return nameOf(p)+" → Stand "+standOfM(p,mi)+(sectorOfM(p,mi)?" ("+sectorOfM(p,mi)+")":""); };
+    var lines=[(state.name||"Concurs")+" – tragere la sorți, manșa "+mi,""];
+    // fără ordine trasă, secțiunea era o coloană de „-." – nu ajută pe nimeni
+    if(arr.some(function(p){ return p.ordine; })){
+      lines.push("ORDINEA TRAGERII:");
+      arr.slice().sort(function(a,b){return (a.ordine||9999)-(b.ordine||9999);}).forEach(function(p){
+        lines.push((p.ordine||"-")+". "+linie(p));
+      });
+      lines.push("");
+    }
     lines.push("PE STANDURI:");
-    arr.slice().sort(byStand).forEach(function(p){
-      lines.push("Stand "+p.stand+" – "+nameOf(p)+(p.sector?" ("+p.sector+")":""));
+    arr.slice().sort(function(a,b){
+      var d=stKey(a)-stKey(b); if(d) return d;
+      return nameKey(a).localeCompare(nameKey(b),"ro");
+    }).forEach(function(p){
+      lines.push("Stand "+standOfM(p,mi)+" – "+nameOf(p)+(sectorOfM(p,mi)?" ("+sectorOfM(p,mi)+")":""));
     });
     copyText(lines.join("\n"));
   }
