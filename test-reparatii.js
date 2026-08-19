@@ -13,13 +13,13 @@ function aplicatie(numManse, manche) {
   const ctx = {
     state: { participants: [], manche: manche || 1, numManse: numManse || 2,
              sectors: ["A", "B"], sponsors: [], rules: "" },
-    console, num: x => parseFloat(x) || 0
+    console, num: x => parseFloat(x) || 0, save(){}
   };
   vm.createContext(ctx);
   vm.runInContext(
     ["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
      "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM",
-     "cmmcAward", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize",
+     "cmmcAward", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize", "curataNumarul",
      "nameOf", "updateWarnStand"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
