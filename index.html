@@ -1753,6 +1753,7 @@
         ? '<li><b>Sectoare de mărimi diferite</b> se aduc pe aceeași scală, cea a sectorului cel mai numeros: primul din sector ia 1 punct, ultimul ia cât are cel mai mare sector, restul între ele — deci cine nimerește sectorul mic nu mai e avantajat de tragerea la sorți. Dacă toate sectoarele au același număr de oameni, punctele rămân exact locurile.</li>'
         : '<li><b>Sectoare de mărimi diferite:</b> punctele rămân locurile din sector — locul 3 ia 3 puncte, oricât de mare e sectorul. Se poate schimba din Contul meu, la „Puncte la sectoare inegale".</li>')+
       '<li><b>La greutăți egale</b> se împarte media locurilor ocupate: doi la egalitate pe locurile 2 și 3 iau amândoi 2,5 puncte. Așa suma punctelor pe sector rămâne corectă și cei fără captură nu sunt avantajați (convenția FIPS/CIPS).</li>'+
+      '<li><b>Cine lipsește de la o manșă</b> — n-a extras stand și n-a cântărit nimic acolo — nu intră în niciun sector al ei, ca să nu schimbe punctele celorlalți. Primește un punct peste ultimul loc din cel mai mare sector al manșei, deci absența nu iese niciodată mai bine decât prezența.</li>'+
       '<li><b>La General</b> se adună punctele din fiecare manșă. O manșă în care nu s-a cântărit încă nimic nu intră în sumă — altfel ar da tuturor media locurilor din sector, iar sectoarele cu mai puțini oameni ar ieși avantajate.</li>'+
       '<li><b>CMMC</b> e cel mai mare pește extra. La General se ia cel mai mare din tot concursul, nu suma manșelor.</li>'+
       '<li><b>Departajare</b>, în ordine: puncte → kilograme → cea mai bună manșă (doar la General) → cel mai mare pește → numărul standului → nume.</li>'+
@@ -2940,9 +2941,17 @@
   // nici să piardă din asta și primește exact media, (nMax+1)/2. Ancorat pe locul 1 ar fi
   // luat 1 punct — locul întâi pe gratis, adică tocmai norocul la tragerea sectoarelor pe
   // care normalizarea vine să-l scoată.
+  // Cine n-a extras stand în manșa asta și n-a cântărit nimic n-a fost la ea. Lăsat în
+  // clasament, cădea singur în sectorul-fantomă „Fără sector", era automat primul acolo
+  // și lua 1 punct — punctajul MAXIM, pentru o manșă la care nu venise. La General putea
+  // astfel să treacă peste oameni care au pescuit amândouă manșele.
+  function absentLaMansa(p, mi){ return !standOfM(p,mi) && totalOfM(p,mi)<=1e-9; }
   function pointsMapS(mi){
-    var secs={};
-    state.participants.forEach(function(p){ var k=sectorOfM(p,mi)||"Fără sector"; (secs[k]=secs[k]||[]).push(p); });
+    var secs={}, absenti=[];
+    state.participants.forEach(function(p){
+      if(absentLaMansa(p,mi)){ absenti.push(p); return; }
+      var k=sectorOfM(p,mi)||"Fără sector"; (secs[k]=secs[k]||[]).push(p);
+    });
     var nMax=0;
     Object.keys(secs).forEach(function(k){ if(secs[k].length>nMax) nMax=secs[k].length; });
     var map={};
@@ -2963,6 +2972,10 @@
         map[p.id]=(loc-(n+1)/2)*factor+mijloc;
       });
     });
+    // Absența nu are voie să iasă mai bine decât prezența: un punct peste ultimul loc din
+    // cel mai mare sector al manșei. Merge la fel pe ambele feluri de punctaj — și pe locuri
+    // simple, și pe aceeași scală, maximul unui sector e nMax.
+    absenti.forEach(function(p){ map[p.id]=nMax+1; });
     return map;
   }
   // o manșă în care nu s-a cântărit absolut nimic nu s-a disputat încă
@@ -3696,7 +3709,7 @@
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
       order.forEach(function(k){
         h+='<div class="pr-sec">Sector '+esc(k)+'</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Total kg</th></tr>';
-        sortRankS(secs[k],rankScope).forEach(function(p,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(p.stand||"–")+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>'; });
+        sortRankS(secs[k],rankScope).forEach(function(p,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>'; });
         h+='</table>';
       });
     }

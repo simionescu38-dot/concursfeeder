@@ -190,7 +190,7 @@ console.log("\n=== 9. Codul REAL din index.html ===");
 const realSrc = ["mOf","cantOfM","extraOfM","cmmcOfM","totalOfM","cmmcAward","standKey","nameKey",
                  // sectorul e al manșei, deci pointsMapS trece prin sectorOfM
                  "sectorOfM","standOfM","mancheDeAfisat","manseRange","numManse","scalaSectoare",
-                 "byStand","pointsMapS","mancheDisputata","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
+                 "byStand","absentLaMansa","pointsMapS","mancheDisputata","pointsCombo","bestMancheOf","sortByPointsS","fmtPts",
                  "regPunctajHtml"]
   .map(grab).join("\n");
 const real = { state: { participants: [], numManse: 2 }, console };
@@ -484,6 +484,66 @@ console.log("\n=== 12. Filtrul de dubluri din sezon.html ===");
     ctx.faraDubluri([arhiva, dupaOCaptura]).length, 2);
 
   t("lista goală nu crapă", ctx.faraDubluri([]).length, 0);
+}
+
+/* ================================================================
+   13. Manșa la care pescarul n-a fost
+       Fără sector și fără stand în manșa aia, cădea singur în
+       sectorul-fantomă „Fără sector", era automat primul acolo și lua
+       1 punct — punctajul MAXIM, pentru o manșă la care nu venise. La
+       General trecea astfel peste oameni care au pescuit tot.
+       Regula acum: un punct peste ultimul loc din cel mai mare sector.
+   ================================================================ */
+console.log("\n=== 13. Cine lipsește de la o manșă ===");
+{
+  // patru prezenți, doi pe sector, plus un întârziat care prinde doar manșa 2
+  real.state.participants = [
+    ["Ion","A","1",9,7], ["Vlad","A","2",4,3], ["Radu","B","3",8,6], ["Mihai","B","4",2,1]
+  ].map(r => ({ id:r[0], nume:r[0], prenume:"", stand:r[2], sector:r[1],
+    m:{ 1:{catches:[r[3]],extras:[],stand:r[2],sector:r[1]},
+        2:{catches:[r[4]],extras:[],stand:r[2],sector:r[1]} } }));
+  real.state.participants.push({ id:"Nou", nume:"Nou", prenume:"", stand:"5", sector:"A",
+    m:{ 1:{catches:[],extras:[],stand:"",sector:""},
+        2:{catches:[5],extras:[],stand:"5",sector:"A"} } });
+
+  const m1 = ptsReal(1);
+  t("absența nu mai ia 1 punct", m1.Nou !== 1, true);
+  t("ia un punct peste ultimul loc din cel mai mare sector (2+1)", m1.Nou, 3);
+  t("iar prezenții rămân exact cum erau",
+    [m1.Ion, m1.Vlad, m1.Radu, m1.Mihai], [1, 2, 1, 2]);
+
+  t("în manșa la care a fost, e punctat normal", ptsReal(2).Nou, 2);
+
+  const gen = JSON.parse(vm.runInContext("JSON.stringify(pointsCombo())", real));
+  t("la General nu mai trece peste cine a pescuit tot", gen.Nou > gen.Mihai, true);
+
+  real.pmap = gen;
+  const ordine = vm.runInContext(
+    "sortByPointsS(state.participants, pmap, 'total').map(function(p){return p.id;})", real);
+  t("clasamentul General îl pune la coadă",
+    ordine[ordine.length-1], "Nou");
+
+  // regulamentul din aplicație trebuie să spună regula, nu doar s-o aplice
+  const reg = vm.runInContext("regPunctajHtml()", real);
+  t("Regulamentul explică ce ia cine lipsește",
+    /Cine lipsește de la o manșă/.test(reg), true);
+  t("…și că absența nu iese mai bine decât prezența",
+    /absența nu iese niciodată mai bine decât prezența/.test(reg), true);
+
+  // cine a venit și n-a prins nimic NU e absent: are stand, deci intră în sectorul lui
+  real.state.participants[4].m[1].stand = "5";
+  real.state.participants[4].m[1].sector = "A";
+  const cuStand = ptsReal(1);
+  t("prezent cu 0 kg intră în sector, nu la absenți", cuStand.Nou, 3);
+  t("…iar sectorul lui are acum trei oameni, deci ultimul ia 3",
+    [cuStand.Ion, cuStand.Vlad], [1, 2]);
+
+  // absent din amândouă manșele: nu e nici primul, nici scutit
+  real.state.participants[4].m[1] = {catches:[],extras:[],stand:"",sector:""};
+  real.state.participants[4].m[2] = {catches:[],extras:[],stand:"",sector:""};
+  const genTot = JSON.parse(vm.runInContext("JSON.stringify(pointsCombo())", real));
+  t("cine lipsește de la tot are cel mai mare total de puncte",
+    Math.max.apply(null, Object.keys(genTot).map(k => genTot[k])), genTot.Nou);
 }
 
 console.log("\n──────────────────────────────");

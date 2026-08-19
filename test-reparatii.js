@@ -19,7 +19,7 @@ function aplicatie(numManse, manche) {
   vm.runInContext(
     ["emptyManche", "numManse", "scalaSectoare", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
      "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM",
-     "cmmcAward", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize", "curataNumarul",
+     "cmmcAward", "absentLaMansa", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize", "curataNumarul",
      "nameOf", "updateWarnStand"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;

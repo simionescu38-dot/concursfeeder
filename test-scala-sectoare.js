@@ -22,7 +22,7 @@ function aplicatie(scala) {
   vm.runInContext(
     ["emptyManche", "numManse", "scalaSectoare", "manseRange", "ensureManche", "mOf",
      "sectorOfM", "standOfM", "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM",
-     "cmmcOfM", "totalOfM", "cmmcAward", "pointsMapS", "mancheDisputata"]
+     "cmmcOfM", "totalOfM", "cmmcAward", "absentLaMansa", "pointsMapS", "mancheDisputata"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
