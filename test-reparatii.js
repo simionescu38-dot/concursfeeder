@@ -101,21 +101,28 @@ console.log("\n=== 3. Migrarea datelor vechi ===");
 }
 
 /* ================================================================
-   4. Nicio tragere nu mai rescrie manșa dintr-un buton
-      La baltă se trage la bilă, iar organizatorul scrie standul strigat.
-      Cât timp aplicația trăgea singură, un buton rescria dintr-o dată
-      ordinea, standul și sectorul întregii manșe — inclusiv sectoarele
-      alese de mână pentru bălțile unde sectoarele nu sunt blocuri.
+   4. Nimic nu mai rescrie o manșă întreagă dintr-o apăsare
+      Tragerea din aplicație și lista de standuri au fost scoase: la
+      baltă se trage la bilă. Amândouă puteau rescrie dintr-un gest
+      ordinea, standul și sectorul tuturor — inclusiv ale unei manșe
+      deja cântărite. A rămas formularul fiecărui participant, care
+      atinge un singur om.
    ================================================================ */
-console.log("\n=== 4. Tragerea automată nu s-a întors ===");
+console.log("\n=== 4. Nicio rescriere în masă ===");
 {
-  t("nu mai există drawLots în aplicație", /function\s+drawLots\s*\(/.test(src), false);
-  t("nici drawOrder", /function\s+drawOrder\s*\(/.test(src), false);
-  t("și niciun buton nu le mai cheamă", /drawLots\(\)|drawOrder\(\)/.test(src), false);
-  // standul scris de mână rămâne singurul drum, iar el nu atinge decât un pescar
-  const man = grabFunction(src, "setStandManual");
-  t("standul scris de mână schimbă un singur participant",
-    /participantById\(id\)/.test(man) && !/state\.participants\.forEach/.test(man), true);
+  t("nu mai există tragere automată", /function\s+drawLots\s*\(/.test(src), false);
+  t("nici tragere de ordine", /function\s+drawOrder\s*\(/.test(src), false);
+  t("nici lista de standuri", /function\s+renderStandEntry\s*\(/.test(src), false);
+  t("și niciun buton nu le mai cheamă",
+    /drawLots\(\)|drawOrder\(\)|renderStandEntry\(\)|setStandManual\(/.test(src), false);
+
+  // singurul drum rămas scrie un singur participant, în manșa activă
+  const ed = grabFunction(src, "saveEdit");
+  t("formularul caută un singur participant, după id",
+    /state\.participants\.find\(/.test(ed), true);
+  t("…și nu trece prin toți", /state\.participants\.forEach/.test(ed), false);
+  t("iar standul scris merge în manșa activă",
+    /mOf\(p, state\.manche\|\|1\)\.stand\s*=/.test(ed), true);
 }
 
 t.raport();

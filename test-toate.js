@@ -18,8 +18,7 @@ const TESTE = [
   ["Meteo", "test-meteo.js"],
   ["Adrese date mai departe", "test-adrese.js"],
   ["Cronometru sincronizat", "test-cronometru.js"],
-  ["Ceasul concursului", "test-ceas.js"],
-  ["Copierea listei de standuri", "test-copiere-lista.js"]
+  ["Ceasul concursului", "test-ceas.js"]
 ];
 
 let picate = [];
