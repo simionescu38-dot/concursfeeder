@@ -239,7 +239,7 @@
   .tag-plin{background:#fdecec !important; color:#a12727 !important; border-color:#f0b1b1 !important;}
   .tag-putine{background:#fff6e5 !important; color:#8a5a12 !important; border-color:#f0d29a !important;}
   /* pescarii fără sector formează un sector-fantomă care falsifică punctajul */
-  #warn-sector{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
+  #warn-sector, #warn-stand{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   /* tastatură de PIN – taste mari, se apasă cu degetul ud, în picioare, la baltă */
   #pinPad{position:fixed; inset:0; z-index:220; display:none; align-items:center; justify-content:center; background:rgba(8,26,46,.96); padding:16px;}
@@ -448,6 +448,7 @@
       <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
     </div>
 
+    <div id="warn-stand" style="display:none;"></div>
     <div id="warn-sector" style="display:none;"></div>
     <input id="search-part" placeholder="🔎 Caută după nume sau stand…" oninput="renderList()" style="margin-bottom:12px;">
     <div id="list"></div>
@@ -2733,8 +2734,37 @@
     w.textContent="⚠ "+fara.length+(fara.length===1?" participant fără sector":" participanți fără sector")+" în manșa "+mi+": "+cine+(fara.length>3?" și încă "+(fara.length-3):"")+". Îi pune la un loc într-un sector separat, iar cel mai bun dintre ei ia 1 punct pe nedrept.";
     w.style.display="block";
   }
+  // Două bilete cu același număr se văd altfel abia la baltă, când doi oameni ajung pe
+  // același stand — sau, mai rău, abia la cântar, unde captura se poate trece pe cine nu
+  // trebuie. Avertismentul stătea în lista de standuri; lista a plecat, greșeala nu.
+  function updateWarnStand(){
+    var w=document.getElementById("warn-stand");
+    if(!w) return;
+    var mi=state.manche||1, pe={};
+    state.participants.forEach(function(p){
+      var st=standOfM(p,mi); if(!st) return;
+      (pe[st]=pe[st]||[]).push(nameOf(p));
+    });
+    var duble=Object.keys(pe).filter(function(k){ return pe[k].length>1; });
+    if(!duble.length){ w.style.display="none"; return; }
+    duble.sort(function(a,b){
+      var x=parseInt(a,10), y=parseInt(b,10);
+      if(isNaN(x)&&isNaN(y)) return a.localeCompare(b,"ro");
+      if(isNaN(x)) return 1;
+      if(isNaN(y)) return -1;
+      return x-y;
+    });
+    var cine=duble.slice(0,3).map(function(k){
+      return "standul "+k+" e dat de "+pe[k].length+" ori ("+pe[k].join(", ")+")";
+    }).join(" · ");
+    w.textContent="⚠ Standuri duble în manșa "+mi+": "+cine+
+      (duble.length>3?" și încă "+(duble.length-3):"")+
+      ". La baltă ajung doi oameni pe același loc, iar la cântar captura se poate trece pe cine nu trebuie.";
+    w.style.display="block";
+  }
   function renderList(){
     var list=document.getElementById("list");
+    updateWarnStand();
     updateWarnSector();
     document.getElementById("st-count").textContent = state.participants.length;
     document.getElementById("st-total").textContent = fmt(sumAll());
