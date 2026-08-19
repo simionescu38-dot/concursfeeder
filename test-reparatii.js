@@ -101,16 +101,28 @@ console.log("\n=== 3. Migrarea datelor vechi ===");
 }
 
 /* ================================================================
-   4. O tragere automată nouă nu lasă în urmă alegeri de mână
+   4. Nimic nu mai rescrie o manșă întreagă dintr-o apăsare
+      Tragerea din aplicație și lista de standuri au fost scoase: la
+      baltă se trage la bilă. Amândouă puteau rescrie dintr-un gest
+      ordinea, standul și sectorul tuturor — inclusiv ale unei manșe
+      deja cântărite. A rămas formularul fiecărui participant, care
+      atinge un singur om.
    ================================================================ */
-console.log("\n=== 4. Alegerile de mână, după o tragere nouă ===");
+console.log("\n=== 4. Nicio rescriere în masă ===");
 {
-  const ctx = aplicatie(2);
-  douaManseTrase(ctx);
-  ctx.state.participants[0].m[1].secManual = 1; // sector ales de mână la manșa 1
-  const draw = grabFunction(src, "drawLots");
-  t("tragerea automată șterge marcajul de sector manual",
-    /delete mOf\(p,mi\)\.secManual/.test(draw), true);
+  t("nu mai există tragere automată", /function\s+drawLots\s*\(/.test(src), false);
+  t("nici tragere de ordine", /function\s+drawOrder\s*\(/.test(src), false);
+  t("nici lista de standuri", /function\s+renderStandEntry\s*\(/.test(src), false);
+  t("și niciun buton nu le mai cheamă",
+    /drawLots\(\)|drawOrder\(\)|renderStandEntry\(\)|setStandManual\(/.test(src), false);
+
+  // singurul drum rămas scrie un singur participant, în manșa activă
+  const ed = grabFunction(src, "saveEdit");
+  t("formularul caută un singur participant, după id",
+    /state\.participants\.find\(/.test(ed), true);
+  t("…și nu trece prin toți", /state\.participants\.forEach/.test(ed), false);
+  t("iar standul scris merge în manșa activă",
+    /mOf\(p, state\.manche\|\|1\)\.stand\s*=/.test(ed), true);
 }
 
 t.raport();

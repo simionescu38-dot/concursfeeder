@@ -159,13 +159,6 @@ console.log("\n=== 6. Concurs cu 6 sectoare ===");
   ctx.state.sectors = ["A","B","C","D","E","F"];
   // proprietatea „fiecare sector cântărește la fel" e a modului cu scală comună
   ctx.state.scalaSectoare = true;
-  vm.runInContext([grabFunction(src, "sectorRanges"), grabFunction(src, "sectorForStand")].join("\n"), ctx);
-
-  const imp = JSON.parse(vm.runInContext('JSON.stringify(sectorRanges(28, state.sectors))', ctx));
-  t("28 de standuri se împart în 6 sectoare", imp.length, 6);
-  t("…fără să se piardă vreun stand", imp.reduce(function(s,x){ return s+(x.to-x.from+1); },0), 28);
-  t("…iar resturile merg la primele sectoare (5,5,5,5,4,4)",
-    imp.map(function(x){ return x.to-x.from+1; }), [5,5,5,5,4,4]);
 
   // 28 de pescari, sectoare de 5 și de 4
   const parts=[]; let id=0;
@@ -194,41 +187,43 @@ console.log("\n=== 6. Concurs cu 6 sectoare ===");
 }
 
 /* ================================================================
-   7. Ordinea se trage separat de standuri
-      La baltă se trage întâi ordinea, apoi fiecare își extrage singur
-      standul. Tragerea automată făcea ambele deodată.
+   7. Standul se scrie din formularul participantului
+      Aplicația nu mai trage nimic și nu mai are o listă de standuri:
+      la baltă se trage la bilă, iar organizatorul deschide pescarul și
+      îi scrie standul strigat. Formularul e singurul drum rămas, deci
+      el trebuie să scrie în manșa ACTIVĂ, nu peste manșele încheiate.
    ================================================================ */
-console.log("\n=== 7. Ordinea separat de standuri ===");
+console.log("\n=== 7. Standul scris din formular ===");
 {
   const ctx = aplicatie(3);
   ctx.state.sectors = ["A","B","C"];
-  ctx.toast = function(){}; ctx.guard = function(){ return false; };
-  ctx.confirm = function(){ return true; };
-  ctx.queueSave = function(){}; ctx.renderList = function(){}; ctx.renderStandEntry = function(){};
-  ctx.document = { getElementById: function(){ return { value: "6" }; } };
-  vm.runInContext(["shuffle","sectorRanges","sectorForStand","currentRanges","drawOrder","updateStandDup","participantById","setStandManual"]
-    .map(function(n){ return grabFunction(src, n); }).join("\n"), ctx);
+  ctx.guard = function(){ return false; };
+  ctx.queueSave = function(){}; ctx.renderList = function(){};
+  ctx.editingId = "a";
+  // formularul de editare al pescarului „a"
+  const camp = { "ed-stand-a":"5", "ed-prenume-a":"", "ed-nume-a":"a", "ed-sector-a":"C" };
+  ctx.document = { getElementById: function(id){ return (id in camp) ? { value: camp[id] } : null; } };
+  vm.runInContext(grabFunction(src, "saveEdit"), ctx);
 
-  pune(ctx, [["a","A","",0], ["b","A","",0], ["c","B","",0],
-             ["d","B","",0], ["e","C","",0], ["f","C","",0]]);
-  ctx.state.participants.forEach(function(p){ p.m[1].stand=""; p.m[1].sector=""; });
+  pune(ctx, [["a","A","1",0], ["b","A","2",0]]);
+  ctx.state.participants.forEach(function(p){ p.m[2].stand=""; p.m[2].sector=""; });
 
-  vm.runInContext("drawOrder();", ctx);
-  const ordini = ctx.state.participants.map(function(p){ return p.ordine; }).sort(function(x,y){return x-y;});
-  t("ordinea se trage pentru toți, o dată fiecare", ordini, [1,2,3,4,5,6]);
-  t("…iar standurile rămân neatinse",
-    ctx.state.participants.every(function(p){ return !p.m[1].stand; }), true);
+  ctx.state.manche = 2;
+  vm.runInContext("saveEdit('a');", ctx);
+  t("standul scris intră în manșa activă",
+    vm.runInContext("standOfM(state.participants[0],2)", ctx), "5");
+  t("…împreună cu sectorul",
+    vm.runInContext("sectorOfM(state.participants[0],2)", ctx), "C");
+  t("manșa 1, deja cântărită, rămâne neatinsă",
+    vm.runInContext("standOfM(state.participants[0],1)+sectorOfM(state.participants[0],1)", ctx), "1A");
+  t("ceilalți nu se ating — se scrie unul câte unul",
+    vm.runInContext("standOfM(state.participants[1],2)", ctx), "");
 
-  // organizatorul scrie standul extras la baltă
-  vm.runInContext("setStandManual('a', '5');", ctx);
-  t("standul scris manual intră în manșa activă",
-    vm.runInContext("standOfM(state.participants[0],1)", ctx), "5");
-  t("iar sectorul se completează singur din intervale",
-    vm.runInContext("sectorOfM(state.participants[0],1)", ctx), "C");
-
-  vm.runInContext("setStandManual('a', '');", ctx);
-  t("ștergerea standului șterge și sectorul",
-    vm.runInContext("standOfM(state.participants[0],1)+'|'+sectorOfM(state.participants[0],1)", ctx), "|");
+  // standul se poate și șterge, dacă s-a trecut greșit
+  camp["ed-stand-a"] = "";
+  vm.runInContext("saveEdit('a');", ctx);
+  t("standul șters chiar se golește în manșa activă",
+    vm.runInContext("standOfM(state.participants[0],2)", ctx), "");
 }
 
 /* ================================================================
@@ -245,53 +240,6 @@ console.log("\n=== 8. Manșa următoare începe goală ===");
   t("…nici sectorul", vm.runInContext("sectorOfM(state.participants[0],2)", ctx), "");
   t("dar manșa 1 și-l păstrează",
     vm.runInContext("standOfM(state.participants[0],1)+sectorOfM(state.participants[0],1)", ctx), "7A");
-}
-
-/* ================================================================
-   9. Sectorul trecut de mână bate calculul automat
-      La unele bălți sectoarele nu sunt blocuri consecutive de standuri,
-      deci organizatorul le pune singur — și nu are voie să le piardă
-      când corectează o cifră la stand.
-   ================================================================ */
-console.log("\n=== 9. Sectorul trecut de mana ===");
-{
-  const ctx = aplicatie(3);
-  ctx.state.sectors = ["A","B","C"];
-  ctx.guard = function(){ return false; };
-  ctx.queueSave = function(){}; ctx.renderList = function(){}; ctx.updateStandDup = function(){};
-  ctx.document = { getElementById: function(){ return null; } };
-  vm.runInContext(["sectorRanges","sectorForStand","currentRanges","participantById",
-    "setStandManual","setSectorManual"]
-    .map(function(n){ return grabFunction(src, n); }).join("\n"), ctx);
-  // 9 standuri, 3 sectoare: A 1-3, B 4-6, C 7-9
-  vm.runInContext("currentRanges = function(){ return sectorRanges(9, state.sectors); };", ctx);
-
-  pune(ctx, [["a","","",0], ["b","","",0]]);
-  ctx.state.participants.forEach(function(p){ p.m[1].stand=""; p.m[1].sector=""; });
-
-  vm.runInContext("setStandManual('a', '2');", ctx);
-  t("standul 2 pică singur în sectorul A",
-    vm.runInContext("sectorOfM(state.participants[0],1)", ctx), "A");
-
-  vm.runInContext("setSectorManual('a', 'C');", ctx);
-  t("ales de mână: trece în C",
-    vm.runInContext("sectorOfM(state.participants[0],1)", ctx), "C");
-
-  vm.runInContext("setStandManual('a', '3');", ctx);
-  t("corectarea standului NU șterge sectorul ales de mână",
-    vm.runInContext("sectorOfM(state.participants[0],1)", ctx), "C");
-  t("…dar standul chiar se schimbă",
-    vm.runInContext("standOfM(state.participants[0],1)", ctx), "3");
-
-  // revenirea la sectorul pe care îl dau intervalele retrage alegerea
-  vm.runInContext("setSectorManual('a', 'A');", ctx);
-  vm.runInContext("setStandManual('a', '8');", ctx);
-  t("revenit pe automat, standul redevine stăpân (8 -> C)",
-    vm.runInContext("sectorOfM(state.participants[0],1)", ctx), "C");
-
-  vm.runInContext("setStandManual('b', '5');", ctx);
-  t("celălalt pescar rămâne pe automat (5 -> B)",
-    vm.runInContext("sectorOfM(state.participants[1],1)", ctx), "B");
 }
 
 t.raport();

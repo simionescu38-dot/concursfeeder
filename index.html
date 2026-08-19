@@ -238,14 +238,6 @@
   th.mcol,th.tcol{font-size:10.5px;}
   .tag-plin{background:#fdecec !important; color:#a12727 !important; border-color:#f0b1b1 !important;}
   .tag-putine{background:#fff6e5 !important; color:#8a5a12 !important; border-color:#f0d29a !important;}
-  /* extragerea standurilor la baltă: un rând pe pescar, în ordinea trasă */
-  .se-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
-  .se-ord{flex:0 0 30px; font-weight:800; color:var(--muted); text-align:right;}
-  .se-nume{flex:1 1 auto; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .se-row input{flex:0 0 64px; margin:0; text-align:center;}
-  .se-sec{flex:0 0 74px; font-size:13px; font-weight:800; color:var(--teal-d); margin:0; padding:8px 4px;}
-  .se-dup{color:#a12727;}
-  #se-warn{margin-top:8px; font-size:13px; font-weight:700; color:#a12727;}
   /* pescarii fără sector formează un sector-fantomă care falsifică punctajul */
   #warn-sector{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
@@ -612,22 +604,6 @@
       <p class="hint" id="imp-preview"></p>
     </div>
 
-    <div class="card lockhide" id="card-sorti">
-      <div class="sec-title">Tragere la sorți</div>
-      <label class="f">Număr de standuri</label>
-      <input id="draw-stands" inputmode="numeric" placeholder="= nr. participanți" oninput="previewDraw()">
-      <p class="hint" id="draw-preview" style="margin-top:8px;"></p>
-      <div class="row">
-        <button class="btn btn-primary" onclick="drawOrder()">🎲 Trage ordinea</button>
-        <button class="btn btn-ghost" onclick="copyDraw()">Copiază</button>
-      </div>
-      <p class="hint" style="margin-top:10px;">Întâi se trage <b>ordinea</b>. Apoi, la baltă, fiecare își extrage standul în ordinea asta — scrie-l mai jos pe măsură ce se strigă. Sectorul se completează singur după intervalele de mai sus, dar îl poți schimba din dreapta: dacă îl alegi tu, rămâne cum l-ai pus și nu se mai rescrie când corectezi standul.</p>
-      <div id="stand-entry"></div>
-      <p class="hint" style="margin-top:12px;">Dacă la baltă nu extrageți standurile manual, poți lăsa aplicația să le dea ea:</p>
-      <button class="btn btn-ghost" onclick="drawLots()">🎲 Trage și standurile automat</button>
-      <p class="hint">Trage întâi <b>ordinea</b>, apoi <b>standul</b> pentru fiecare; sectorul iese din stand (ex: 1–20 = A). Rescrie ordinea, standul și sectorul.</p>
-    </div>
-
     <div class="card">
       <div class="sec-title">Cum se calculează</div>
       <p class="hint">
@@ -942,7 +918,7 @@
     manseRange().forEach(function(i){ if(mancheDisputata(i)) last=i; });
     return last;
   }
-  // scrie standul și sectorul în manșa dată (tragerea la sorți, editarea manuală)
+  // scrie standul și sectorul în manșa dată (formularul de editare al pescarului)
   function setStandSector(p, mi, stand, sector){
     var m=mOf(p,mi);
     m.stand=(stand===undefined||stand===null)?"":String(stand);
@@ -1574,7 +1550,7 @@
   }
   // ---------- grila de meniu de pe Acasă ----------
   // Se schimbă după lacăt: organizatorul vede uneltele de concurs, pescarul nu vede
-  // niciodată cântărirea sau tragerea la sorți. Trimite doar către ecrane care există.
+  // niciodată cântărirea. Trimite doar către ecrane care există.
   function meniuGo(view, elId, inainte){
     if(inainte) inainte();
     showView(view);
@@ -1591,12 +1567,12 @@
       ["🎣","Cântărire","meniuGo('cantar')"],
       ["🏆","Clasament","meniuGo('rank')"],
       ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
-      ["🎲","Tragere la sorți","meniuGo('set','card-sorti')"],
       ["⏱️","Cronometru","meniuGo('set','card-cronometru')"],
       ["📅","Calendar","meniuGo('cal')"],
       ["📓","Strategie","meniuGo('strat')"],
       ["📜","Regulament","meniuGo('reg')"],
-      ["🤝","Sponsori","meniuGo('spons')"]
+      ["🤝","Sponsori","meniuGo('spons')"],
+      ["🥇","Sezon","meniuLink('sezon.html')"]
     ];
     var pescar=[
       ["🏆","Clasament","meniuGo('rank')"],
@@ -2559,8 +2535,7 @@
     var tab=document.getElementById("tab-"+(TAB_PARINTE[v]||v));
     if(tab) tab.classList.add("on");
     if(v==="rank") renderRank();
-    if(v==="cantar") renderList(); // standurile se scriu din Contul meu, deci lista poate fi veche
-    if(v==="set") previewDraw();
+    if(v==="cantar") renderList(); // standul se scrie din formularul fiecărui participant
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
     if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); }
     if(v==="strat"){ renderStrat(); loadPasPicheti(); }
@@ -2574,7 +2549,7 @@
     // „unde stă acum" e standul din manșa activă: altfel formularul de editare ar arăta
     // standul manșei trecute și l-ar scrie peste cel bun la prima salvare
     state.participants.forEach(function(p){ p.stand=standOfM(p,mi); p.sector=sectorOfM(p,mi); });
-    renderList(); renderRank(); renderStandEntry();
+    renderList(); renderRank();
     toast("Manșa "+mi+" activă pentru cântărire");
   }
   function setNumManse(n){
@@ -3154,170 +3129,10 @@
     showView("cantar");
   }
 
-  function sectorRanges(N, secs){
-    var k=secs.length; if(k===0||N<=0) return [];
-    var base=Math.floor(N/k), rem=N%k, start=1, out=[];
-    secs.forEach(function(s,i){ var size=base+(i<rem?1:0); out.push({sector:s, from:start, to:start+size-1}); start+=size; });
-    return out;
-  }
-  function previewDraw(){
-    var box=document.getElementById("draw-preview"); if(!box) return;
-    var P=state.participants.length;
-    var el=document.getElementById("draw-stands");
-    var N=parseInt(el?el.value:"",10)||P;
-    var r=sectorRanges(N, state.sectors);
-    if(!r.length){ box.innerHTML="Adaugă întâi sectoare (A, B, C...)."; return; }
-    box.innerHTML=N+" standuri · "+r.map(function(x){return "<b>"+esc(x.sector)+"</b> "+x.from+"–"+x.to;}).join(" · ");
-    renderStandEntry(); // intervalele s-au schimbat, deci și sectorul fiecărui stand scris
-  }
-  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var r=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[r]; a[r]=t; } return a; }
-  function sectorForStand(s, ranges){ for(var q=0;q<ranges.length;q++){ if(s>=ranges[q].from && s<=ranges[q].to) return ranges[q].sector; } return ""; }
-  // La baltă se trage întâi ORDINEA, apoi fiecare își extrage singur standul, în ordinea
-  // aceea. Tragerea automată face ambele deodată, deci nu se potrivea cu felul în care
-  // se ține de fapt tragerea — organizatorul trebuia să corecteze 28 de standuri pe rând,
-  // din formularul de editare al fiecărui participant.
-  function drawOrder(){
-    if(guard()) return;
-    var P=state.participants.length;
-    if(P===0){ toast("Nu ai participanți"); return; }
-    if(!confirm("Tragi ordinea pentru cei "+P+" participanți?\n\nSe amestecă DOAR ordinea de extragere. Standurile și sectoarele rămân neatinse.")) return;
-    var ord=[]; for(var i=1;i<=P;i++) ord.push(i); shuffle(ord);
-    state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
-    queueSave(); renderStandEntry(); renderList();
-    toast("Ordinea trasă – acum extrageți standurile");
-  }
-  // intervalele pe care le arată previzualizarea, folosite și la completarea manuală
-  function currentRanges(){
-    var el=document.getElementById("draw-stands");
-    var N=parseInt(el?el.value:"",10)||state.participants.length;
-    return sectorRanges(N, state.sectors);
-  }
-  function standEntryOrder(){
-    return state.participants.slice().sort(function(a,b){ return (a.ordine||9999)-(b.ordine||9999); });
-  }
-  // sectorul se poate și alege de mână: la unele bălți sectoarele nu sunt blocuri
-  // consecutive de standuri, iar organizatorul le trece singur
-  function seOptions(sel){
-    var out='<option value=""'+(sel?"":" selected")+'>–</option>';
-    state.sectors.forEach(function(x){
-      out+='<option value="'+esc(x)+'"'+(x===sel?" selected":"")+'>'+esc(x)+'</option>';
-    });
-    // un sector rămas dintr-o împărțire veche, scos între timp din listă
-    if(sel && state.sectors.indexOf(sel)<0) out+='<option value="'+esc(sel)+'" selected>'+esc(sel)+'</option>';
-    return out;
-  }
-  function renderStandEntry(){
-    var box=document.getElementById("stand-entry"); if(!box) return;
-    if(!state.participants.length){ box.innerHTML=""; return; }
-    var mi=state.manche||1;
-    var h='<div class="hint" style="margin:10px 0 4px;">Standurile pentru <b>manșa '+mi+'</b>:</div>';
-    standEntryOrder().forEach(function(p){
-      var st=standOfM(p,mi);
-      h+='<div class="se-row">'+
-         '<div class="se-ord">'+(p.ordine||"–")+'.</div>'+
-         '<div class="se-nume">'+esc(nameOf(p))+'</div>'+
-         '<input inputmode="numeric" value="'+esc(st)+'" placeholder="stand" oninput="setStandManual(\''+p.id+'\', this.value)">'+
-         '<select class="se-sec" id="se-sec-'+p.id+'" onchange="setSectorManual(\''+p.id+'\', this.value)">'+
-           seOptions(sectorOfM(p,mi))+
-         '</select>'+
-         '</div>';
-    });
-    h+='<div id="se-warn"></div>';
-    box.innerHTML=h;
-    updateStandDup();
-  }
-  // două bilete cu același număr, sau un stand în afara intervalelor: se vede pe loc,
-  // nu la premiere
-  function updateStandDup(){
-    var w=document.getElementById("se-warn"); if(!w) return;
-    var mi=state.manche||1, cnt={}, probleme=[];
-    state.participants.forEach(function(p){
-      var st=standOfM(p,mi); if(!st) return;
-      cnt[st]=(cnt[st]||0)+1;
-    });
-    Object.keys(cnt).forEach(function(k){ if(cnt[k]>1) probleme.push("standul "+k+" e dat de "+cnt[k]+" ori"); });
-    var faraSector=state.participants.filter(function(p){ return standOfM(p,mi) && !sectorOfM(p,mi); }).length;
-    if(faraSector) probleme.push(faraSector+(faraSector===1?" stand cade":" standuri cad")+" în afara sectoarelor");
-    w.textContent = probleme.length ? "⚠ "+probleme.join(" · ") : "";
-  }
-  function participantById(id){
-    var out=null;
-    state.participants.forEach(function(x){ if(x.id===id) out=x; });
-    return out;
-  }
-  function setStandManual(id, val){
-    if(guard()) return;
-    var p=participantById(id); if(!p) return;
-    var mi=state.manche||1, m=mOf(p,mi);
-    var st=(""+(val||"")).trim();
-    var nr=parseInt(st,10);
-    // sectorul ales de mână nu se pierde când se corectează o cifră la stand
-    var sec = m.secManual ? (m.sector||"")
-            : (st && !isNaN(nr) ? sectorForStand(nr, currentRanges()) : "");
-    var eraManual = !!m.secManual;
-    setStandSector(p, mi, st, sec);
-    if(eraManual) mOf(p,mi).secManual=true;
-    var sel=document.getElementById("se-sec-"+id);
-    if(sel) sel.value = sectorOfM(p,mi) || "";
-    updateStandDup();
-    // fără renderList aici: se reconstruia toată lista de cântărire la fiecare cifră
-    // tastată, iar la 30 de pescari se simțea. Lista se reface când intri în Cântar.
-    queueSave();
-  }
-  function setSectorManual(id, val){
-    if(guard()) return;
-    var p=participantById(id); if(!p) return;
-    var mi=state.manche||1;
-    setStandSector(p, mi, standOfM(p,mi), val||"");
-    // ales de mână: de acum standul nu-l mai rescrie. Revenind la sectorul pe care
-    // l-ar da intervalele, alegerea se consideră retrasă.
-    var nr=parseInt(standOfM(p,mi),10);
-    var auto = isNaN(nr) ? "" : sectorForStand(nr, currentRanges());
-    mOf(p,mi).secManual = (val||"")!==auto;
-    updateStandDup();
-    queueSave();
-  }
-  function drawLots(){
-    if(guard()) return;
-    var P=state.participants.length;
-    if(P===0){ toast("Nu ai participanți"); return; }
-    var el=document.getElementById("draw-stands");
-    var N=parseInt(el?el.value:"",10); if(!N||N<1) N=P;
-    if(N<P){ toast("Prea puține standuri: "+N+" pentru "+P+" participanți"); return; }
-    var mi=state.manche||1;
-    // tragerea e a manșei active; manșele deja cântărite își păstrează sectoarele lor
-    if(!confirm("Tragi la sorți pentru MANȘA "+mi+"?\n\nSe rescriu ordinea, standul și sectorul celor "+P+" participanți, doar pentru manșa "+mi+". Manșele deja cântărite rămân cu sectoarele lor.")) return;
-    var ranges=sectorRanges(N, state.sectors);
-    var ord=[]; for(var i=1;i<=P;i++) ord.push(i); shuffle(ord);
-    var pool=[]; for(var j=1;j<=N;j++) pool.push(j); shuffle(pool);
-    var stands=pool.slice(0,P);
-    state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
-    var seq=state.participants.slice().sort(function(a,b){return a.ordine-b.ordine;});
-    // tragere nouă = repartizare nouă: alegerile de sector făcute de mână pentru manșa
-    // asta nu mai au ce păzi, altfel ar bloca tăcut sectorul dat acum de intervale
-    seq.forEach(function(p,k){ var s=stands[k]; setStandSector(p, mi, s, sectorForStand(s, ranges)); delete mOf(p,mi).secManual; });
-    queueSave(); renderList(); renderRank(); renderStandEntry(); toast("Tragere făcută pentru manșa "+mi);
-    showView("cantar");
-  }
   // sortare numerică după stand (stand 10 vine după stand 2); cei fără cifre în stand merg la coadă
   function standKey(p){ var m=(""+(p.stand||"")).match(/\d+/); return m?parseInt(m[0],10):Number.POSITIVE_INFINITY; }
   function byStand(a,b){ var d=standKey(a)-standKey(b); if(d) return d; return nameKey(a).localeCompare(nameKey(b),"ro"); }
   function copyText(txt){ try{ navigator.clipboard.writeText(txt).then(function(){toast("Copiat");},function(){fallbackCopy(txt);}); }catch(e){ fallbackCopy(txt); } }
-  function copyDraw(){
-    var arr=state.participants.filter(function(p){return p.stand;});
-    if(!arr.length){ toast("Nicio repartizare de copiat"); return; }
-    var lines=[(state.name||"Concurs")+" – tragere la sorți",""];
-    lines.push("ORDINEA TRAGERII:");
-    arr.slice().sort(function(a,b){return (a.ordine||0)-(b.ordine||0);}).forEach(function(p){
-      lines.push((p.ordine||"-")+". "+nameOf(p)+" → Stand "+p.stand+(p.sector?" ("+p.sector+")":""));
-    });
-    lines.push("");
-    lines.push("PE STANDURI:");
-    arr.slice().sort(byStand).forEach(function(p){
-      lines.push("Stand "+p.stand+" – "+nameOf(p)+(p.sector?" ("+p.sector+")":""));
-    });
-    copyText(lines.join("\n"));
-  }
 
   // ---------- ora capturii / lider / statistici ----------
   function hhmm(t){ var d=new Date(t); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
