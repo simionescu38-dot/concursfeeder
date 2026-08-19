@@ -662,6 +662,7 @@
     <div class="card lockhide" id="card-arhive">
       <div class="sec-title">Curăță arhiva de sezon</div>
       <p class="hint" style="margin:0 0 10px;">Concursurile arhivate online intră în <b>Clasamentul de sezon</b>. Dacă ai făcut simulări sau ai arhivat de două ori același concurs, șterge-le de aici. Coloana de kilograme te ajută să le deosebești: o simulare are de obicei <b>0 kg</b>.</p>
+      <p class="hint" style="margin:0 0 10px;">Tot de aici scrii <b>balta</b> pentru concursurile arhivate înainte să existe câmpul. Fără ea, același lac poate ieși în două clasamente de standuri, sub două nume de concurs. Scrie-o la fel peste tot și se unesc.</p>
       <button class="btn btn-ghost" onclick="loadArhive()">🗂️ Încarcă arhivele salvate online</button>
       <div id="arhive-list" style="margin-top:12px;"></div>
     </div>
@@ -2254,15 +2255,46 @@
         var nume=((d.name||a.name||"")+"").trim();
         var kg=arhivaKg(parts);
         var cand=a.archived_at||a.saved_at||a.created_at||"";
-        h+='<div class="evt"><div style="flex:1; min-width:0;">'+
+        h+='<div class="evt" style="flex-wrap:wrap;"><div style="flex:1; min-width:0;">'+
              '<div class="nm">'+esc(nume||"(fără nume)")+'</div>'+
              '<div class="hint" style="margin:2px 0 0;">'+esc(cand?new Date(cand).toLocaleString("ro-RO"):"fără dată")+
              ' · '+parts.length+' particip. · <b>'+fmt(kg)+' kg</b>'+(kg===0?' — pare simulare':'')+'</div></div>'+
-             '<button class="btn btn-danger" style="width:auto; margin:0; padding:8px 12px;" onclick="delArhiva(\''+esc(a.id)+'\')">Șterge</button></div>';
+             '<button class="btn btn-danger" style="width:auto; margin:0; padding:8px 12px;" onclick="delArhiva(\''+esc(a.id)+'\')">Șterge</button>'+
+             '<div class="row" style="width:100%; margin-top:8px;">'+
+               '<input id="arh-balta-'+esc(a.id)+'" placeholder="Balta (ex: Remus Lake)" value="'+esc(d.balta||"")+'">'+
+               '<button class="btn btn-ghost" style="flex:0 0 104px; margin:0;" onclick="setArhivaBalta(\''+esc(a.id)+'\')">Salvează</button>'+
+             '</div></div>';
       });
       h+='<button class="btn btn-danger mt" onclick="delArhiveToate()">Șterge TOATE arhivele online ('+list.length+')</button>';
       el.innerHTML=h;
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca lista (fără net?).</p>'; });
+  }
+  // Arhivele nu se pot modifica pe server: se scriu o dată și se șterg. Ca să pun balta
+  // pe un concurs vechi, salvez o copie cu ea și abia apoi șterg originalul — în ordinea
+  // asta, o pică de rețea la mijloc lasă o dublură, nu un concurs pierdut. Iar dublura o
+  // contopește filtrul din sezon, fiindcă are aceiași pescari și aceeași oră de start.
+  function setArhivaBalta(id){
+    if(!syncKey){ toast("Îți trebuie cheia de scriere, completată mai sus"); return; }
+    var camp=document.getElementById("arh-balta-"+id); if(!camp) return;
+    var balta=(camp.value||"").trim();
+    toast("Salvez balta…");
+    fetch(API_BASE+"/api/archive").then(function(r){ return r.json(); }).then(function(j){
+      var list=(j&&j.ok&&j.archives)?j.archives:[];
+      var a=null; list.forEach(function(x){ if(x.id===id) a=x; });
+      if(!a){ toast("Nu mai găsesc arhiva — reîncarcă lista"); return; }
+      var d=a.data||{};
+      d.balta=balta;
+      // data concursului se citește din startAt; fără el, copia ar părea de azi
+      if(!d.startAt && a.archived_at) d.startAt=Date.parse(a.archived_at)||null;
+      return fetch(API_BASE+"/api/archive"+(a.room?("?room="+encodeURIComponent(a.room)):""), {
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-write-key":syncKey},
+        body: JSON.stringify({data: d})
+      }).then(function(r){ return r.json(); }).then(function(res){
+        if(!(res&&res.ok)){ toast("Nu s-a putut salva – cheia e greșită?"); return; }
+        return delArhiva(id, true).then(function(){ toast(balta?("Balta pusă: "+balta):"Balta ștearsă"); loadArhive(); });
+      });
+    }).catch(function(){ toast("Eroare de rețea"); });
   }
   function delArhiva(id, tacut){
     if(!syncKey){ toast("Îți trebuie cheia de scriere, completată mai sus"); return Promise.resolve(false); }

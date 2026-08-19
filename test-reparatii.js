@@ -276,4 +276,28 @@ console.log("\n=== 7. Importul nu atinge manșele încheiate ===");
     vm.runInContext("standOfM(state.participants[0],1)+sectorOfM(state.participants[0],1)", ctx), "1A");
 }
 
+/* ================================================================
+   8. Balta pusă pe un concurs deja arhivat
+      Arhivele nu se pot modifica pe server: se scriu o dată și se șterg.
+      Ca să pui balta pe un concurs vechi, salvezi o copie cu ea și ștergi
+      originalul. Ordinea contează: ștergere-întâi înseamnă că o pică de
+      rețea la mijloc pierde singurul exemplar al concursului.
+   ================================================================ */
+console.log("\n=== 8. Balta pe o arhivă veche ===");
+{
+  const fn = grabFunction(src, "setArhivaBalta");
+  const iPost = fn.indexOf('method:"POST"');
+  const iDel = fn.indexOf("delArhiva(");
+  t("salvarea copiei există", iPost > -1, true);
+  t("ștergerea originalului există", iDel > -1, true);
+  t("copia se salvează ÎNAINTE de ștergere", iPost < iDel, true);
+  t("ștergerea e tăcută, ca să nu ceară a doua confirmare", /delArhiva\(id, true\)/.test(fn), true);
+  t("balta se curăță de spații", /\.trim\(\)/.test(fn), true);
+  t("data concursului se păstrează, ca să nu pară de azi",
+    /if\(!d\.startAt && a\.archived_at\) d\.startAt=/.test(fn), true);
+  t("camera concursului se păstrează", /a\.room\?\("\?room="/.test(fn), true);
+  t("fără cheie de scriere nu se atinge nimic",
+    /if\(!syncKey\)\{ toast\([^)]*\); return; \}/.test(fn), true);
+}
+
 t.raport();
