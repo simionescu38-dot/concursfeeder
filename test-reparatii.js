@@ -101,16 +101,21 @@ console.log("\n=== 3. Migrarea datelor vechi ===");
 }
 
 /* ================================================================
-   4. O tragere automată nouă nu lasă în urmă alegeri de mână
+   4. Nicio tragere nu mai rescrie manșa dintr-un buton
+      La baltă se trage la bilă, iar organizatorul scrie standul strigat.
+      Cât timp aplicația trăgea singură, un buton rescria dintr-o dată
+      ordinea, standul și sectorul întregii manșe — inclusiv sectoarele
+      alese de mână pentru bălțile unde sectoarele nu sunt blocuri.
    ================================================================ */
-console.log("\n=== 4. Alegerile de mână, după o tragere nouă ===");
+console.log("\n=== 4. Tragerea automată nu s-a întors ===");
 {
-  const ctx = aplicatie(2);
-  douaManseTrase(ctx);
-  ctx.state.participants[0].m[1].secManual = 1; // sector ales de mână la manșa 1
-  const draw = grabFunction(src, "drawLots");
-  t("tragerea automată șterge marcajul de sector manual",
-    /delete mOf\(p,mi\)\.secManual/.test(draw), true);
+  t("nu mai există drawLots în aplicație", /function\s+drawLots\s*\(/.test(src), false);
+  t("nici drawOrder", /function\s+drawOrder\s*\(/.test(src), false);
+  t("și niciun buton nu le mai cheamă", /drawLots\(\)|drawOrder\(\)/.test(src), false);
+  // standul scris de mână rămâne singurul drum, iar el nu atinge decât un pescar
+  const man = grabFunction(src, "setStandManual");
+  t("standul scris de mână schimbă un singur participant",
+    /participantById\(id\)/.test(man) && !/state\.participants\.forEach/.test(man), true);
 }
 
 t.raport();

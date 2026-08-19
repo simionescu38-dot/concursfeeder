@@ -238,7 +238,7 @@
   th.mcol,th.tcol{font-size:10.5px;}
   .tag-plin{background:#fdecec !important; color:#a12727 !important; border-color:#f0b1b1 !important;}
   .tag-putine{background:#fff6e5 !important; color:#8a5a12 !important; border-color:#f0d29a !important;}
-  /* extragerea standurilor la baltă: un rând pe pescar, în ordinea trasă */
+  /* standurile strigate la bilă: un rând pe pescar, în ordinea din listă */
   .se-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line);}
   .se-ord{flex:0 0 30px; font-weight:800; color:var(--muted); text-align:right;}
   .se-nume{flex:1 1 auto; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -613,18 +613,14 @@
     </div>
 
     <div class="card lockhide" id="card-sorti">
-      <div class="sec-title">Tragere la sorți</div>
+      <div class="sec-title">Standuri și sectoare</div>
       <label class="f">Număr de standuri</label>
       <input id="draw-stands" inputmode="numeric" placeholder="= nr. participanți" oninput="previewDraw()">
       <p class="hint" id="draw-preview" style="margin-top:8px;"></p>
-      <button class="btn btn-primary" onclick="drawOrder()">🎲 Trage ordinea</button>
-      <p class="hint" style="margin-top:10px;">Întâi se trage <b>ordinea</b>. Apoi, la baltă, fiecare își extrage standul în ordinea asta — scrie-l mai jos pe măsură ce se strigă. Sectorul se completează singur după intervalele de mai sus, dar îl poți schimba din dreapta: dacă îl alegi tu, rămâne cum l-ai pus și nu se mai rescrie când corectezi standul.</p>
+      <p class="hint" style="margin-top:10px;">Tragerea se ține la baltă, la bilă. Scrie mai jos standul fiecăruia, pe măsură ce se strigă. Sectorul se completează singur după intervalele de mai sus, dar îl poți schimba din dreapta: dacă îl alegi tu, rămâne cum l-ai pus și nu se mai rescrie când corectezi standul.</p>
       <div id="stand-entry"></div>
       <button class="btn btn-ghost mt" onclick="copyDraw()">⧉ Copiază lista (nume, stand, sector)</button>
       <p class="hint">Pune lista de mai sus în clipboard, ca text — o lipești direct pe WhatsApp sau într-un mesaj. Pentru o foaie de tipărit sau PDF, mergi în <b>Clasamente</b> și apasă „🖨 Print / PDF".</p>
-      <p class="hint" style="margin-top:12px;">Dacă la baltă nu extrageți standurile manual, poți lăsa aplicația să le dea ea:</p>
-      <button class="btn btn-ghost" onclick="drawLots()">🎲 Trage și standurile automat</button>
-      <p class="hint">Trage întâi <b>ordinea</b>, apoi <b>standul</b> pentru fiecare; sectorul iese din stand (ex: 1–20 = A). Rescrie ordinea, standul și sectorul.</p>
     </div>
 
     <div class="card">
@@ -1590,7 +1586,7 @@
       ["🎣","Cântărire","meniuGo('cantar')"],
       ["🏆","Clasament","meniuGo('rank')"],
       ["📊","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
-      ["🎲","Tragere la sorți","meniuGo('set','card-sorti')"],
+      ["📍","Standuri și sectoare","meniuGo('set','card-sorti')"],
       ["⏱️","Cronometru","meniuGo('set','card-cronometru')"],
       ["📅","Calendar","meniuGo('cal')"],
       ["📓","Strategie","meniuGo('strat')"],
@@ -3169,22 +3165,7 @@
     box.innerHTML=N+" standuri · "+r.map(function(x){return "<b>"+esc(x.sector)+"</b> "+x.from+"–"+x.to;}).join(" · ");
     renderStandEntry(); // intervalele s-au schimbat, deci și sectorul fiecărui stand scris
   }
-  function shuffle(a){ for(var i=a.length-1;i>0;i--){ var r=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[r]; a[r]=t; } return a; }
   function sectorForStand(s, ranges){ for(var q=0;q<ranges.length;q++){ if(s>=ranges[q].from && s<=ranges[q].to) return ranges[q].sector; } return ""; }
-  // La baltă se trage întâi ORDINEA, apoi fiecare își extrage singur standul, în ordinea
-  // aceea. Tragerea automată face ambele deodată, deci nu se potrivea cu felul în care
-  // se ține de fapt tragerea — organizatorul trebuia să corecteze 28 de standuri pe rând,
-  // din formularul de editare al fiecărui participant.
-  function drawOrder(){
-    if(guard()) return;
-    var P=state.participants.length;
-    if(P===0){ toast("Nu ai participanți"); return; }
-    if(!confirm("Tragi ordinea pentru cei "+P+" participanți?\n\nSe amestecă DOAR ordinea de extragere. Standurile și sectoarele rămân neatinse.")) return;
-    var ord=[]; for(var i=1;i<=P;i++) ord.push(i); shuffle(ord);
-    state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
-    queueSave(); renderStandEntry(); renderList();
-    toast("Ordinea trasă – acum extrageți standurile");
-  }
   // intervalele pe care le arată previzualizarea, folosite și la completarea manuală
   function currentRanges(){
     var el=document.getElementById("draw-stands");
@@ -3210,10 +3191,12 @@
     if(!state.participants.length){ box.innerHTML=""; return; }
     var mi=state.manche||1;
     var h='<div class="hint" style="margin:10px 0 4px;">Standurile pentru <b>manșa '+mi+'</b>:</div>';
-    standEntryOrder().forEach(function(p){
+    standEntryOrder().forEach(function(p,i){
       var st=standOfM(p,mi);
+      // ordinea nu se mai trage din aplicație — cifra e locul în listă, ca să ai după ce
+      // ține degetul pe telefon când se strigă. Concursurile vechi își păstrează ordinea trasă.
       h+='<div class="se-row">'+
-         '<div class="se-ord">'+(p.ordine||"–")+'.</div>'+
+         '<div class="se-ord">'+(p.ordine||(i+1))+'.</div>'+
          '<div class="se-nume">'+esc(nameOf(p))+'</div>'+
          '<input inputmode="numeric" value="'+esc(st)+'" placeholder="stand" oninput="setStandManual(\''+p.id+'\', this.value)">'+
          '<select class="se-sec" id="se-sec-'+p.id+'" onchange="setSectorManual(\''+p.id+'\', this.value)">'+
@@ -3275,28 +3258,6 @@
     mOf(p,mi).secManual = (val||"")!==auto;
     updateStandDup();
     queueSave();
-  }
-  function drawLots(){
-    if(guard()) return;
-    var P=state.participants.length;
-    if(P===0){ toast("Nu ai participanți"); return; }
-    var el=document.getElementById("draw-stands");
-    var N=parseInt(el?el.value:"",10); if(!N||N<1) N=P;
-    if(N<P){ toast("Prea puține standuri: "+N+" pentru "+P+" participanți"); return; }
-    var mi=state.manche||1;
-    // tragerea e a manșei active; manșele deja cântărite își păstrează sectoarele lor
-    if(!confirm("Tragi la sorți pentru MANȘA "+mi+"?\n\nSe rescriu ordinea, standul și sectorul celor "+P+" participanți, doar pentru manșa "+mi+". Manșele deja cântărite rămân cu sectoarele lor.")) return;
-    var ranges=sectorRanges(N, state.sectors);
-    var ord=[]; for(var i=1;i<=P;i++) ord.push(i); shuffle(ord);
-    var pool=[]; for(var j=1;j<=N;j++) pool.push(j); shuffle(pool);
-    var stands=pool.slice(0,P);
-    state.participants.forEach(function(p,k){ p.ordine=ord[k]; });
-    var seq=state.participants.slice().sort(function(a,b){return a.ordine-b.ordine;});
-    // tragere nouă = repartizare nouă: alegerile de sector făcute de mână pentru manșa
-    // asta nu mai au ce păzi, altfel ar bloca tăcut sectorul dat acum de intervale
-    seq.forEach(function(p,k){ var s=stands[k]; setStandSector(p, mi, s, sectorForStand(s, ranges)); delete mOf(p,mi).secManual; });
-    queueSave(); renderList(); renderRank(); renderStandEntry(); toast("Tragere făcută pentru manșa "+mi);
-    showView("cantar");
   }
   // sortare numerică după stand (stand 10 vine după stand 2); cei fără cifre în stand merg la coadă
   function standKey(p){ var m=(""+(p.stand||"")).match(/\d+/); return m?parseInt(m[0],10):Number.POSITIVE_INFINITY; }

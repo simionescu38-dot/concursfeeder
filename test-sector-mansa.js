@@ -194,11 +194,12 @@ console.log("\n=== 6. Concurs cu 6 sectoare ===");
 }
 
 /* ================================================================
-   7. Ordinea se trage separat de standuri
-      La baltă se trage întâi ordinea, apoi fiecare își extrage singur
-      standul. Tragerea automată făcea ambele deodată.
+   7. Standul strigat la bilă se scrie de mână
+      Aplicația nu mai trage nimic: la baltă se trage la bilă, iar
+      organizatorul scrie standul strigat. Scrisul lui atinge un singur
+      pescar, iar sectorul iese din intervale.
    ================================================================ */
-console.log("\n=== 7. Ordinea separat de standuri ===");
+console.log("\n=== 7. Standul scris de mână ===");
 {
   const ctx = aplicatie(3);
   ctx.state.sectors = ["A","B","C"];
@@ -206,21 +207,17 @@ console.log("\n=== 7. Ordinea separat de standuri ===");
   ctx.confirm = function(){ return true; };
   ctx.queueSave = function(){}; ctx.renderList = function(){}; ctx.renderStandEntry = function(){};
   ctx.document = { getElementById: function(){ return { value: "6" }; } };
-  vm.runInContext(["shuffle","sectorRanges","sectorForStand","currentRanges","drawOrder","updateStandDup","participantById","setStandManual"]
+  vm.runInContext(["sectorRanges","sectorForStand","currentRanges","updateStandDup","participantById","setStandManual"]
     .map(function(n){ return grabFunction(src, n); }).join("\n"), ctx);
 
   pune(ctx, [["a","A","",0], ["b","A","",0], ["c","B","",0],
              ["d","B","",0], ["e","C","",0], ["f","C","",0]]);
   ctx.state.participants.forEach(function(p){ p.m[1].stand=""; p.m[1].sector=""; });
 
-  vm.runInContext("drawOrder();", ctx);
-  const ordini = ctx.state.participants.map(function(p){ return p.ordine; }).sort(function(x,y){return x-y;});
-  t("ordinea se trage pentru toți, o dată fiecare", ordini, [1,2,3,4,5,6]);
-  t("…iar standurile rămân neatinse",
-    ctx.state.participants.every(function(p){ return !p.m[1].stand; }), true);
-
   // organizatorul scrie standul extras la baltă
   vm.runInContext("setStandManual('a', '5');", ctx);
+  t("ceilalți rămân fără stand — se scrie unul câte unul",
+    ctx.state.participants.slice(1).every(function(p){ return !p.m[1].stand; }), true);
   t("standul scris manual intră în manșa activă",
     vm.runInContext("standOfM(state.participants[0],1)", ctx), "5");
   t("iar sectorul se completează singur din intervale",
