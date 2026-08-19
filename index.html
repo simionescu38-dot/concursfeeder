@@ -2595,8 +2595,11 @@
     var np={id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{}};
     curataNumarul(np);
     ensureManche(np);
-    // pescarul nou stă pe același stand în toate manșele până la următoarea tragere
-    manseRange().forEach(function(i){ np.m[i].stand=stand; np.m[i].sector=sec; });
+    // Standul e al MANȘEI, nu al pescarului. Cât timp aplicația trăgea singură la sorți,
+    // scrisul în toate manșele avea un rost — tragerea următoare le rescria oricum. Acum
+    // se trage la bilă, deci scrisul rămânea pe loc: un întârziat adăugat în manșa 2
+    // apărea, pe hârtie, și pe un stand din manșa 1, la care nu pescuise.
+    setStandSector(np, state.manche||1, stand, sec);
     state.participants.push(np);
     document.getElementById("in-stand").value="";
     document.getElementById("in-prenume").value="";
@@ -2818,7 +2821,7 @@
             (p.photo&&!L?'<button class="av-x" onclick="removePhoto(\''+p.id+'\')">×</button>':'')+
           '</div>'+
           '<div class="p-name"><div class="nm">'+full+'</div>'+
-            '<div class="p-sub">'+(p.ordine?'Ordine '+p.ordine+' · ':'')+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'fără stand')+(sectorOfM(p,state.manche||1)?' · Sector '+esc(sectorOfM(p,state.manche||1)):'')+'</div></div>'+
+            '<div class="p-sub">'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'fără stand')+(sectorOfM(p,state.manche||1)?' · Sector '+esc(sectorOfM(p,state.manche||1)):'')+'</div></div>'+
           (L?'':'<button class="edit" onclick="editParticipant(\''+p.id+'\')">✎</button>'+
           '<button class="del" onclick="delParticipant(\''+p.id+'\')">×</button>')+
         '</div>';
@@ -3232,7 +3235,7 @@
       var np={id:uid(), stand:x.stand||"", prenume:nm.prenume, nume:nm.nume, sector:sec, m:{}};
       curataNumarul(np);
       ensureManche(np);
-      manseRange().forEach(function(i){ np.m[i].stand=np.stand; np.m[i].sector=np.sector; });
+      setStandSector(np, state.manche||1, np.stand, np.sector);
       state.participants.push(np);
     });
     document.getElementById("imp-text").value="";

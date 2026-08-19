@@ -17,7 +17,7 @@ function aplicatie(numManse, manche) {
   };
   vm.createContext(ctx);
   vm.runInContext(
-    ["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
+    ["emptyManche", "numManse", "scalaSectoare", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
      "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM",
      "cmmcAward", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize", "curataNumarul",
      "nameOf", "updateWarnStand"]
@@ -178,6 +178,102 @@ console.log("\n=== 5. Standuri duble ===");
   t("le arată pe amândouă", /standul 12 e dat de 2 ori/.test(w2.textContent), true);
   t("iar standurile ies în ordine numerică",
     w2.textContent.indexOf("standul 5") < w2.textContent.indexOf("standul 12"), true);
+}
+
+/* ================================================================
+   6. Pescarul adăugat acum nu intră în manșele încheiate
+      Standul e al MANȘEI, nu al pescarului. Cât timp aplicația trăgea
+      singură la sorți, scrierea în toate manșele avea un rost — tragerea
+      următoare le rescria oricum. Acum se trage la bilă, deci scrierea
+      rămânea pe loc: un întârziat adăugat în manșa 2 apărea, pe hârtie,
+      și pe un stand din manșa 1, la care nu pescuise. De acolo, trei
+      urmări: alarmă falsă de stand dublu, un om în plus într-un sector
+      încheiat, și — pe „aceeași scală" — punctele acelei manșe schimbate
+      retroactiv pentru toți ceilalți.
+   ================================================================ */
+console.log("\n=== 6. Un întârziat nu atinge manșa încheiată ===");
+{
+  const ctx = aplicatie(2, 1);
+  ctx.state.sectors = ["A", "B"];
+  ctx.state.scalaSectoare = true;   // varianta în care mărimea sectorului intră în formulă
+  ctx.guard = () => false;
+  ctx.queueSave = () => {}; ctx.renderList = () => {}; ctx.uid = () => "nou";
+  ctx.curataNumarul = () => false;
+  ctx.sectorDinStand = () => {};
+  const camp = { "in-stand": "3", "in-prenume": "Radu", "in-nume": "", "in-sector": "A" };
+  ctx.document = { getElementById: id => (id in camp) ? { value: camp[id], dataset: {}, focus(){} } : null };
+  vm.runInContext(grabFunction(src, "addParticipant"), ctx);
+
+  // manșa 1 s-a pescuit: patru oameni, doi pe sector
+  ctx.state.participants = [
+    ["Ion", "1", "A", 9], ["Vlad", "2", "A", 4], ["Radu2", "3", "B", 8], ["Mihai", "4", "B", 2]
+  ].map(r => ({
+    id: r[0], nume: r[0], prenume: "", stand: r[1], sector: r[2], msv: 1,
+    m: { 1: { catches: [r[3]], extras: [], stand: r[1], sector: r[2] },
+         2: { catches: [], extras: [], stand: "", sector: "" } }
+  }));
+  const inainte = JSON.parse(vm.runInContext("JSON.stringify(pointsMapS(1))", ctx));
+
+  // organizatorul trece pe manșa 2 și adaugă un întârziat, pe standul 3 din sectorul A
+  ctx.state.manche = 2;
+  camp["in-stand"] = "3"; camp["in-sector"] = "A";
+  vm.runInContext("addParticipant()", ctx);
+  const nou = ctx.state.participants[ctx.state.participants.length - 1];
+
+  t("întârziatul are stand în manșa activă",
+    vm.runInContext("standOfM(state.participants[4],2)", ctx), "3");
+  t("…și sector acolo", vm.runInContext("sectorOfM(state.participants[4],2)", ctx), "A");
+  t("dar manșa 1 rămâne goală la el",
+    vm.runInContext("standOfM(state.participants[4],1)", ctx), "");
+  t("…fără sector în manșa 1", vm.runInContext("sectorOfM(state.participants[4],1)", ctx), "");
+
+  const dupa = JSON.parse(vm.runInContext("JSON.stringify(pointsMapS(1))", ctx));
+  t("punctele manșei încheiate rămân neatinse pentru ceilalți",
+    ["Ion", "Vlad", "Radu2", "Mihai"].map(k => dupa[k]),
+    ["Ion", "Vlad", "Radu2", "Mihai"].map(k => inainte[k]));
+
+  // și nu se aprinde o alarmă de stand dublu pe manșa 1, unde standul 3 e al lui Radu2
+  let cutie = { style: {}, textContent: "" };
+  ctx.document = { getElementById: id => id === "warn-stand" ? cutie : null };
+  ctx.state.manche = 1;
+  vm.runInContext("updateWarnStand()", ctx);
+  t("nicio alarmă falsă de stand dublu pe manșa 1", cutie.style.display, "none");
+  ctx.state.manche = 2;
+  vm.runInContext("updateWarnStand()", ctx);
+  t("iar pe manșa 2 standul lui e singur", cutie.style.display, "none");
+}
+
+/* ================================================================
+   7. Același lucru pe drumul de import
+   ================================================================ */
+console.log("\n=== 7. Importul nu atinge manșele încheiate ===");
+{
+  const ctx = aplicatie(2, 2);
+  ctx.state.sectors = ["A", "B"];
+  ctx.state.numStanduri = "4";
+  ctx.guard = () => false;
+  ctx.queueSave = () => {}; ctx.renderList = () => {}; ctx.renderSectors = () => {};
+  ctx.toast = () => {}; ctx.showView = () => {}; ctx.uid = () => "imp";
+  ctx.curataNumarul = () => false;
+  ctx.document = { getElementById: () => ({ value: "3, Radu Nou", innerHTML: "" }) };
+  vm.runInContext(["parseImport", "splitName", "sectorRanges", "sectorForStand", "doImport"]
+    .map(n => grabFunction(src, n)).join("\n"), ctx);
+
+  ctx.state.participants = [{
+    id: "vechi", nume: "Ion", prenume: "", stand: "1", sector: "A", msv: 1,
+    m: { 1: { catches: [5], extras: [], stand: "1", sector: "A" },
+         2: { catches: [], extras: [], stand: "", sector: "" } }
+  }];
+  vm.runInContext("doImport()", ctx);
+
+  t("importatul intră în manșa activă",
+    vm.runInContext("standOfM(state.participants[1],2)", ctx), "3");
+  t("dar manșa 1 rămâne goală la el",
+    vm.runInContext("standOfM(state.participants[1],1)", ctx), "");
+  t("…și fără sector acolo",
+    vm.runInContext("sectorOfM(state.participants[1],1)", ctx), "");
+  t("cel care chiar a pescuit manșa 1 rămâne neatins",
+    vm.runInContext("standOfM(state.participants[0],1)+sectorOfM(state.participants[0],1)", ctx), "1A");
 }
 
 t.raport();
