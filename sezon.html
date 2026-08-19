@@ -133,7 +133,14 @@
   // locurile pot fi fracționare (media locurilor la egalitate): 2 → "2", 2.5 → "2,5"
   function fmtPts(n){ return (Math.round((+n||0)*2)/2).toString().replace(".",","); }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
-  function nameOf(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || ""; }
+  // Numerele scrise în fața numelui („7.Fabian Cretu") sunt o numerotare de mână, rămasă în
+  // arhivele făcute înainte ca aplicația să le curețe la sursă. Fără tăierea asta, același om
+  // intră de două ori în sezon: numerotat în concursurile vechi, curat în cele noi — și niciunul
+  // dintre cele două rânduri nu arată câte concursuri a făcut de fapt.
+  function nameOf(p){
+    var n = ((p.prenume||"")+" "+(p.nume||"")).trim();
+    return n.replace(/^\s*\d{1,3}\s*[.)]\s*/, "");
+  }
   function normKey(nm){
     var ZW = [0x200B,0x200C,0x200D,0x200E,0x200F,0xFEFF,0x2060];
     var out = "";
@@ -218,6 +225,8 @@
       out.push({
         compName: (data.name || r.name || r.code).trim() || r.code,
         compDate: data.startAt || (r.updated_at && Date.parse(r.updated_at)) || null,
+        startAt: data.startAt || null,
+        updatedAt: (r.updated_at && Date.parse(r.updated_at)) || null,
         code: r.code,
         parts: parts
       });
@@ -254,6 +263,8 @@
       out.push({
         compName: numeConcurs(data.name, exp.exportedAt),
         compDate: data.startAt || (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
+        startAt: data.startAt || null,
+        updatedAt: (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
         code: "arhiva:"+paths[i],
         parts: parts
       });
@@ -272,6 +283,8 @@
       out.push({
         compName: numeConcurs(data.name || a.name, a.archived_at),
         compDate: data.startAt || (a.archived_at && Date.parse(a.archived_at)) || null,
+        startAt: data.startAt || null,
+        updatedAt: (a.archived_at && Date.parse(a.archived_at)) || null,
         code: "arhiva-api:"+a.id,
         parts: parts
       });
@@ -288,10 +301,17 @@
      făcută din ea, sau două arhivări ale aceluiași concurs. Fără filtrul ăsta
      erau numărate de fiecare dată — adică punctele și kilogramele acelorași
      oameni intrau de două ori în clasamentul de sezon.
-     Semnătura: lista de participanți (id + kg), care e identică la copii. */
+     Identitatea unui concurs e CINE a pescuit și CÂND, nu cât s-a prins. Semnătura
+     cuprindea și kilogramele, așa că o singură greutate corectată între două arhivări
+     rupea concursul în două: la Brăila, 24,710 kg trecuți greșit și corectați la 10,400
+     au făcut ca toți cei 12 oameni să intre de două ori în clasamentul de sezon.
+     Ora de start e a concursului, deci identică în toate copiile lui; fără ea cădem pe
+     ziua salvării, ca două arhivări la ore diferite din aceeași zi să se recunoască. */
   function semnatura(src){
-    return src.parts.map(function(p){ return (p.id||nameOf(p))+":"+totalKg(p).toFixed(3); })
-                    .sort().join("|");
+    var oameni = src.parts.map(function(p){ return p.id||nameOf(p); }).sort().join("|");
+    var cand = src.startAt ? ("s"+src.startAt)
+             : (src.compDate ? ("z"+new Date(src.compDate).toISOString().slice(0,10)) : "");
+    return oameni+"@"+cand;
   }
   function faraDubluri(sources){
     var vazute = {}, out = [];
@@ -307,7 +327,10 @@
   async function loadSeason(){
     var liveSources = await fetchLiveSources();
     var archiveSources = await fetchArchiveSources();
-    // arhivele primele: au nume și dată stabile, camera live e doar o copie de moment
+    // Arhivele primele: au nume și dată stabile, camera live e doar o copie de moment.
+    // Între arhivările aceluiași concurs rămâne cea mai nouă — adică cea în care
+    // greutățile corectate sunt deja corectate.
+    archiveSources.sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
     var sources = faraDubluri(archiveSources.concat(liveSources));
     if(!sources.length){
       throw new Error("Niciun concurs găsit.");

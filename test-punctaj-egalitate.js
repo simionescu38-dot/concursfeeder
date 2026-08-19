@@ -460,7 +460,7 @@ console.log("\n=== 12. Filtrul de dubluri din sezon.html ===");
   ctx.faraDubluri = vm.runInContext("faraDubluri", ctx);
 
   const pescar = (id, kg) => ({ id, prenume: "X", nume: id, m: { 1: { catches: [kg], extras: [] }, 2: { catches: [], extras: [] } } });
-  const concurs = (nume, parts) => ({ compName: nume, compDate: 1, code: nume, parts });
+  const concurs = (nume, parts, startAt) => ({ compName: nume, compDate: 1, startAt: startAt===undefined?1000:startAt, code: nume, parts });
 
   const oameni = [pescar("a", 5), pescar("b", 3)];
   const camera  = concurs("remuslake2026", oameni);
@@ -478,12 +478,40 @@ console.log("\n=== 12. Filtrul de dubluri din sezon.html ===");
                concurs("Remus Lake 7.08.2026", oameni.map(p => JSON.parse(JSON.stringify(p))))];
   t("două arhivări ale aceluiași concurs contează o dată", ctx.faraDubluri(ctx.__in2).length, 1);
 
-  // dacă cineva a mai prins un pește între timp, NU mai e aceeași sursă
-  const dupaOCaptura = concurs("remuslake2026", [pescar("a", 5), Object.assign(pescar("b", 3), { m: { 1: { catches: [3, 2], extras: [] }, 2: { catches: [], extras: [] } } })]);
-  t("dacă s-a mai cântărit ceva, e o stare diferită și rămâne separată",
-    ctx.faraDubluri([arhiva, dupaOCaptura]).length, 2);
+  // Cazul de la Brăila: o greutate corectată între două arhivări. E ACELAȘI concurs —
+  // aceiași oameni, aceeași oră de start — deci nu are voie să intre de două ori.
+  const dupaCorectie = concurs("remuslake2026", [pescar("a", 5), Object.assign(pescar("b", 3), { m: { 1: { catches: [10.4], extras: [] }, 2: { catches: [], extras: [] } } })]);
+  t("o greutate corectată nu mai rupe concursul în două",
+    ctx.faraDubluri([arhiva, dupaCorectie]).length, 1);
+  t("…iar cea păstrată e prima din listă, adică arhiva",
+    ctx.faraDubluri([arhiva, dupaCorectie])[0].compName, "Remus Lake 7.08");
+
+  // dar un concurs cu aceiași oameni în ALTĂ zi rămâne al lui
+  const altaZi = concurs("Remus Lake 14.08", oameni, 9999999);
+  t("aceiași oameni, altă zi = alt concurs", ctx.faraDubluri([arhiva, altaZi]).length, 2);
+
+  // fără oră de start, cade pe ziua salvării
+  const faraOra1 = { compName: "X", compDate: Date.parse("2026-08-19T15:38:00Z"), startAt: null, code: "x1", parts: oameni };
+  const faraOra2 = { compName: "X", compDate: Date.parse("2026-08-19T17:07:00Z"), startAt: null, code: "x2", parts: oameni };
+  t("două salvări din aceeași zi, fără oră de start, se recunosc",
+    ctx.faraDubluri([faraOra1, faraOra2]).length, 1);
+  const altaZiFaraOra = { compName: "X", compDate: Date.parse("2026-08-26T15:38:00Z"), startAt: null, code: "x3", parts: oameni };
+  t("…dar altă zi rămâne alt concurs", ctx.faraDubluri([faraOra1, altaZiFaraOra]).length, 2);
 
   t("lista goală nu crapă", ctx.faraDubluri([]).length, 0);
+
+  // Numerotarea de mână a rămas în arhivele de dinainte de curățare. Dacă sezonul o ia
+  // ca parte din nume, același om iese pe două rânduri: numerotat în concursurile vechi,
+  // curat în cele noi — și niciunul nu arată câte concursuri a făcut de fapt.
+  const numeOf = vm.runInContext("nameOf", ctx);
+  t("numerotarea veche nu mai face parte din nume",
+    numeOf({ prenume: "7.Fabian", nume: "Cretu" }), "Fabian Cretu");
+  t("…iar numele curat rămâne cum e",
+    numeOf({ prenume: "Fabian", nume: "Cretu" }), "Fabian Cretu");
+  t("cele două variante ajung la același om",
+    numeOf({ prenume: "7.Fabian", nume: "Cretu" }) === numeOf({ prenume: "Fabian", nume: "Cretu" }), true);
+  t("o inițială nu e o numerotare",
+    numeOf({ prenume: "I.", nume: "Popescu" }), "I. Popescu");
 }
 
 /* ================================================================
