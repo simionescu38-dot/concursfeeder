@@ -1123,7 +1123,7 @@
     puneDeoParte("schimbat cu o copie mai veche"); // ca să se poată reveni și din asta
     state=u.data; normalize(); save();
     var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
-    var sb=document.getElementById("set-balta"); if(sb) sb.value=state.balta||"";
+    improspateazaBalta();
     var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
     renderSectors(); renderList(); renderRank(); updateManseButtons(); updateUndoUI();
     toast("Adus înapoi – verifică lista în Cântar");
@@ -2378,7 +2378,7 @@
           if(sj && sj.ok && sj.data){
             state=sj.data; normalize();
             var sn=document.getElementById("set-name"); if(sn) sn.value=state.name||"";
-    var sb=document.getElementById("set-balta"); if(sb) sb.value=state.balta||"";
+            improspateazaBalta();
             var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
             document.getElementById("nm-2").classList.toggle("on", numManse()===2);
             document.getElementById("nm-3").classList.toggle("on", numManse()===3);
@@ -2424,9 +2424,15 @@
   var currentArchiveId = "";
   function loadArchiveId(){ try{ currentArchiveId = localStorage.getItem(ARCHIVE_ID_KEY)||""; }catch(e){} }
   function saveArchiveId(id){ currentArchiveId = id||""; try{ if(id) localStorage.setItem(ARCHIVE_ID_KEY, id); else localStorage.removeItem(ARCHIVE_ID_KEY); }catch(e){} }
-  function archiveToSeason(cb){
+  /* `tacut` = chemat din wipe(), care a cerut deja balta și și-a arătat confirmarea lui;
+     fără el ar ieși două ferestre suprapuse la Reset. Același tipar ca stergeArhiva(id, tacut). */
+  function archiveToSeason(cb, tacut){
     if(!syncKey){ toast("Setează întâi cheia de scriere (Clasament live)"); if(cb) cb(false); return; }
     if(!state.participants.length){ toast("Nu ai niciun participant de arhivat"); if(cb) cb(false); return; }
+    if(!tacut){
+      if(!ceriBalta()){ if(cb) cb(false); return; }
+      improspateazaBalta();
+    }
     var st=document.getElementById("archive-status");
     if(st) st.textContent="Se arhivează…";
     var doPost=function(){
@@ -3888,7 +3894,7 @@
         toast(added+" adăugați, "+updated+" actualizați");
       }
       document.getElementById("set-name").value=state.name||"";
-      document.getElementById("set-balta").value=state.balta||"";
+      improspateazaBalta();
       document.getElementById("compName").textContent=state.name||"";
       renderSectors(); renderList();
     };
@@ -3899,15 +3905,38 @@
   // Balta e a locului, nu a etapei: numele concursului se schimbă de la o etapă la alta,
   // dar standul 46 e același stand. Sezonul grupează standurile după balta asta.
   function saveBalta(v){ if(isLocked()) return; state.balta=(""+(v||"")).trim(); queueSave(); }
+  function improspateazaBalta(){ var sb=document.getElementById("set-balta"); if(sb) sb.value=state.balta||""; }
+  /* Balta e cheia după care sezonul adună standurile (cheiaLocatiei, sezon.html).
+     Arhivat fără ea, concursul intră singur, sub numele lui, și aceeași baltă iese în
+     două clasamente de standuri — s-a întâmplat cu Remus Lake pe 19 august, și se repară
+     pe urmă arhivă cu arhivă, de pe telefon. Aici se cere o dată, în clipa în care contează.
+     Nu blochează arhivarea: se poate lăsa gol și merge mai departe. Doar Renunță o oprește. */
+  function ceriBalta(){
+    if((state.balta||"").trim()) return true;
+    var b = prompt(
+      "Balta e goală.\n\n" +
+      "Fără ea, concursul intră singur în Clasamentul de sezon, sub numele lui, " +
+      "iar standurile aceleiași bălți ies în două clasamente separate.\n\n" +
+      "Scrie balta acum (sau lasă gol și continuă):", "");
+    if(b === null) return false;
+    b = (""+b).trim();
+    if(b){ state.balta = b; queueSave(); }
+    return true;
+  }
   function wipe(){
     if(guard()) return;
     var willArchive = state.participants.length>0 && !!syncKey;
+    // întâi se repară data, apoi se confirmă ștergerea: invers ar ieși două ferestre una peste alta
+    if(willArchive){
+      if(!ceriBalta()) return;
+      improspateazaBalta();
+    }
     var msg = willArchive
       ? "Ștergi toți participanții și datele? Concursul curent se arhivează automat în sezon înainte, deci rezultatele rămân. Nu se poate reveni."
       : "Ștergi toți participanții și datele? Nu se poate reveni.";
     if(!confirm(msg)) return;
     puneDeoParte("înainte de ștergere");
-    if(willArchive) archiveToSeason(function(){ saveArchiveId(""); });
+    if(willArchive) archiveToSeason(function(){ saveArchiveId(""); }, true);
     // sponsorii sunt o listă de parteneri, nu rezultate: supraviețuiesc ștergerii,
     // altfel ar trebui retastați la fiecare concurs. Regulamentul, fiind al
     // concursului, se șterge odată cu el. Balta la fel: e a locului, iar etapa
@@ -3928,7 +3957,7 @@
     wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
     stratLoad();
     document.getElementById("set-name").value = state.name||"";
-    document.getElementById("set-balta").value = state.balta||"";
+    improspateazaBalta();
     document.getElementById("compName").textContent = state.name||"";
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);

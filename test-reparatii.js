@@ -366,4 +366,75 @@ console.log("\n=== 9. Restaurarea din fișier ===");
   t("un fișier cu lacăt pus nu blochează telefonul", [cuLacat.lock, cuLacat.pinHash], [false, ""]);
 }
 
+/* ================================================================
+   10. Balta cerută în clipa arhivării
+   ================================================================
+   Concursul din 19 august a plecat în sezon cu balta goală. Sezonul a căzut pe
+   numele concursului (cheiaLocatiei) și Remus Lake a ieșit în două clasamente de
+   standuri, reparate pe urmă arhivă cu arhivă, de pe telefon. Acum se cere o dată,
+   în clipa în care contează. Nu blochează arhivarea — doar Renunță o oprește.
+   ================================================================ */
+console.log("\n=== 10. Balta cerută în clipa arhivării ===");
+{
+  function cuBalta(balta, raspuns) {
+    const ctx = {
+      state: { balta: balta, participants: [] },
+      salvari: 0,
+      intrebari: [],
+      console
+    };
+    // protezele se leagă de ctx, nu de `this`: chemate gol din vm, `this` nu e contextul
+    ctx.queueSave = function () { ctx.salvari++; };
+    ctx.prompt = function (text, implicit) { ctx.intrebari.push(text); return raspuns; };
+    vm.createContext(ctx);
+    vm.runInContext(grabFunction(src, "ceriBalta"), ctx);
+    ctx.rezultat = vm.runInContext("ceriBalta()", ctx);
+    return ctx;
+  }
+
+  // balta scrisă deja: nicio întrebare, nicio atingere în plus la fiecare concurs
+  const scrisa = cuBalta("Remus Lake", null);
+  t("cu balta scrisă, arhivarea merge mai departe", scrisa.rezultat, true);
+  t("…și nu întreabă nimic", scrisa.intrebari.length, 0);
+  t("…și nu salvează degeaba", scrisa.salvari, 0);
+
+  // spațiile singure nu sunt o baltă
+  const spatii = cuBalta("   ", "Bazinul Trofee");
+  t("o baltă din spații se cere din nou", spatii.intrebari.length, 1);
+  t("…și se scrie cea dată acum", spatii.state.balta, "Bazinul Trofee");
+
+  // omul o scrie pe loc
+  const scrisaAcum = cuBalta("", "Remus Lake");
+  t("balta scrisă la întrebare intră în concurs", scrisaAcum.state.balta, "Remus Lake");
+  t("…arhivarea merge mai departe", scrisaAcum.rezultat, true);
+  t("…și se salvează o dată", scrisaAcum.salvari, 1);
+  t("întrebarea spune de ce contează", /clasamente separate/.test(scrisaAcum.intrebari[0]), true);
+
+  // spațiile se taie, ca aceeași baltă să nu iasă în două clasamente
+  const cuSpatii = cuBalta("", "  Remus Lake  ");
+  t("spațiile din jur se taie", cuSpatii.state.balta, "Remus Lake");
+
+  // lasă gol și continuă: arhivarea NU se blochează
+  const lasatGol = cuBalta("", "");
+  t("lăsată goală, arhivarea tot merge", lasatGol.rezultat, true);
+  t("…și nu se scrie nimic", lasatGol.state.balta, "");
+  t("…nici nu se salvează degeaba", lasatGol.salvari, 0);
+
+  // Renunță (prompt întoarce null): se oprește tot
+  const renuntat = cuBalta("", null);
+  t("Renunță oprește arhivarea", renuntat.rezultat, false);
+  t("…și nu schimbă nimic", renuntat.state.balta, "");
+
+  /* Reset-ul arhivează singur. Dacă ar cere balta și el, și archiveToSeason,
+     ar ieși două ferestre una peste alta — de aceea wipe() cheamă cu `tacut`. */
+  const arhiv = grabFunction(src, "archiveToSeason");
+  t("archiveToSeason primește al doilea argument", /function archiveToSeason\(cb, tacut\)/.test(arhiv), true);
+  t("…și sare peste întrebare când e chemat tăcut", /if\(!tacut\)/.test(arhiv), true);
+  const sterge = grabFunction(src, "wipe");
+  t("wipe cere balta înainte de confirmarea lui", sterge.indexOf("ceriBalta") < sterge.indexOf("confirm(msg)"), true);
+  t("…și arhivează tăcut, ca să nu întrebe de două ori",
+    /archiveToSeason\(function\(\)\{ saveArchiveId\(""\); \}, true\)/.test(sterge), true);
+}
+
+
 t.raport();
