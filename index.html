@@ -3261,13 +3261,31 @@
 
   // ---------- settings ----------
   function splitName(full){ full=(full||"").trim(); var sp=full.indexOf(" "); if(sp<0) return {prenume:full, nume:""}; return {prenume:full.slice(0,sp), nume:full.slice(sp+1).trim()}; }
+  // Lista vine de pe WhatsApp, întreagă, cu tot cu mesajul din jurul ei: titlu cu dată,
+  // orele programului, taxele, un „Lista înscrieri:". Toate arătau a participanți —
+  // „200 de lei" intra ca standul 200 al pescarului „de lei" — iar numele numerotate fără
+  // spațiu („1.Remus Catalin") își pierdeau standul și rămâneau cu cifra lipită de nume.
+  // Din 14 pescari ieșeau 24 de participanți, așa că lista se trecea de mână.
+  //
+  // Un rând e al unui pescar dacă începe cu un număr urmat de . ) sau -, iar după
+  // separator NU vine tot o cifră: așa cad și orele (08.50), și datele (22.08.2026).
+  // Când lista e numerotată așa, rândurile nenumerotate sunt text din jur, nu oameni —
+  // altfel n-am avea cum deosebi „200 de lei" de „200 Ion Popescu".
+  // Ce a fost lăsat pe dinafară se agață de rezultat, ca „Verifică" să poată arăta
+  // exact ce a ignorat: o listă tăiată în tăcere ar fi mai rea decât una murdară.
   function parseImport(text){
-    var out=[];
-    (text||"").split(/\r?\n/).forEach(function(line){
-      var raw=line.trim(); if(!raw) return;
+    var numerotat=/^(\d{1,3})\s*[\.\)\-–—]\s*(?!\d)(\S.*)$/;
+    var out=[], ignorate=[];
+    var linii=(text||"").split(/\r?\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l!==""; });
+    var numerotate=linii.filter(function(l){ return numerotat.test(l); }).length;
+    // două rânduri numerotate = o listă numerotată; unul singur poate fi o coincidență
+    var strict = numerotate>=2;
+    linii.forEach(function(line){
+      var raw=line;
       var stand="";
-      var m=raw.match(/^(\d+)\s*[\.\)\-]\s+(.+)$/);
+      var m=raw.match(numerotat);
       if(m){ stand=m[1]; raw=m[2].trim(); }
+      else if(strict){ ignorate.push(line); return; }
       var parts=raw.split(/[\t,;|]/).map(function(x){return x.trim();}).filter(function(x){return x!=="";});
       var name="", sector="";
       if(parts.length<=1){ name=parts[0]||""; }
@@ -3279,16 +3297,28 @@
         name=parts[i]||""; sector=parts[i+1]||"";
       }
       if(!stand){ var mm=name.match(/^(\d+)\s+(.+)$/); if(mm){ stand=mm[1]; name=mm[2].trim(); } }
-      if(name){ out.push({stand:stand, name:name, sector:sector}); }
+      if(name) out.push({stand:stand, name:name, sector:sector});
+      else ignorate.push(line);
     });
+    out.ignorate=ignorate;
     return out;
   }
   function previewImport(){
     var arr=parseImport(document.getElementById("imp-text").value);
     var box=document.getElementById("imp-preview");
-    if(!arr.length){ box.innerHTML="Nimic de importat — verifică lista."; return; }
+    var ign=arr.ignorate||[];
+    if(!arr.length){
+      box.innerHTML="Nimic de importat — verifică lista."+(ign.length?("<br>Am lăsat pe dinafară "+ign.length+" rânduri."):"");
+      return;
+    }
     var s=arr.slice(0,4).map(function(x){ return "• "+(x.stand?("St."+x.stand+" "):"")+esc(x.name)+(x.sector?(" · Sec "+esc(x.sector)):""); }).join("<br>");
-    box.innerHTML="Am găsit <b>"+arr.length+"</b> participanți:<br>"+s+(arr.length>4?"<br>…":"");
+    var h="Am găsit <b>"+arr.length+"</b> participanți:<br>"+s+(arr.length>4?"<br>…":"");
+    // rândurile sărite se arată pe nume: dacă printre ele e un pescar, se vede pe loc
+    if(ign.length){
+      h+="<br><br>Am sărit <b>"+ign.length+"</b> "+(ign.length===1?"rând":"rânduri")+" (titlu, ore, taxe):<br>"+
+         ign.slice(0,6).map(function(l){ return "• "+esc(l); }).join("<br>")+(ign.length>6?"<br>…":"");
+    }
+    box.innerHTML=h;
   }
   function doImport(){
     if(guard()) return;
