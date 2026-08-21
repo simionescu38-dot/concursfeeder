@@ -120,4 +120,37 @@ console.log("\n=== 4. Sezonul nu rămâne la varianta veche ===");
     /caches\.match\(e\.request, \{ ignoreSearch: true \}\)/.test(sw), true);
 }
 
+/* ================================================================
+   5. Arhivele sunt date, nu fișiere ale aplicației
+      Service worker-ul prinde în cache orice fișier de pe același domeniu
+      și îl servește ÎNAINTEA rețelei. Fișierele din arhiva/ intrau și ele
+      acolo, deși se îndreaptă din depozit fără ca aplicația să se schimbe:
+      o baltă adăugată sau un nume corectat nu mai ajungeau niciodată pe
+      telefon. S-a întâmplat de două ori la rând înainte să fie prins.
+   ================================================================ */
+console.log("\n=== 5. Arhivele nu mai stau în cache ===");
+{
+  const sez = citeste(path.join(RADACINA, "sezon.html"));
+
+  t("service worker-ul lasă arhivele să plece în rețea",
+    /url\.pathname\.indexOf\("\/arhiva\/"\) >= 0\) return;/.test(sw), true);
+  t("…la fel cum lasă și apelurile de API",
+    /url\.pathname\.indexOf\("\/api\/"\) === 0/.test(sw), true);
+
+  // și cache-ul propriu al browserului: fișierele se cer cu o cheie de fiecare dată
+  const ctx = { Date: { now: () => 1234 }, console };
+  vm.createContext(ctx);
+  vm.runInContext(grabFunction(sez, "faraCache"), ctx);
+  t("adresa fără întrebare primește cheia cu ?",
+    vm.runInContext('faraCache("arhiva/x.json")', ctx), "arhiva/x.json?cb=1234");
+  t("adresa care are deja o întrebare o primește cu &",
+    vm.runInContext('faraCache("a?b=1")', ctx), "a?b=1&cb=1234");
+
+  t("citirea arhivelor chiar folosește cheia",
+    /fetch\(faraCache\(path\)\)/.test(sez), true);
+  t("…inclusiv la backup",
+    (sez.match(/fetch\(faraCache\(path\)\)/g) || []).length, 2);
+  t("și listarea din depozit", /faraCache\("https:\/\/api\.github\.com/.test(sez), true);
+}
+
 t.raport();
