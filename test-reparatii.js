@@ -308,4 +308,62 @@ console.log("\n=== 8. Balta pe o arhivă veche ===");
     /id="arh-stare-/.test(grabFunction(src, "loadArhive")), true);
 }
 
+/* ================================================================
+   9. Backup-ul restaurat aduce înapoi tot concursul
+      exportData scrie toată starea în fișier, dar restaurarea o
+      reconstruia dintr-o listă fixă de câmpuri și arunca restul în
+      tăcere. Cel grav era scalaSectoare — felul punctajului: un concurs
+      ținut pe „aceeași scală" revenea la locuri simple, adică alte
+      puncte pe aceleași kilograme. Iar ora de start e identitatea
+      concursului în sezon, deci fără ea un concurs restaurat ar fi
+      intrat a doua oară în clasament.
+   ================================================================ */
+console.log("\n=== 9. Restaurarea din fișier ===");
+{
+  const ctx = { console };
+  vm.createContext(ctx);
+  vm.runInContext(grabFunction(src, "stareDinFisier"), ctx);
+
+  ctx.__f = {
+    name: "Cupa de Miercuri", balta: "Remus Lake", numStanduri: "50",
+    sectors: ["A","B","C","D","E"], manche: 2, numManse: 3,
+    scalaSectoare: true, startAt: 1787119200000, endAt: 1787148000000, nadireMin: 15,
+    rules: "regulamentul nostru", sponsors: [{nume:"Balta X"}],
+    voiceOn: true, pushOn: true,
+    pinHash: "PIN-DIN-FISIER", lock: true,
+    participants: [{ id:"a", prenume:"Ion", nume:"Popescu", stand:"1" }],
+    camp_dintr_o_versiune_viitoare: "ceva"
+  };
+  const s = vm.runInContext("stareDinFisier(__f, 'PIN-UL-MEU', false)", ctx);
+
+  t("felul punctajului se întoarce", s.scalaSectoare, true);
+  t("ora de start se întoarce", s.startAt, 1787119200000);
+  t("…și ora de stop", s.endAt, 1787148000000);
+  t("balta se întoarce", s.balta, "Remus Lake");
+  t("numărul de standuri se întoarce", s.numStanduri, "50");
+  t("minutele de nădire se întorc", s.nadireMin, 15);
+
+  t("PIN-ul rămâne al telefonului, nu vine din fișier", s.pinHash, "PIN-UL-MEU");
+  t("nici lacătul nu vine din fișier", s.lock, false);
+
+  t("participanții vin întregi", s.participants.length, 1);
+  t("sectoarele vin din fișier", s.sectors, ["A","B","C","D","E"]);
+  t("manșa activă și numărul de manșe vin din fișier", [s.manche, s.numManse], [2, 3]);
+  t("regulamentul și sponsorii la fel", [s.rules, s.sponsors.length], ["regulamentul nostru", 1]);
+
+  // un export făcut de o versiune mai nouă nu trebuie ciuntit de una mai veche
+  t("un câmp necunoscut trece neatins", s.camp_dintr_o_versiune_viitoare, "ceva");
+
+  // fișierul de pe alt telefon poate veni fără sectoare
+  const faraSectoare = vm.runInContext(
+    "stareDinFisier({participants:[]}, 'PIN', false)", ctx);
+  t("fără sectoare în fișier, ies A B C", faraSectoare.sectors, ["A","B","C"]);
+  t("…iar PIN-ul tot al telefonului rămâne", faraSectoare.pinHash, "PIN");
+
+  // fișierul nu are voie să lase telefonul blocat cu un PIN pe care omul nu-l știe
+  const cuLacat = vm.runInContext(
+    "stareDinFisier({lock:true, pinHash:'AL-LUI', participants:[]}, '', false)", ctx);
+  t("un fișier cu lacăt pus nu blochează telefonul", [cuLacat.lock, cuLacat.pinHash], [false, ""]);
+}
+
 t.raport();

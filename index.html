@@ -3098,6 +3098,15 @@
   // coloane: punctele mari, kilogramele mici dedesubt, totalul la capăt.
   function rankColumnsHtml(sorted, pmap){
     var manse=manseRange();
+    // Punctajul unei manșe e al TUTUROR, nu al unui pescar: se cere o dată, nu la fiecare
+    // celulă. Cerut înăuntrul buclei, la 50 de pescari și 3 manșe se reface clasamentul
+    // întreg de 150 de ori pentru un singur tabel — un sfert de secundă pe telefon, exact
+    // pe ecranul la care se uită lumea la premiere.
+    var punctele={}, disputate={};
+    manse.forEach(function(i){
+      disputate[i]=mancheDisputata(i);
+      if(disputate[i]) punctele[i]=pointsMapS(i);
+    });
     var h='<table><thead><tr><th class="pos">#</th><th>Participant</th>'+
       manse.map(function(i){ return '<th class="mcol">M'+i+'</th>'; }).join('')+
       '<th class="tcol">TOTAL</th></tr></thead><tbody>';
@@ -3110,8 +3119,8 @@
       manse.forEach(function(i){
         // o manșă în care nu s-a cântărit încă nimic n-are nici puncte, nici kilograme:
         // un „0" acolo arată ca un rezultat prost, nu ca o manșă care n-a început
-        if(mancheDisputata(i)){
-          h+='<td class="mcol"><div class="pp">'+fmtPts(pointsMapS(i)[p.id])+'</div><div class="kk">'+fmt(totalOfM(p,i))+'</div></td>';
+        if(disputate[i]){
+          h+='<td class="mcol"><div class="pp">'+fmtPts(punctele[i][p.id])+'</div><div class="kk">'+fmt(totalOfM(p,i))+'</div></td>';
         } else {
           h+='<td class="mcol"><div class="pp" style="color:var(--muted);font-weight:700;">–</div></td>';
         }
@@ -3828,6 +3837,25 @@
     setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
     toast("Fișier exportat");
   }
+  // Fișierul de backup are concursul ÎNTREG — exportData scrie toată starea. Restaurarea
+  // îl reconstruia însă dintr-o listă fixă de câmpuri și arunca restul în tăcere: felul
+  // punctajului (scalaSectoare), orele de start și stop, balta, numărul de standuri. Un
+  // concurs ținut pe „aceeași scală" revenea la locuri simple — alte puncte pe aceleași
+  // kilograme, fără niciun semn. Iar ora de start e identitatea concursului în sezon, deci
+  // fără ea un concurs restaurat intra a doua oară în clasament.
+  //
+  // Se pleacă acum de la datele din fișier și se pun deasupra doar cele două câmpuri care
+  // rămân ale telefonului: PIN-ul și lacătul. Cheia de acasă nu vine dintr-un fișier primit
+  // pe WhatsApp. Restul trece neatins, inclusiv câmpuri pe care versiunea asta nu le știe.
+  function stareDinFisier(data, pinLocal, lacatLocal){
+    var s={};
+    Object.keys(data||{}).forEach(function(k){ s[k]=data[k]; });
+    s.pinHash=pinLocal||"";
+    s.lock=!!lacatLocal;
+    // singurul câmp pe care normalize() nu-l umple
+    if(!Array.isArray(s.sectors) || !s.sectors.length) s.sectors=["A","B","C"];
+    return s;
+  }
   function importData(input){
     if(guard()){ input.value=""; return; }
     var f=input.files && input.files[0]; input.value=""; if(!f) return;
@@ -3841,7 +3869,7 @@
       if(mode==="replace"){
         if(!confirm("Înlocuiești TOATE datele de pe acest telefon cu cele din fișier ("+data.participants.length+" participanți)?")) return;
         puneDeoParte("înainte de import");
-        state={ name:data.name||"", sectors:(Array.isArray(data.sectors)&&data.sectors.length)?data.sectors:["A","B","C"], participants:data.participants, pinHash:state.pinHash||"", lock:state.lock||false, manche:data.manche||1, numManse:data.numManse||2, rules:data.rules||"", sponsors:Array.isArray(data.sponsors)?data.sponsors:[] };
+        state=stareDinFisier(data, state.pinHash, state.lock);
         normalize(); save();
         document.getElementById("nm-2").classList.toggle("on", numManse()===2);
         document.getElementById("nm-3").classList.toggle("on", numManse()===3);
