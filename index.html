@@ -3098,6 +3098,15 @@
   // coloane: punctele mari, kilogramele mici dedesubt, totalul la capăt.
   function rankColumnsHtml(sorted, pmap){
     var manse=manseRange();
+    // Punctajul unei manșe e al TUTUROR, nu al unui pescar: se cere o dată, nu la fiecare
+    // celulă. Cerut înăuntrul buclei, la 50 de pescari și 3 manșe se reface clasamentul
+    // întreg de 150 de ori pentru un singur tabel — un sfert de secundă pe telefon, exact
+    // pe ecranul la care se uită lumea la premiere.
+    var punctele={}, disputate={};
+    manse.forEach(function(i){
+      disputate[i]=mancheDisputata(i);
+      if(disputate[i]) punctele[i]=pointsMapS(i);
+    });
     var h='<table><thead><tr><th class="pos">#</th><th>Participant</th>'+
       manse.map(function(i){ return '<th class="mcol">M'+i+'</th>'; }).join('')+
       '<th class="tcol">TOTAL</th></tr></thead><tbody>';
@@ -3110,8 +3119,8 @@
       manse.forEach(function(i){
         // o manșă în care nu s-a cântărit încă nimic n-are nici puncte, nici kilograme:
         // un „0" acolo arată ca un rezultat prost, nu ca o manșă care n-a început
-        if(mancheDisputata(i)){
-          h+='<td class="mcol"><div class="pp">'+fmtPts(pointsMapS(i)[p.id])+'</div><div class="kk">'+fmt(totalOfM(p,i))+'</div></td>';
+        if(disputate[i]){
+          h+='<td class="mcol"><div class="pp">'+fmtPts(punctele[i][p.id])+'</div><div class="kk">'+fmt(totalOfM(p,i))+'</div></td>';
         } else {
           h+='<td class="mcol"><div class="pp" style="color:var(--muted);font-weight:700;">–</div></td>';
         }
