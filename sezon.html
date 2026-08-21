@@ -238,9 +238,14 @@
   // listă dinamică a folderului arhiva/ de pe GitHub, ca fișierele arhivate automat
   // (din butonul „Arhivează" din aplicație) să apară aici fără nicio modificare de cod.
   // ARCHIVE_FILES rămâne ca rezervă, dacă vreodată API-ul GitHub nu răspunde.
+  /* Arhivele din depozit sunt DATE, nu fișiere ale aplicației: se schimbă fără ca
+     aplicația să se schimbe. Fără cheia asta, browserul le ține până la zece minute
+     (GitHub Pages trimite max-age=600), iar service worker-ul le-ar servi din memoria
+     lui — așa că o îndreptare făcută azi în arhivă n-ar ajunge pe telefon nici mâine. */
+  function faraCache(url){ return url + (url.indexOf("?") < 0 ? "?" : "&") + "cb=" + Date.now(); }
   async function listareArhivaGit(){
     try{
-      var r = await fetch("https://api.github.com/repos/simionescu38-dot/concursfeeder/contents/arhiva");
+      var r = await fetch(faraCache("https://api.github.com/repos/simionescu38-dot/concursfeeder/contents/arhiva"));
       var list = await r.json();
       if(!Array.isArray(list)) return ARCHIVE_FILES.slice();
       var paths = list.filter(function(f){ return f && f.name && /\.json$/i.test(f.name); })
@@ -253,7 +258,7 @@
   async function fetchArchiveFiles(){
     var paths = await listareArhivaGit();
     var results = await Promise.all(paths.map(function(path){
-      return fetch(path).then(function(r){return r.json();}).catch(function(){ return null; });
+      return fetch(faraCache(path)).then(function(r){return r.json();}).catch(function(){ return null; });
     }));
     var out = [];
     results.forEach(function(exp, i){
@@ -608,7 +613,7 @@
     Promise.all([
       fetch(API_BASE+"/api/archive").then(function(r){return r.json();}).catch(function(){return {ok:false, archives:[]};}),
       listareArhivaGit().then(function(paths){
-        return Promise.all(paths.map(function(path){ return fetch(path).then(function(r){return r.json();}).catch(function(){return null;}); }));
+        return Promise.all(paths.map(function(path){ return fetch(faraCache(path)).then(function(r){return r.json();}).catch(function(){return null;}); }));
       })
     ]).then(function(results){
       var apiArchives = (results[0] && results[0].ok) ? results[0].archives : [];
