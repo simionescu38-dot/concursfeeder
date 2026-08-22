@@ -2444,27 +2444,39 @@
       if(!ceriBalta()){ if(cb) cb(false); return; }
       improspateazaBalta();
     }
+    /* Starea se îngheață ACUM, nu când pleacă cererea. wipe() cheamă funcția asta și
+       apoi golește `state` pe loc, fără să aștepte; cum trimiterea venea abia după ce se
+       ștergea arhiva veche, pe server urca `state` cel golit. La Remus Lake, pe 22
+       august, arhiva bună a fost ștearsă și în locul ei a urcat un concurs cu 0 pescari. */
+    var deTrimis = JSON.parse(JSON.stringify(state));
+    var vechiul = currentArchiveId;
     var st=document.getElementById("archive-status");
     if(st) st.textContent="Se arhivează…";
-    var doPost=function(){
-      fetch(API_BASE+"/api/archive"+(syncRoom?("?room="+encodeURIComponent(syncRoom)):""), {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-write-key":syncKey},
-        body: JSON.stringify({data: state})
-      }).then(function(r){ return r.json(); }).then(function(j){
-        if(j && j.ok){ saveArchiveId(j.id); toast("Concurs arhivat în sezon"); if(st) st.textContent="Arhivat • "+nowHM()+" — vezi-l în Clasamentul de sezon."; }
-        else { toast("Eroare la arhivare"); if(st) st.textContent="Eroare: "+((j&&j.error)||"necunoscută"); }
-        if(cb) cb(!!(j&&j.ok));
-      }).catch(function(){ toast("Eroare de rețea la arhivare"); if(st) st.textContent="Eroare de rețea — încearcă din nou."; if(cb) cb(false); });
-    };
-    if(currentArchiveId){
-      // rearhivăm același concurs (nu a fost resetat între timp) — înlocuim arhiva veche, nu adăugăm una nouă
-      // (replace=1: șterge și copia din git a arhivei vechi, ca să nu rămână un fișier orfan/neactualizat)
-      fetch(API_BASE+"/api/archive?id="+encodeURIComponent(currentArchiveId)+"&replace=1", { method:"DELETE", headers:{"x-write-key":syncKey} })
-        .catch(function(){}).then(doPost);
-    } else {
-      doPost();
-    }
+    /* Copia nouă pleacă ÎNAINTE de ștergerea celei vechi. Invers, o pică de rețea la
+       mijloc lăsa concursul fără nicio arhivă; așa, lasă cel mult o dublură — pe care o
+       contopește filtrul din sezon, având aceiași pescari și aceeași oră de start.
+       Aceeași ordine ca la setArhivaCampuri. */
+    fetch(API_BASE+"/api/archive"+(syncRoom?("?room="+encodeURIComponent(syncRoom)):""), {
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-write-key":syncKey},
+      body: JSON.stringify({data: deTrimis})
+    }).then(function(r){ return r.json(); }).then(function(j){
+      if(!(j && j.ok)){
+        // arhiva veche rămâne pe server: mai bine una învechită decât niciuna
+        toast("Eroare la arhivare"); if(st) st.textContent="Eroare: "+((j&&j.error)||"necunoscută");
+        if(cb) cb(false); return;
+      }
+      saveArchiveId(j.id);
+      toast("Concurs arhivat în sezon");
+      if(st) st.textContent="Arhivat • "+nowHM()+" — vezi-l în Clasamentul de sezon.";
+      // abia acum se scoate arhivarea de dinainte a aceluiași concurs
+      // (replace=1: șterge și copia din git a arhivei vechi, ca să nu rămână un fișier orfan)
+      if(vechiul && vechiul!==j.id){
+        return fetch(API_BASE+"/api/archive?id="+encodeURIComponent(vechiul)+"&replace=1", { method:"DELETE", headers:{"x-write-key":syncKey} })
+          .catch(function(){}).then(function(){ if(cb) cb(true); });
+      }
+      if(cb) cb(true);
+    }).catch(function(){ toast("Eroare de rețea la arhivare"); if(st) st.textContent="Eroare de rețea — încearcă din nou."; if(cb) cb(false); });
   }
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;

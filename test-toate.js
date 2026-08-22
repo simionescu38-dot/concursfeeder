@@ -23,7 +23,8 @@ const TESTE = [
   ["Nume fără numerotare de mână", "test-nume-curat.js"],
   ["Lista lipită de pe WhatsApp", "test-import.js"],
   ["Aducerea variantei noi", "test-actualizare.js"],
-  ["Poza pentru WhatsApp", "test-imagine.js"]
+  ["Poza pentru WhatsApp", "test-imagine.js"],
+  ["Arhivarea în sezon", "test-arhivare.js"]
 ];
 
 let picate = [];
