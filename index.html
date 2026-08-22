@@ -3732,47 +3732,195 @@
     logo.onerror=function(){ drawShareImage(null); };
     logo.src="icon-192.png";
   }
+  /* Ce intră în poză se hotăra amestecat cu desenatul, iar poza rămăsese în urma
+     ecranului: tăia la primii 10 și sorta întotdeauna după kilograme. La un concurs pe
+     puncte putea, așa, să anunțe alt câștigător decât clasamentul oficial — și poza e
+     exact ce ajunge la pescari. Hotărârea stă aici, separată de pânză, ca să poată fi
+     verificată. Aceleași ramuri ca la copyRank(), în aceeași ordine. */
+  function planImagine(){
+    var pmap=currentPmap();
+    var scop = rankScope==="total" ? "General" : "Manșa "+rankScope;
+    var plan={ titlu: state.name||"Concurs pescuit", subtitlu:"", cmmc:"", manse:null, arataPct:false, sectiuni:[] };
+
+    var cuPeste=state.participants.filter(function(p){ return cmmcAward(p,rankScope)>0; });
+    if(cuPeste.length){
+      var best=cuPeste.reduce(function(a,b){ return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a; });
+      plan.cmmc="🐟 CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg";
+    }
+
+    function rand(p,i,cuPct,cuSector){
+      return {
+        medal: i<3 ? ["🥇","🥈","🥉"][i] : (i+1)+".",
+        nume: nameOf(p),
+        sub: "Stand "+(standOfM(p,rankScope)||"–")+((cuSector&&sectorOfM(p,rankScope))?" · Sec "+sectorOfM(p,rankScope):""),
+        pct: cuPct ? fmtPts(pmap[p.id]) : "",
+        kg: fmt(totalOfM(p,rankScope))
+      };
+    }
+
+    // Statisticile nu sunt un clasament: se desenează clasamentul final, iar subtitlul o spune.
+    var mod = rankMode==="stat" ? "fin" : rankMode;
+
+    if(mod==="sec"){
+      plan.arataPct=true;
+      plan.subtitlu="Pe sectoare · "+scop+" · "+roDate();
+      var secs={}, ordine=[];
+      state.participants.forEach(function(p){
+        var k=sectorOfM(p,rankScope)||"Fără sector";
+        if(!secs[k]){ secs[k]=[]; ordine.push(k); }
+        secs[k].push(p);
+      });
+      ordine.sort(function(a,b){ return a.localeCompare(b,"ro"); });
+      ordine.forEach(function(k){
+        plan.sectiuni.push({
+          titlu: "Sector "+k+" · "+secs[k].length+" participanți",
+          randuri: sortRankS(secs[k],rankScope).map(function(p,i){ return rand(p,i,true,false); })
+        });
+      });
+      return plan;
+    }
+
+    if(finMethod==="pct"){
+      var sortati=sortByPointsS(state.participants,pmap,rankScope);
+      if(rankScope==="total"){
+        // manșele ca pe ecran (rankColumnsHtml): punctele mari, kilogramele mici dedesubt
+        var manse=manseRange(), disputate={}, punctele={};
+        manse.forEach(function(i){ disputate[i]=mancheDisputata(i); if(disputate[i]) punctele[i]=pointsMapS(i); });
+        plan.manse=manse;
+        plan.subtitlu="Final pe puncte · General · "+roDate();
+        plan.sectiuni.push({ titlu:"", randuri: sortati.map(function(p,i){
+          var r=rand(p,i,true,true);
+          // o manșă în care nu s-a cântărit nimic n-are nici puncte, nici kilograme:
+          // un 0 acolo arată ca un rezultat prost, nu ca o manșă care n-a început
+          r.manse=manse.map(function(mi){
+            return disputate[mi]
+              ? { pct: fmtPts(punctele[mi][p.id]), kg: fmt(totalOfM(p,mi)) }
+              : { pct:"–", kg:"" };
+          });
+          return r;
+        }) });
+        return plan;
+      }
+      plan.arataPct=true;
+      plan.subtitlu="Final pe puncte · "+scop+" · "+roDate();
+      plan.sectiuni.push({ titlu:"", randuri: sortati.map(function(p,i){ return rand(p,i,true,true); }) });
+      return plan;
+    }
+
+    plan.subtitlu="Final pe kg · "+scop+" · "+roDate();
+    plan.sectiuni.push({ titlu:"", randuri: sortRankS(state.participants,rankScope).map(function(p,i){ return rand(p,i,false,true); }) });
+    return plan;
+  }
+
   function drawShareImage(logo){
-    var W=1080, H=1440;
+    var plan=planImagine();
+    var W=1080, ANTET=260, SUS=60, SUBSOL=60, GAP=24, HTITLU=70, HCOL=50;
+    var rowH=94;
+    function inaltimea(rh){
+      var h=ANTET+SUS+(plan.cmmc?100:0)+(plan.manse?HCOL:0);
+      plan.sectiuni.forEach(function(s,i){
+        if(i) h+=GAP;
+        if(s.titlu) h+=HTITLU;
+        h+=s.randuri.length*rh;
+      });
+      return h+SUBSOL;
+    }
+    /* Pânza creștea niciodată: era fixă la 1440, adică fix zece rânduri, și restul
+       pescarilor cădeau pe dinafară fără niciun semn. Acum crește după listă, iar dacă
+       ar ieși prea mare (telefonul refuză pânzele uriașe) se strâng rândurile — mai bine
+       rânduri mai dese decât nicio poză. */
+    var H=inaltimea(rowH);
+    while(H>8000 && rowH>44){ rowH-=6; H=inaltimea(rowH); }
+    var sc=rowH/94;
+    var fNume=Math.max(20,Math.round(40*sc)), fSub=Math.max(13,Math.round(23*sc));
+    var fCel=Math.max(16,Math.round(30*sc)), fCelKg=Math.max(12,Math.round(21*sc));
+    var boxH=Math.max(38,rowH-10);
+
     var c=document.createElement("canvas"); c.width=W; c.height=H;
     var x=c.getContext("2d");
     x.fillStyle="#eef4fa"; x.fillRect(0,0,W,H);
-    var gr=x.createLinearGradient(0,0,0,260);
+    var gr=x.createLinearGradient(0,0,0,ANTET);
     gr.addColorStop(0,"#0e63b8"); gr.addColorStop(1,"#0a3c78");
-    x.fillStyle=gr; x.fillRect(0,0,W,260);
+    x.fillStyle=gr; x.fillRect(0,0,W,ANTET);
     if(logo){ try{ x.drawImage(logo,44,56,150,150); }catch(e){} }
     x.fillStyle="#ffffff"; x.textAlign="center";
     x.font="bold 62px Georgia";
-    x.fillText(state.name||"Concurs pescuit", W/2+60, 125, W-320);
-    x.font="bold 34px Arial"; x.fillStyle="rgba(255,255,255,.85)";
-    x.fillText("Clasament · "+scopeLabel(rankScope)+" · "+roDate(), W/2+60, 185, W-320);
-    var y0=320;
-    var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
-    if(withFish.length){
-      var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;});
-      x.fillStyle="#fbe9cf";
-      rr(x,60,y0-20,W-120,80,16); x.fill();
-      x.fillStyle="#8a5a12"; x.font="bold 36px Arial";
-      x.fillText("🐟 CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg", W/2, y0+32, W-160);
-      y0+=100;
+    x.fillText(plan.titlu, W/2+60, 125, W-320);
+    x.font="bold 32px Arial"; x.fillStyle="rgba(255,255,255,.85)";
+    x.fillText(plan.subtitlu, W/2+60, 185, W-320);
+
+    var celule=plan.manse ? plan.manse.length+1 : 0;
+    var latime=celule ? Math.floor((W-92-520)/celule) : 0;
+    function centrul(ci){ return 520+ci*latime+Math.floor(latime/2); }
+
+    var y=ANTET+SUS;
+    if(plan.cmmc){
+      x.fillStyle="#fbe9cf"; rr(x,60,y-20,W-120,80,16); x.fill();
+      x.fillStyle="#8a5a12"; x.font="bold 36px Arial"; x.textAlign="center";
+      x.fillText(plan.cmmc, W/2, y+32, W-160);
+      y+=100;
     }
-    var arr=sortRankS(state.participants,rankScope).slice(0,10);
-    arr.forEach(function(p,i){
-      var y=y0+i*94;
-      x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
-      rr(x,60,y,W-120,84,16); x.fill();
-      x.fillStyle="#10263c"; x.textAlign="left"; x.font="bold 40px Arial";
-      var medal = i<3 ? ["🥇","🥈","🥉"][i] : (i+1)+".";
-      x.fillText(medal, 92, y+56);
-      x.fillText(nameOf(p), 185, y+56, 560);
-      x.textAlign="right";
-      x.fillText(fmt(totalOfM(p,rankScope))+" kg", W-92, y+56);
+
+    // patru șiruri de cifre fără antet nu spun nimic celui care primește poza pe WhatsApp
+    if(plan.manse){
+      x.textAlign="center"; x.fillStyle="#5c7189"; x.font="bold 26px Arial";
+      plan.manse.forEach(function(mi,ci){ x.fillText("M"+mi, centrul(ci), y+32, latime-8); });
+      x.fillStyle="#0e63b8";
+      x.fillText("TOTAL", centrul(plan.manse.length), y+32, latime-8);
+      y+=HCOL;
+    }
+
+    plan.sectiuni.forEach(function(sec,si){
+      if(si) y+=GAP;
+      if(sec.titlu){
+        x.fillStyle="#0e63b8"; x.textAlign="left"; x.font="bold 34px Arial";
+        x.fillText(sec.titlu, 72, y+42, W-144);
+        y+=HTITLU;
+      }
+      sec.randuri.forEach(function(r,i){
+        x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
+        rr(x,60,y,W-120,boxH,16); x.fill();
+        var mij=y+Math.round(boxH*0.46), jos=y+Math.round(boxH*0.78);
+        x.fillStyle="#10263c"; x.textAlign="left"; x.font="bold "+fNume+"px Arial";
+        x.fillText(r.medal, 92, mij);
+        if(plan.manse){
+          // # · nume · câte o coloană de manșă · TOTAL — punctele mari, kilogramele mici
+          x.fillText(r.nume, 185, mij, 320);
+          x.fillStyle="#5c7189"; x.font="bold "+fSub+"px Arial";
+          x.fillText(r.sub, 185, jos, 320);
+          x.textAlign="center";
+          r.manse.concat([{pct:r.pct, kg:r.kg}]).forEach(function(cel,ci){
+            var cx=centrul(ci);
+            x.fillStyle = ci===celule-1 ? "#0e63b8" : "#10263c";
+            x.font="bold "+fCel+"px Arial";
+            x.fillText(cel.pct, cx, mij, latime-8);
+            if(cel.kg){
+              x.fillStyle="#5c7189"; x.font=fCelKg+"px Arial";
+              x.fillText(cel.kg, cx, jos, latime-8);
+            }
+          });
+        } else {
+          var latNume = plan.arataPct ? 380 : 540;
+          x.fillText(r.nume, 185, mij, latNume);
+          x.fillStyle="#5c7189"; x.font="bold "+fSub+"px Arial";
+          x.fillText(r.sub, 185, jos, latNume);
+          x.textAlign="right";
+          x.fillStyle="#10263c"; x.font="bold "+fNume+"px Arial";
+          x.fillText(r.kg+" kg", W-92, mij);
+          if(plan.arataPct){
+            x.fillStyle="#0e7c86"; x.font="bold "+Math.max(16,Math.round(30*sc))+"px Arial";
+            x.fillText(r.pct+" pct", W-330, mij);
+          }
+        }
+        y+=rowH;
+      });
     });
+
     x.textAlign="center"; x.fillStyle="#44586c"; x.font="bold 28px Arial";
     // Adresa se ia din bara de sus, nu se scrie de mână: aici era trecut fix
     // vechiul cantar-remuslake.netlify.app, deci fiecare clasament trimis pe
     // WhatsApp trimitea oamenii exact la aplicația abandonată.
-    x.fillText(adresaAfisata(), W/2, H-40);
+    x.fillText(adresaAfisata(), W/2, H-28);
     c.toBlob(function(b){
       if(!b){ toast("Nu am putut genera imaginea"); return; }
       var f=null; try{ f=new File([b],"clasament.png",{type:"image/png"}); }catch(e){}

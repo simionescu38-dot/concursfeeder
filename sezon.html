@@ -635,43 +635,64 @@
     logo.src="icon-192.png";
   }
   function drawSeasonImage(logo){
-    var W=1080, H=1440;
+    var pePuncte = sortMode!=="kg";
+    // podiumul sezonului: neclasații nu apar deloc, ca numerotarea să nu mintă (pozitiiSezon).
+    // Clasații apar însă TOȚI: tăietura la primii 10 lăsa restul sezonului pe dinafară.
+    var poz=pozitiiSezon(currentSeasonSorted()).filter(function(p){ return p.clasat; });
+    var arr=poz.map(function(p){ return p.rec; });
+    var W=1080, ANTET=260, SUS=60, SUBSOL=60;
+    var rowH=94;
+    function inaltimea(rh){ return ANTET+SUS+(season.seasonFish?100:0)+arr.length*rh+SUBSOL; }
+    /* Era tăiat la primii 10, pe o pânză fixă de 1440 — restul sezonului nu ajungea
+       niciodată în poză. Acum pânza crește după listă, iar dacă ar ieși prea mare se
+       strâng rândurile: mai bine rânduri dese decât nicio poză. */
+    var H=inaltimea(rowH);
+    while(H>8000 && rowH>44){ rowH-=6; H=inaltimea(rowH); }
+    var sc=rowH/94;
+    var fNume=Math.max(20,Math.round(38*sc)), fPct=Math.max(16,Math.round(30*sc));
+    var boxH=Math.max(38,rowH-10);
+
     var c=document.createElement("canvas"); c.width=W; c.height=H;
     var x=c.getContext("2d");
     x.fillStyle="#f2f6fb"; x.fillRect(0,0,W,H);
-    var gr=x.createLinearGradient(0,0,0,260);
+    var gr=x.createLinearGradient(0,0,0,ANTET);
     gr.addColorStop(0,"#1c6fd9"); gr.addColorStop(1,"#0f4fa8");
-    x.fillStyle=gr; x.fillRect(0,0,W,260);
+    x.fillStyle=gr; x.fillRect(0,0,W,ANTET);
     if(logo){ try{ x.drawImage(logo,44,56,150,150); }catch(e){} }
     x.fillStyle="#ffffff"; x.textAlign="center";
     x.font="bold 58px Georgia";
     x.fillText("Clasament de sezon", W/2+60, 120, W-320);
     x.font="bold 32px Arial"; x.fillStyle="rgba(255,255,255,.85)";
     x.fillText(sortLabel()+" · "+season.comps.length+" concursuri · "+roDate(), W/2+60, 180, W-320);
-    var y0=320;
+
+    var y=ANTET+SUS;
     if(season.seasonFish){
-      x.fillStyle="#fdecd2";
-      rr(x,60,y0-20,W-120,80,16); x.fill();
+      x.fillStyle="#fdecd2"; rr(x,60,y-20,W-120,80,16); x.fill();
       x.fillStyle="#8a5a12"; x.font="bold 34px Arial";
-      x.fillText("🐟 CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg", W/2, y0+32, W-160);
-      y0+=100;
+      x.fillText("🐟 CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg", W/2, y+32, W-160);
+      y+=100;
     }
-    // imaginea e podiumul sezonului: neclasații nu apar deloc, ca numerotarea să nu mintă
-    var arr=pozitiiSezon(currentSeasonSorted()).filter(function(p){ return p.clasat; })
-      .slice(0,10).map(function(p){ return p.rec; });
     arr.forEach(function(rec,i){
-      var y=y0+i*94;
       x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
-      rr(x,60,y,W-120,84,16); x.fill();
-      x.fillStyle="#0f1b2d"; x.textAlign="left"; x.font="bold 38px Arial";
-      var medal = i<3 ? ["🥇","🥈","🥉"][i] : (i+1)+".";
-      x.fillText(medal, 92, y+56);
-      x.fillText(rec.name, 185, y+56, 560);
+      rr(x,60,y,W-120,boxH,16); x.fill();
+      var mij=y+Math.round(boxH*0.62);
+      x.fillStyle="#0f1b2d"; x.textAlign="left"; x.font="bold "+fNume+"px Arial";
+      var loc=poz[i].loc;
+      var medal = loc<=3 ? ["🥇","🥈","🥉"][loc-1] : loc+".";
+      x.fillText(medal, 92, mij);
+      x.fillText(rec.name, 185, mij, pePuncte?380:540);
       x.textAlign="right";
-      x.fillText(fmt(rec.totalKg)+" kg", W-92, y+56);
+      x.fillText(fmt(rec.totalKg)+" kg", W-92, mij);
+      // antetul scria „După puncte" dar poza arăta doar kilograme: se vedea altă ordine
+      // decât cea pe care o anunța, fără nicio explicație
+      if(pePuncte){
+        x.fillStyle="#0e7c86"; x.font="bold "+fPct+"px Arial";
+        x.fillText(fmtPts(ptsAfisat(rec))+" pct", W-330, mij);
+      }
+      y+=rowH;
     });
     x.textAlign="center"; x.fillStyle="#5c7189"; x.font="bold 26px Arial";
-    x.fillText("Clasament de sezon — "+roDate(), W/2, H-40);
+    x.fillText("Clasament de sezon — "+roDate(), W/2, H-28);
     c.toBlob(function(b){
       if(!b){ toast("Nu am putut genera imaginea"); return; }
       var f=null; try{ f=new File([b],"sezon.png",{type:"image/png"}); }catch(e){}
