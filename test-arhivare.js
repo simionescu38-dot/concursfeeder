@@ -19,8 +19,22 @@ const src = citeste(path.join(RADACINA, "index.html"));
 
 /** un element de pagină de care codul se poate atinge fără să crape */
 function element() {
-  return { value: "", textContent: "", style: {}, focus() {},
-           classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } } };
+  const e = { value: "", style: {}, focus() {}, __istoric: [],
+              classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } } };
+  let txt = "";
+  // aplicația poate scrie de mai multe ori pe același rând; le ținem pe toate,
+  // altfel „gata" se pierde sub mesajul de după golire
+  Object.defineProperty(e, "textContent", {
+    get() { return txt; },
+    set(v) { txt = String(v); e.__istoric.push(txt); }
+  });
+  return e;
+}
+
+/** paginile de probă țin minte elementele, ca să se poată citi ce scrie aplicația pe ecran */
+function pagina() {
+  const el = {};
+  return { getElementById: id => (el[id] = el[id] || element()), __el: el };
 }
 
 /**
@@ -48,9 +62,8 @@ function aplicatie(opt) {
     toast() {}, nowHM: () => "12:00", guard: () => false,
     puneDeoParte() {}, save() {}, renderSectors() {}, renderList() {}, renderRank() {},
     updateUndoUI() {}, updateManseButtons() {}, improspateazaBalta() {}, ceriBalta: () => true,
-    numManse: () => 2,
     confirm: () => true,
-    document: { getElementById: () => element() },
+    document: pagina(),
     encodeURIComponent
   };
   ctx.saveArchiveId = function (id) { ctx.currentArchiveId = id || ""; };
@@ -70,12 +83,19 @@ function aplicatie(opt) {
     return new Promise(function (res, rej) {
       setTimeout(function () {
         if (metoda === "POST" && opt.postPica) return rej(new Error("rețea"));
-        res({ json: () => Promise.resolve(metoda === "POST" ? (opt.raspuns || { ok: true, id: "arhiva-noua" }) : { ok: true }) });
+        const raspuns =
+          metoda === "POST" ? (opt.raspuns || { ok: true, id: "arhiva-noua" })
+          : metoda === "GET" && /\/api\/archive/.test(url)
+            ? { ok: true, archives: (opt.listaServer ? opt.listaServer() : [{ id: "arhiva-noua", data: { participants: [{}, {}, {}] } }]) }
+          : { ok: true };
+        res({ json: () => Promise.resolve(raspuns) });
       }, 0);
     });
   };
   vm.createContext(ctx);
-  vm.runInContext(["archiveToSeason", "wipe"].map(n => grabFunction(src, n)).join("\n"), ctx);
+  vm.runInContext(["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "cantOfM", "extraOfM",
+    "cmmcOfM", "totalOfM", "fmt", "archiveToSeason", "wipe", "goleste", "amTerminatConcursul"]
+    .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
 
@@ -186,8 +206,97 @@ const linistit = () => new Promise(r => setTimeout(r, 30));
 
     const w = grabFunction(src, "wipe");
     t("Reset arhivează tăcut, ca să nu întrebe de două ori", /archiveToSeason\(function\(\)\{ saveArchiveId\(""\); \}, true\)/.test(w), true);
-    t("Reset pune deoparte o copie înainte să șteargă", w.indexOf("puneDeoParte") < w.indexOf("state={ name:\"\""), true);
+    t("Reset golește prin goleste(), nu de mână", /goleste\(/.test(w), true);
+    const g = grabFunction(src, "goleste");
+    t("golirea pune deoparte o copie înainte să șteargă",
+      g.indexOf("puneDeoParte") < g.indexOf("state={ name:\"\""), true);
+    t("…și uită arhiva de dinainte, ca următorul concurs să n-o suprascrie",
+      /saveArchiveId\(""\)/.test(g), true);
   }
+
+  /* ================================================================
+     7. „Am terminat concursul" — un buton pentru tot
+     ================================================================
+     Pe 22 august organizatorul a apăsat „Arhivează", pe server n-a ajuns nimic,
+     iar singurul semn a fost un toast trecut în două secunde: a aflat abia peste
+     o oră. Butonul ăsta citește înapoi de pe server și numără pescarii înainte
+     să spună „gata", iar lista se golește DOAR după ce concursul chiar e acolo. */
+  console.log("\n=== 7. Butonul de sfârșit de concurs ===");
+  const ecran = ctx => ctx.document.__el["archive-status"].textContent;
+  /** tot ce a scris aplicația pe rândul de sub buton, în ordine */
+  const ecrane = ctx => ctx.document.__el["archive-status"].__istoric.join("  |  ");
+
+  {
+    const ctx = aplicatie({ arhivaVeche: "" });
+    vm.runInContext("amTerminatConcursul()", ctx);
+    await linistit();
+    t("concursul pleacă întreg", (ctx.cereri.find(c => c.metoda === "POST") || {}).pescari, 3);
+    t("se citește înapoi de pe server", ctx.cereri.some(c => c.metoda === "GET" && /api\/archive/.test(c.url)), true);
+    console.log("     pe ecran: " + JSON.stringify(ecrane(ctx)));
+    t("scrie limpede că e gata", /✅ Gata\./.test(ecrane(ctx)), true);
+    t("…și câți pescari au intrat", /3 pescari/.test(ecrane(ctx)), true);
+    t("…și câte kilograme", /61,100 kg/.test(ecrane(ctx)), true);
+    t("…iar la final spune și că lista e goală", /lista golită/.test(ecran(ctx)), true);
+    // rândul de stare e al butonului: arhivarea chemată tăcut nu mai scrie „Arhivat"
+    // înainte ca verificarea pe server să confirme
+    t("nu se laudă cu Arhivat înainte de verificare", /Arhivat •/.test(ecrane(ctx)), false);
+    t("lista se golește, fiindcă organizatorul a spus da", ctx.state.participants.length, 0);
+    t("…și arhiva de dinainte se uită", ctx.currentArchiveId, "");
+  }
+
+  {
+    const ctx = aplicatie({ arhivaVeche: "" });
+    ctx.confirm = () => false;
+    vm.runInContext("amTerminatConcursul()", ctx);
+    await linistit();
+    t("dacă spune nu, lista rămâne pe telefon", ctx.state.participants.length, 3);
+    t("…dar concursul tot e salvat", /✅ Gata\./.test(ecran(ctx)), true);
+  }
+
+  {
+    // exact ce s-a întâmplat pe 22 august: „am arhivat", dar pe server nu era nimic
+    const ctx = aplicatie({ arhivaVeche: "", listaServer: () => [] });
+    vm.runInContext("amTerminatConcursul()", ctx);
+    await linistit();
+    console.log("     pe ecran: " + JSON.stringify(ecran(ctx)));
+    t("dacă nu se găsește pe server, NU spune că e gata", /Gata/.test(ecrane(ctx)), false);
+    t("…spune că n-o găsește", /n-o găsesc pe server/.test(ecran(ctx)), true);
+    t("…și lista NU se golește", ctx.state.participants.length, 3);
+  }
+
+  {
+    // ajunge pe server, dar ciuntit — tot nu e „gata"
+    const ctx = aplicatie({ arhivaVeche: "", listaServer: () => [{ id: "arhiva-noua", data: { participants: [{}] } }] });
+    vm.runInContext("amTerminatConcursul()", ctx);
+    await linistit();
+    t("dacă ajung mai puțini pescari, nu spune că e gata", /Gata/.test(ecrane(ctx)), false);
+    t("…și lista NU se golește", ctx.state.participants.length, 3);
+  }
+
+  {
+    const ctx = aplicatie({ arhivaVeche: "", raspuns: { ok: false, error: "forbidden" } });
+    vm.runInContext("amTerminatConcursul()", ctx);
+    await linistit();
+    t("serverul refuză → nu spune că e gata", /Gata/.test(ecrane(ctx)), false);
+    t("…și lista rămâne", ctx.state.participants.length, 3);
+  }
+
+  {
+    const ctx = aplicatie({ arhivaVeche: "" });
+    ctx.state.participants = [];
+    vm.runInContext("amTerminatConcursul()", ctx);
+    await linistit();
+    t("fără participanți nu pleacă nicio cerere", ctx.cereri.length, 0);
+    t("…și scrie unde să se uite", /Cântar/.test(ecran(ctx)), true);
+
+    const faraCheie = aplicatie({ arhivaVeche: "" });
+    faraCheie.syncKey = "";
+    vm.runInContext("amTerminatConcursul()", faraCheie);
+    await linistit();
+    t("fără cheie nu pleacă nicio cerere", faraCheie.cereri.length, 0);
+    t("…și scrie de ce", /cheia de scriere/.test(ecran(faraCheie)), true);
+  }
+
 
   t.raport();
 })();

@@ -547,8 +547,8 @@
       <div class="sec-title">Sezon</div>
       <a class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;" href="sezon.html">🏆 Clasament de sezon (toate concursurile)</a>
       <p class="hint">Combină automat rezultatele din toate concursurile sincronizate și arată clasamentul pe tot sezonul.</p>
-      <button class="btn btn-ghost mt lockhide" onclick="archiveToSeason()">📦 Arhivează concursul curent în sezon</button>
-      <p class="hint" id="archive-status">La final de concurs, apasă aici o singură dată — rămâne permanent în clasamentul de sezon, chiar dacă refolosești camera live pentru concursul următor.</p>
+      <button class="btn btn-primary mt lockhide" onclick="amTerminatConcursul()">🏁 Am terminat concursul</button>
+      <p class="hint" id="archive-status">Apasă o singură dată, la sfârșit. Salvează concursul în clasamentul de sezon, se uită pe server că a ajuns cu adevărat, și abia apoi te întreabă dacă golește lista pentru data viitoare.</p>
     </div>
   </section>
 
@@ -2450,7 +2450,10 @@
        august, arhiva bună a fost ștearsă și în locul ei a urcat un concurs cu 0 pescari. */
     var deTrimis = JSON.parse(JSON.stringify(state));
     var vechiul = currentArchiveId;
-    var st=document.getElementById("archive-status");
+    // Chemată tăcut (din Reset sau din butonul de sfârșit de concurs), nu scrie pe rândul
+    // de stare: acela e al celui care a chemat-o. Altfel apărea Arhivat înainte ca
+    // verificarea pe server să confirme — fix genul de mesaj prematur care a încurcat.
+    var st = tacut ? null : document.getElementById("archive-status");
     if(st) st.textContent="Se arhivează…";
     /* Copia nouă pleacă ÎNAINTE de ștergerea celei vechi. Invers, o pică de rețea la
        mijloc lăsa concursul fără nicio arhivă; așa, lasă cel mult o dublură — pe care o
@@ -2473,9 +2476,9 @@
       // (replace=1: șterge și copia din git a arhivei vechi, ca să nu rămână un fișier orfan)
       if(vechiul && vechiul!==j.id){
         return fetch(API_BASE+"/api/archive?id="+encodeURIComponent(vechiul)+"&replace=1", { method:"DELETE", headers:{"x-write-key":syncKey} })
-          .catch(function(){}).then(function(){ if(cb) cb(true); });
+          .catch(function(){}).then(function(){ if(cb) cb(true, j.id); });
       }
-      if(cb) cb(true);
+      if(cb) cb(true, j.id);
     }).catch(function(){ toast("Eroare de rețea la arhivare"); if(st) st.textContent="Eroare de rețea — încearcă din nou."; if(cb) cb(false); });
   }
   function startViewerMode(room){
@@ -4106,19 +4109,73 @@
       ? "Ștergi toți participanții și datele? Concursul curent se arhivează automat în sezon înainte, deci rezultatele rămân. Nu se poate reveni."
       : "Ștergi toți participanții și datele? Nu se poate reveni.";
     if(!confirm(msg)) return;
-    puneDeoParte("înainte de ștergere");
     if(willArchive) archiveToSeason(function(){ saveArchiveId(""); }, true);
+    goleste("înainte de ștergere");
+  }
+
+  /* Golirea propriu-zisă, fără arhivare. O folosesc și Reset-ul, și butonul de sfârșit
+     de concurs — dar acela golește DOAR după ce a văzut concursul ajuns pe server. */
+  function goleste(motiv){
+    puneDeoParte(motiv||"înainte de ștergere");
     // sponsorii sunt o listă de parteneri, nu rezultate: supraviețuiesc ștergerii,
     // altfel ar trebui retastați la fiecare concurs. Regulamentul, fiind al
     // concursului, se șterge odată cu el. Balta la fel: e a locului, iar etapa
     // următoare e de obicei tot acolo — rămâne scrisă în câmp, deci se vede și se
     // schimbă dintr-o atingere când chiar se mută concursul.
     state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice(), numManse:state.numManse, balta:state.balta||"" };
-    save(); document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
+    save(); saveArchiveId("");
+    document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
     document.getElementById("nm-3").classList.toggle("on", numManse()===3);
     updateManseButtons();
     renderSectors(); renderList(); renderRank(); updateUndoUI();
+  }
+
+  /* Un singur buton pentru sfârșitul de concurs. Organizatorul nu trebuie să știe ce e o
+     arhivă, o cameră live sau o cheie de scriere — și, mai ales, trebuie să afle dacă a
+     reușit. Pe 22 august a apăsat „Arhivează", pe server n-a ajuns nimic, iar singurul
+     semn a fost un toast trecut în două secunde; a aflat abia peste o oră. Aici se
+     citește înapoi de pe server și se numără pescarii, iar lista se golește doar după
+     ce concursul chiar e acolo. */
+  function amTerminatConcursul(){
+    if(guard()) return;
+    var st=document.getElementById("archive-status");
+    var spune=function(txt, rau){
+      if(!st) return;
+      st.textContent=txt;
+      st.style.color = rau ? "#a12727" : "#0f6b2f";
+      st.style.fontWeight="700";
+    };
+    if(!state.participants.length){ spune("⚠ Nu e niciun participant pe telefon. Deschide Cântar și verifică lista întâi.", true); return; }
+    if(!syncKey){ spune("⚠ Îți trebuie cheia de scriere — Contul meu, la Clasament live pe alte telefoane.", true); return; }
+    if(!ceriBalta()) return;
+    improspateazaBalta();
+
+    var cati=state.participants.length;
+    var kg=state.participants.reduce(function(a,p){ return a+totalOfM(p,"total"); },0);
+    var nume=state.name||"Concursul";
+    spune("Se salvează concursul…");
+
+    archiveToSeason(function(ok, id){
+      if(!ok){ spune("⚠ Nu s-a salvat. Verifică semnalul și apasă din nou — pe telefon nu s-a pierdut nimic.", true); return; }
+      // „am arhivat" nu înseamnă „e pe server": se citește înapoi și se numără
+      fetch(API_BASE+"/api/archive").then(function(r){ return r.json(); }).then(function(j){
+        var list=(j&&j.ok&&j.archives)?j.archives:[];
+        var a=null; list.forEach(function(x){ if(x.id===id) a=x; });
+        var n=a ? ((a.data&&a.data.participants)||[]).length : 0;
+        if(!a || n!==cati){
+          spune("⚠ Salvarea a plecat, dar n-o găsesc pe server. NU goli lista — mai apasă o dată peste un minut.", true);
+          return;
+        }
+        spune("✅ Gata. "+nume+" e în Clasamentul de sezon: "+cati+" pescari, "+fmt(kg)+" kg.");
+        if(confirm("Gata — concursul e salvat în Clasamentul de sezon.\n\nGolesc lista de pe telefon, pentru concursul următor?\n\nRezultatele rămân în sezon, iar pe telefon rămâne o copie dacă te răzgândești.")){
+          goleste("după ce concursul a intrat în sezon");
+          spune("✅ Salvat în sezon, lista golită. Poți începe concursul următor.");
+        }
+      }).catch(function(){
+        spune("⚠ S-a salvat, dar n-am putut verifica (fără net?). Nu goli lista până nu-l vezi în Clasamentul de sezon.", true);
+      });
+    }, true);
   }
 
   // ---------- init ----------
