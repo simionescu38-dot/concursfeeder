@@ -229,7 +229,9 @@ console.log("\n=== 7. Tăietura la primii 10 a dispărut ===");
   const pozaSezon = grabFunction(sezon, "drawSeasonImage");
   t("nici poza de sezon nu taie", /slice\(0\s*,\s*10\)/.test(pozaSezon), false);
   t("…și crește și ea după listă", /inaltimea\(/.test(pozaSezon), true);
-  t("…și arată punctele când e sortată pe puncte", /fmtPts\(rec\.totalPoints\)/.test(pozaSezon), true);
+  // punctele de sezon au devenit media pe etapă (ptsAfisat), nu suma
+  t("…și arată punctele când e sortată pe puncte", /fmtPts\(ptsAfisat\(rec\)\)/.test(pozaSezon), true);
+  t("…iar neclasații rămân în afara podiumului", /filter\(function\(p\)\{ return p\.clasat; \}\)/.test(pozaSezon), true);
 }
 
 t.raport();
