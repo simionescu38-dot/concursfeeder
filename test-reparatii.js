@@ -283,16 +283,32 @@ console.log("\n=== 7. Importul nu atinge manșele încheiate ===");
       originalul. Ordinea contează: ștergere-întâi înseamnă că o pică de
       rețea la mijloc pierde singurul exemplar al concursului.
    ================================================================ */
-console.log("\n=== 8. Balta pe o arhivă veche ===");
+console.log("\n=== 8. Numele și balta pe o arhivă veche ===");
 {
-  const fn = grabFunction(src, "setArhivaBalta");
+  const fn = grabFunction(src, "setArhivaCampuri");
   const iPost = fn.indexOf('method:"POST"');
   const iDel = fn.indexOf("delArhiva(");
   t("salvarea copiei există", iPost > -1, true);
   t("ștergerea originalului există", iDel > -1, true);
   t("copia se salvează ÎNAINTE de ștergere", iPost < iDel, true);
   t("ștergerea e tăcută, ca să nu ceară a doua confirmare", /delArhiva\(id, true\)/.test(fn), true);
-  t("balta se curăță de spații", /\.trim\(\)/.test(fn), true);
+  t("câmpurile se curăță de spații", (fn.match(/\.trim\(\)/g) || []).length >= 2, true);
+
+  /* Numele arhivat ajunge în clasamentul de sezon și pe pozele trimise pe WhatsApp,
+     deci o greșeală de tastare („22.08.2926") se plimbă mai departe. Editorul avea
+     doar câmp de baltă: numele se putea îndrepta numai rearhivând de pe telefon,
+     și numai dacă mai aveai concursul acolo. */
+  t("numele se scrie în arhivă", /d\.name=nume/.test(fn), true);
+  t("…citit din câmpul lui", /arh-nume-/.test(fn), true);
+  t("balta rămâne și ea salvată în aceeași apăsare", /d\.balta=balta/.test(fn), true);
+  t("un nume gol e refuzat, nu salvat",
+    fn.indexOf("if(!nume)") > -1 && fn.indexOf("if(!nume)") < fn.indexOf('spune("Se salvează'), true);
+  t("…iar balta goală rămâne îngăduită (se poate șterge cu bună știință)",
+    /if\(!balta\)/.test(fn), false);
+  t("rândul are câmp de nume, cu numele de acum în el",
+    /id="arh-nume-'\+esc\(a\.id\)\+'" placeholder="Numele concursului" value="'\+esc\(nume\)/.test(grabFunction(src, "loadArhive")), true);
+  t("un singur buton salvează amândouă câmpurile",
+    (grabFunction(src, "loadArhive").match(/setArhivaCampuri/g) || []).length, 1);
   t("data concursului se păstrează, ca să nu pară de azi",
     /if\(!d\.startAt && a\.archived_at\) d\.startAt=/.test(fn), true);
   t("camera concursului se păstrează", /a\.room\?\("\?room="/.test(fn), true);

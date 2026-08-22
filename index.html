@@ -662,7 +662,7 @@
     <div class="card lockhide" id="card-arhive">
       <div class="sec-title">Curăță arhiva de sezon</div>
       <p class="hint" style="margin:0 0 10px;">Concursurile arhivate online intră în <b>Clasamentul de sezon</b>. Dacă ai făcut simulări sau ai arhivat de două ori același concurs, șterge-le de aici. Coloana de kilograme te ajută să le deosebești: o simulare are de obicei <b>0 kg</b>.</p>
-      <p class="hint" style="margin:0 0 10px;">Tot de aici scrii <b>balta</b> pentru concursurile arhivate înainte să existe câmpul. Fără ea, același lac poate ieși în două clasamente de standuri, sub două nume de concurs. Scrie-o la fel peste tot și se unesc.</p>
+      <p class="hint" style="margin:0 0 10px;">Tot de aici îndrepți <b>numele</b> și <b>balta</b> unui concurs deja arhivat — o greșeală de tastare în nume ajunge altfel în clasamentul de sezon și pe pozele trimise pe WhatsApp. Fără baltă, același lac poate ieși în două clasamente de standuri, sub două nume de concurs; scrie-o la fel peste tot și se unesc.</p>
       <button class="btn btn-ghost" onclick="loadArhive()">🗂️ Încarcă arhivele salvate online</button>
       <div id="arhive-list" style="margin-top:12px;"></div>
     </div>
@@ -2275,19 +2275,23 @@
              ' · '+parts.length+' particip. · <b>'+fmt(kg)+' kg</b>'+(kg===0?' — pare simulare':'')+'</div></div>'+
              '<button class="btn btn-danger" style="width:auto; margin:0; padding:8px 12px;" onclick="delArhiva(\''+esc(a.id)+'\')">Șterge</button>'+
              '<div class="row" style="width:100%; margin-top:8px;">'+
+               '<input id="arh-nume-'+esc(a.id)+'" placeholder="Numele concursului" value="'+esc(nume)+'">'+
+             '</div>'+
+             '<div class="row" style="width:100%; margin-top:6px;">'+
                '<input id="arh-balta-'+esc(a.id)+'" placeholder="Balta (ex: Remus Lake)" value="'+esc(d.balta||"")+'">'+
-               '<button class="btn btn-ghost" style="flex:0 0 104px; margin:0;" onclick="setArhivaBalta(\''+esc(a.id)+'\')">Salvează</button>'+
+               '<button class="btn btn-ghost" style="flex:0 0 104px; margin:0;" onclick="setArhivaCampuri(\''+esc(a.id)+'\')">Salvează</button>'+
              '</div><div class="hint" id="arh-stare-'+esc(a.id)+'" style="width:100%; margin:4px 0 0;"></div></div>';
       });
       h+='<button class="btn btn-danger mt" onclick="delArhiveToate()">Șterge TOATE arhivele online ('+list.length+')</button>';
       el.innerHTML=h;
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca lista (fără net?).</p>'; });
   }
-  // Arhivele nu se pot modifica pe server: se scriu o dată și se șterg. Ca să pun balta
-  // pe un concurs vechi, salvez o copie cu ea și abia apoi șterg originalul — în ordinea
-  // asta, o pică de rețea la mijloc lasă o dublură, nu un concurs pierdut. Iar dublura o
-  // contopește filtrul din sezon, fiindcă are aceiași pescari și aceeași oră de start.
-  function setArhivaBalta(id){
+  // Arhivele nu se pot modifica pe server: se scriu o dată și se șterg. Ca să îndrept
+  // numele sau balta unui concurs vechi, salvez o copie cu ele și abia apoi șterg
+  // originalul — în ordinea asta, o pică de rețea la mijloc lasă o dublură, nu un concurs
+  // pierdut. Iar dublura o contopește filtrul din sezon, fiindcă are aceiași pescari și
+  // aceeași oră de start.
+  function setArhivaCampuri(id){
     // Răspunsul stă lângă rând, nu într-un toast: toastul trece în două secunde, iar omul
     // se uită la câmp, nu la mijlocul ecranului. Cine rata mesajul credea că a salvat,
     // vedea câmpul gol la reîncărcare și n-avea de unde ști de ce.
@@ -2299,14 +2303,21 @@
       stare.style.fontWeight = rau ? "700" : "";
     };
     if(!syncKey){ spune("⚠ Nu s-a salvat: completează întâi cheia de scriere, la Clasament live pe alte telefoane.", true); toast("Îți trebuie cheia de scriere"); return; }
-    var camp=document.getElementById("arh-balta-"+id); if(!camp) return;
-    var balta=(camp.value||"").trim();
+    var campNume=document.getElementById("arh-nume-"+id);
+    var campBalta=document.getElementById("arh-balta-"+id);
+    if(!campNume || !campBalta) return;
+    var nume=(campNume.value||"").trim();
+    var balta=(campBalta.value||"").trim();
+    // balta poate fi ștearsă cu bună știință; numele nu — fără el, rândul devine
+    // „(fără nume)" și nu-l mai recunoști în listă ca să-l pui la loc
+    if(!nume){ spune("⚠ Numele nu poate rămâne gol.", true); campNume.focus(); return; }
     spune("Se salvează…");
     fetch(API_BASE+"/api/archive").then(function(r){ return r.json(); }).then(function(j){
       var list=(j&&j.ok&&j.archives)?j.archives:[];
       var a=null; list.forEach(function(x){ if(x.id===id) a=x; });
       if(!a){ spune("⚠ Nu mai găsesc arhiva — încarcă lista din nou.", true); return; }
       var d=a.data||{};
+      d.name=nume;
       d.balta=balta;
       // data concursului se citește din startAt; fără el, copia ar părea de azi
       if(!d.startAt && a.archived_at) d.startAt=Date.parse(a.archived_at)||null;
@@ -2316,7 +2327,7 @@
         body: JSON.stringify({data: d})
       }).then(function(r){ return r.json(); }).then(function(res){
         if(!(res&&res.ok)){ spune("⚠ Serverul a refuzat salvarea — cheia de scriere e greșită?", true); return; }
-        return delArhiva(id, true).then(function(){ spune(balta?("✅ Balta pusă: "+balta):"✅ Balta ștearsă"); setTimeout(loadArhive, 1500); });
+        return delArhiva(id, true).then(function(){ spune("✅ Salvat: "+nume+(balta?(" · "+balta):" · fără baltă")); setTimeout(loadArhive, 1500); });
       });
     }).catch(function(){ spune("⚠ Eroare de rețea — încearcă din nou.", true); });
   }
