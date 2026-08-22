@@ -216,6 +216,18 @@
   .sector-h .tag{background:var(--teal); color:#fff; padding:2px 10px; border-radius:8px; font-size:13px;}
   .sector-h .cnt{font-size:12px; color:var(--muted); font-weight:700;}
 
+  /* un card strâns: rândul se vede, cuprinsul se deschide la atingere */
+  .pliant{margin:0 0 14px;}
+  .pliant-cap{width:100%; text-align:left; cursor:pointer; padding:14px 16px; border-radius:14px;
+    border:1px solid var(--line); background:var(--card); box-shadow:var(--shadow-sm);
+    font-weight:800; font-size:15px; color:var(--muted); font-family:inherit;
+    display:flex; align-items:center; gap:8px;}
+  .pliant-cap::after{content:"▾"; margin-left:auto; transition:transform .15s;}
+  .pliant.deschis .pliant-cap::after{transform:rotate(180deg);}
+  .pliant.deschis .pliant-cap{margin-bottom:10px;}
+  .pliant-cap .rar{font-size:11px; font-weight:700; letter-spacing:.04em;
+    text-transform:uppercase; opacity:.7;}
+  .pliant-in[hidden]{display:none;}
   .sectors-list{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
   .sec-chip{display:flex; align-items:center; gap:6px; background:#e4eef9; border:1px solid var(--line); border-radius:999px; padding:5px 6px 5px 12px; font-weight:800;}
   .sec-chip button{border:0; background:#c9d9ea; width:22px; height:22px; border-radius:50%; font-weight:800; cursor:pointer; color:var(--teal-d);}
@@ -659,6 +671,12 @@
       </div>
     </div>
 
+    <!-- Trei carduri de mecanică a serverului, care nu se ating la un concurs obișnuit.
+         Stăteau deschise între lucrurile de zi cu zi și îngroșau meniul fără folos.
+         Pliat cu o comutare a atributului hidden, nu cu <details>: așa se poate proba. -->
+    <div class="pliant lockhide" id="pliant-server">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-server')">🛠 Reparat pe server <span class="rar">rar</span></button>
+      <div class="pliant-in" hidden>
     <div class="card lockhide" id="card-arhive">
       <div class="sec-title">Curăță arhiva de sezon</div>
       <p class="hint" style="margin:0 0 10px;">Concursurile arhivate online intră în <b>Clasamentul de sezon</b>. Dacă ai făcut simulări sau ai arhivat de două ori același concurs, șterge-le de aici. Coloana de kilograme te ajută să le deosebești: o simulare are de obicei <b>0 kg</b>.</p>
@@ -679,6 +697,8 @@
       <p class="hint" style="margin:0 0 10px;">Ultimele versiuni salvate automat ale camerei live (la fiecare suprascriere) — dacă s-a suprascris ceva din greșeală, poți reveni la o versiune anterioară.</p>
       <button class="btn btn-ghost" onclick="loadRoomHistory()">🕘 Vezi istoricul camerei</button>
       <div id="room-history-list" style="margin-top:12px;"></div>
+    </div>
+      </div>
     </div>
 
     <div class="card">
@@ -725,7 +745,7 @@
 
     <div class="card lockhide">
       <div class="sec-title">Reset</div>
-      <p class="hint" style="margin:0 0 10px;">Dacă ai cheia de scriere setată (Clasament live), concursul curent se arhivează automat în sezon chiar înainte de ștergere — nu mai trebuie să apeși separat „Arhivează".</p>
+      <p class="hint" style="margin:0 0 10px;">De obicei nu-ți trebuie: la sfârșit de concurs apeși <b>🏁 Am terminat concursul</b>, în Clasamente, care salvează și apoi te întreabă dacă golește lista. Butonul de aici șterge tot dintr-o dată (arhivează întâi, dacă ai cheia de scriere).</p>
       <button class="btn btn-danger" onclick="wipe()">Șterge toate datele</button>
     </div>
   </section>
@@ -2635,6 +2655,17 @@
   // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
   // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
   var TAB_PARINTE={strat:"part", reg:"part", spons:"part"};
+  /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
+     în browserul de probă, iar ce nu se poate proba nu se livrează. */
+  function plianteaza(id){
+    var el=document.getElementById(id); if(!el) return;
+    var cap=el.querySelector(".pliant-cap"), cuprins=el.querySelector(".pliant-in");
+    if(!cap || !cuprins) return;
+    var seDeschide = cuprins.hidden;
+    cuprins.hidden = !seDeschide;
+    cap.setAttribute("aria-expanded", seDeschide ? "true" : "false");
+    el.classList.toggle("deschis", seDeschide);
+  }
   function showView(v){
     var el=document.getElementById("view-"+v);
     if(!el) return;
