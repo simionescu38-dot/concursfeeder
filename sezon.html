@@ -122,8 +122,12 @@
 <script>
   var API_BASE = "https://concurs-api.simionescu38.workers.dev";
   // concursuri ținute în afara sincronizării live (ex: exportate manual dintr-o alta instalare a aplicației)
+  /* Rezerva: de obicei folderul arhiva/ se citește prin API-ul GitHub (listareArhivaGit).
+     Când acela nu răspunde — limită de cereri — se cade pe lista asta, deci fiecare fișier
+     nou trebuie trecut și aici, altfel concursul dispare din sezon exact când API-ul tace. */
   var ARCHIVE_FILES = [
-    "arhiva/2026-07-29-braila-de-miercuri.json"
+    "arhiva/2026-07-29-braila-de-miercuri.json",
+    "arhiva/2026-08-22-braila-remus-lake.json"
   ];
   var sortMode = "kg"; // "kg" | "pts"
   var season = null; // computed data, filled after load
