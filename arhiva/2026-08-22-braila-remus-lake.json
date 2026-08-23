@@ -1,0 +1,506 @@
+{
+ "app": "concurs-pescuit",
+ "ver": 1,
+ "exportedAt": "2026-08-22T14:56:08.000Z",
+ "data": {
+  "name": "Brăila Remus Lake 22.08.2026",
+  "sectors": [
+   "D",
+   "E",
+   "F"
+  ],
+  "participants": [
+   {
+    "id": "mt3valxng4u5",
+    "stand": "33",
+    "prenume": "Remus",
+    "nume": "Catalin",
+    "sector": "D",
+    "m": {
+     "1": {
+      "catches": [
+       15.09
+      ],
+      "catchTimes": [
+       1787410019384
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "33",
+      "sector": "D"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnqgbd",
+    "stand": "55",
+    "prenume": "Cristi",
+    "nume": "Enache",
+    "sector": "F",
+    "m": {
+     "1": {
+      "catches": [
+       14.12
+      ],
+      "catchTimes": [
+       1787410088365
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "55",
+      "sector": "F"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxn8v77",
+    "stand": "37",
+    "prenume": "Mihai",
+    "nume": "Moraru",
+    "sector": "D",
+    "m": {
+     "1": {
+      "catches": [
+       14.25
+      ],
+      "catchTimes": [
+       1787410124620
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "37",
+      "sector": "D"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnbr2y",
+    "stand": "35",
+    "prenume": "Hritcu",
+    "nume": "Bogdan",
+    "sector": "D",
+    "m": {
+     "1": {
+      "catches": [
+       16.38
+      ],
+      "catchTimes": [
+       1787410055650
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "35",
+      "sector": "D"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxndftc",
+    "stand": "47",
+    "prenume": "Vasile",
+    "nume": "Strut",
+    "sector": "E",
+    "m": {
+     "1": {
+      "catches": [
+       12.04
+      ],
+      "catchTimes": [
+       1787410188359
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "47",
+      "sector": "E"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnd451",
+    "stand": "49",
+    "prenume": "Titiana",
+    "nume": "Costel",
+    "sector": "E",
+    "m": {
+     "1": {
+      "catches": [
+       9.85
+      ],
+      "catchTimes": [
+       1787410241440
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "49",
+      "sector": "E"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnl8bo",
+    "stand": "53",
+    "prenume": "Paul",
+    "nume": "Selig",
+    "sector": "F",
+    "m": {
+     "1": {
+      "catches": [
+       8.44
+      ],
+      "catchTimes": [
+       1787410278005
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "53",
+      "sector": "F"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxn4mo3",
+    "stand": "51",
+    "prenume": "Cristi",
+    "nume": "Radovici",
+    "sector": "F",
+    "m": {
+     "1": {
+      "catches": [
+       7.72
+      ],
+      "catchTimes": [
+       1787410325052
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "51",
+      "sector": "F"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnukik",
+    "stand": "59",
+    "prenume": "Mimi",
+    "nume": "Fedor",
+    "sector": "F",
+    "m": {
+     "1": {
+      "catches": [
+       25.08
+      ],
+      "catchTimes": [
+       1787410351729
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "59",
+      "sector": "F"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnxsuf",
+    "stand": "41",
+    "prenume": "TOX",
+    "nume": "",
+    "sector": "E",
+    "m": {
+     "1": {
+      "catches": [
+       13.12
+      ],
+      "catchTimes": [
+       1787410376012
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "41",
+      "sector": "E"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnwshn",
+    "stand": "43",
+    "prenume": "Canuta",
+    "nume": "Catalin",
+    "sector": "E",
+    "m": {
+     "1": {
+      "catches": [
+       9.38
+      ],
+      "catchTimes": [
+       1787410391793
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "43",
+      "sector": "E"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnexur",
+    "stand": "39",
+    "prenume": "Stefanut",
+    "nume": "",
+    "sector": "D",
+    "m": {
+     "1": {
+      "catches": [
+       13.39
+      ],
+      "catchTimes": [
+       1787410413442
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "39",
+      "sector": "D"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxn4vv4",
+    "stand": "31",
+    "prenume": "Seby",
+    "nume": "",
+    "sector": "D",
+    "m": {
+     "1": {
+      "catches": [
+       8.32
+      ],
+      "catchTimes": [
+       1787410434446
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "31",
+      "sector": "D"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnxu8i",
+    "stand": "45",
+    "prenume": "Patrascu",
+    "nume": "Catalin",
+    "sector": "E",
+    "m": {
+     "1": {
+      "catches": [
+       11.57
+      ],
+      "catchTimes": [
+       1787410466462
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "45",
+      "sector": "E"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   },
+   {
+    "id": "mt3valxnly9j",
+    "stand": "57",
+    "prenume": "Iosif",
+    "nume": "Andrei",
+    "sector": "F",
+    "m": {
+     "1": {
+      "catches": [
+       20.93
+      ],
+      "catchTimes": [
+       1787410493657
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "stand": "57",
+      "sector": "F"
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1
+   }
+  ],
+  "manche": 1,
+  "numManse": 2,
+  "rules": "",
+  "sponsors": [],
+  "balta": "Remus Lake",
+  "scalaSectoare": false,
+  "nadireMin": 10,
+  "numStanduri": "15",
+  "startAt": 1787378400000,
+  "endAt": 1787403600000,
+  "pushOn": true
+ }
+}
