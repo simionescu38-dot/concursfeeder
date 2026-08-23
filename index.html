@@ -4219,6 +4219,11 @@
       st.style.fontWeight="700";
     };
     if(!state.participants.length){ spune("⚠ Nu e niciun participant pe telefon. Deschide Cântar și verifică lista întâi.", true); return; }
+    // Un concurs în care n-a cântărit NIMENI înseamnă, aproape întotdeauna, că
+    // greutățile n-au fost trecute — nu că n-a prins nimeni nimic. Dus așa în sezon,
+    // acoperă rezultatele adevărate, cum s-a și întâmplat pe 23 august.
+    var cuCantar=state.participants.filter(function(p){ return totalOfM(p,"total")>0; }).length;
+    if(!cuCantar && !confirm("Niciun pescar n-are cântar trecut — concursul ar intra în Clasamentul de sezon cu 0 kg.\n\nDe obicei asta înseamnă că greutățile n-au fost trecute încă: deschide Cântar și verifică.\n\nChiar îl salvezi gol?")) return;
     if(!syncKey){ spune("⚠ Îți trebuie cheia de scriere — Contul meu, la Clasament live pe alte telefoane.", true); return; }
     if(!ceriBalta()) return;
     improspateazaBalta();
