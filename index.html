@@ -2947,6 +2947,11 @@
         return;
       }
     }
+    // Foaia arbitrului e scrisă pe standuri, iar la manșa 2 și 3 standurile se schimbă
+    // după tragerea la sorți: cardul arăta standul manșei, dar lista stătea în ordinea în
+    // care au fost adăugați, așa că cifrele de pe ecran săreau față de cele de pe hârtie.
+    // .slice() fiindcă „visible" poate fi chiar state.participants — ordinea salvată nu se atinge.
+    visible = visible.slice().sort(byStandM(state.manche||1));
     var html="";
     var L=isLocked();
     if(L) editingId=null;
@@ -3455,6 +3460,9 @@
   // sortare numerică după stand (stand 10 vine după stand 2); cei fără cifre în stand merg la coadă
   function standKey(p){ var m=(""+(p.stand||"")).match(/\d+/); return m?parseInt(m[0],10):Number.POSITIVE_INFINITY; }
   function byStand(a,b){ var d=standKey(a)-standKey(b); if(d) return d; return nameKey(a).localeCompare(nameKey(b),"ro"); }
+  // aceeași sortare, dar pe standul unei anume manșe — la Cântar, cea la care lucrezi
+  function standKeyM(p,mi){ var m=(""+(standOfM(p,mi)||"")).match(/\d+/); return m?parseInt(m[0],10):Number.POSITIVE_INFINITY; }
+  function byStandM(mi){ return function(a,b){ var d=standKeyM(a,mi)-standKeyM(b,mi); if(d) return d; return nameKey(a).localeCompare(nameKey(b),"ro"); }; }
   function copyText(txt){ try{ navigator.clipboard.writeText(txt).then(function(){toast("Copiat");},function(){fallbackCopy(txt);}); }catch(e){ fallbackCopy(txt); } }
 
   // ---------- ora capturii / lider / statistici ----------
