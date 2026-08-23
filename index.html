@@ -456,7 +456,7 @@
     </div>
 
     <div class="summary">
-      <div class="stat"><div class="n num" id="st-count">0</div><div class="l">Participanți</div></div>
+      <div class="stat"><div class="n num" id="st-count">0</div><div class="l">Cântăriți</div></div>
       <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
     </div>
 
@@ -2765,6 +2765,14 @@
   }
 
   function sumAll(){ return state.participants.reduce(function(a,p){return a+totalOf(p);},0); }
+  // Câți au ceva pe cântar în manșa la care lucrezi. Duminică lista celor 11 era trecută,
+  // dar greutățile nu — și nimic de pe ecran nu spunea asta.
+  function catiCantariti(){ return state.participants.filter(function(p){ return totalOf(p)>0; }).length; }
+  function improspateazaCantariti(){
+    var el=document.getElementById("st-count"); if(!el) return;
+    var n=state.participants.length;
+    el.textContent = n ? (catiCantariti()+" din "+n) : "0";
+  }
 
   function chipsHtml(p){
     var m=mOf(p, state.manche||1);
@@ -2865,6 +2873,7 @@
     var ebox=document.getElementById("exchips-"+id); if(ebox) ebox.innerHTML=extrasChipsHtml(p);
     var tot=document.getElementById("tot-"+id); if(tot) tot.innerHTML=fmt(totalOf(p))+' <small>kg</small>';
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
+    improspateazaCantariti();
   }
 
   function sectorOptions(sel){ return state.sectors.map(function(s){ return '<option value="'+esc(s)+'"'+(s===sel?' selected':'')+'>Sector '+esc(s)+'</option>'; }).join(''); }
@@ -2928,7 +2937,7 @@
     var list=document.getElementById("list");
     updateWarnStand();
     updateWarnSector();
-    document.getElementById("st-count").textContent = state.participants.length;
+    improspateazaCantariti();
     document.getElementById("st-total").textContent = fmt(sumAll());
     if(state.participants.length===0){
       list.innerHTML='<div class="empty"><div class="big">🎣</div>Niciun participant încă.<br>Adaugă primul stand mai sus.</div>';
