@@ -206,13 +206,23 @@ console.log("\n=== 5. Antetul poza-i spune ce e ===");
 /* ================================================================
    6. Statisticile nu sunt un clasament
    ================================================================ */
-console.log("\n=== 6. Ecranul de statistici ===");
+/* Statisticile au ieșit din rândul de butoane al Clasamentelor și au acum loc propriu,
+   strâns, sub clasament: nu erau un clasament, iar stând acolo ascultau și de butoanele
+   de manșă, deși au sens pe tot concursul. Deci poza nu mai are de unde să cadă pe ele. */
+console.log("\n=== 6. Modul „stat\" nu mai există ===");
 {
-  const ctx = aplicatie({ rankMode: "stat", finMethod: "pct", rankScope: "total" });
-  pescari(ctx, 9, 3);
-  const plan = vm.runInContext("planImagine()", ctx);
-  t("se desenează clasamentul final, nu o poză goală", numeleDin(plan).length, 9);
-  t("subtitlul spune ce s-a desenat", /Final pe puncte/.test(plan.subtitlu), true);
+  const poza = grabFunction(src, "planImagine");
+  t("planul nu mai cunoaște un mod de statistici", /"stat"/.test(poza), false);
+  t("…și ia modul direct de pe ecran", /var mod = rankMode;/.test(poza), true);
+
+  const src2 = citeste(path.join(RADACINA, "index.html"));
+  t("butonul Statistici nu mai e în rândul de clasamente", /id="seg-stat"/.test(src2), false);
+  t("are în schimb pliantul lui", /id="pliant-stat"/.test(src2), true);
+  t("clasamentul nu mai desenează statistici", /rankMode==="stat"/.test(src2), false);
+
+  const stat = grabFunction(src2, "statsHtml");
+  t("statisticile nu mai ascultă de manșa aleasă", /rankScope/.test(stat), false);
+  t("…ci trec prin toate manșele", /var scopes = manseRange\(\);/.test(stat), true);
 }
 
 /* ================================================================

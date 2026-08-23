@@ -543,7 +543,6 @@
     <div class="seg">
       <button id="seg-sec" class="on" onclick="setRankMode('sec')">Pe sectoare</button>
       <button id="seg-fin" onclick="setRankMode('fin')">Final</button>
-      <button id="seg-stat" onclick="setRankMode('stat')">Statistici</button>
     </div>
     <div class="seg" id="finMethod" style="display:none;">
       <button id="fm-kg" class="on" onclick="setFinMethod('kg')">După kg</button>
@@ -554,6 +553,14 @@
     <button class="btn btn-ghost mt" onclick="copyRank()">⧉ Copiază clasamentul</button>
     <button class="btn btn-ghost mt" onclick="printRank()">🖨 Print / PDF</button>
     <button class="btn btn-ghost mt" onclick="shareImage()">🖼 Imagine pentru WhatsApp / Facebook</button>
+
+    <!-- Statisticile nu sunt un clasament, deci nu stăteau bine lângă „Pe sectoare" și
+         „Final": se supuneau și butoanelor de manșă, deși au sens pe tot concursul.
+         Aici au loc propriu, strâns, și se deschid când vrei. -->
+    <div class="pliant mt" id="pliant-stat">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideStatistici()">📊 Statistici <span class="rar">tot concursul</span></button>
+      <div class="pliant-in" hidden><div id="statBody"></div></div>
+    </div>
 
     <div class="card mt">
       <div class="sec-title">Sezon</div>
@@ -3034,10 +3041,21 @@
     document.getElementById("rs-total").classList.toggle("on", mi==='total');
     renderRank();
   }
+  /* Statisticile se socotesc doar când sunt cerute: la 50 de pescari și 3 manșe nu are
+     rost să treacă prin toate capturile la fiecare cântărire, dacă pliantul e strâns. */
+  function deschideStatistici(){
+    plianteaza("pliant-stat");
+    improspateazaStatistici();
+  }
+  function improspateazaStatistici(){
+    var cuprins=document.querySelector("#pliant-stat .pliant-in");
+    var box=document.getElementById("statBody");
+    if(!cuprins || !box || cuprins.hidden) return;
+    box.innerHTML=statsHtml();
+  }
   function setRankMode(m){ rankMode=m;
     document.getElementById("seg-sec").classList.toggle("on",m==="sec");
     document.getElementById("seg-fin").classList.toggle("on",m==="fin");
-    document.getElementById("seg-stat").classList.toggle("on",m==="stat");
     document.getElementById("finMethod").style.display = (m==="fin")?"flex":"none";
     renderRank();
   }
@@ -3204,7 +3222,6 @@
     var body=document.getElementById("rankBody");
     if(state.participants.length===0){ body.innerHTML='<div class="empty">Niciun participant de clasat încă.</div>'; return; }
 
-    if(rankMode==="stat"){ body.innerHTML=statsHtml(); return; }
 
     var pmap=currentPmap();
     if(rankMode==="fin" && finMethod==="pct"){
@@ -3232,6 +3249,7 @@
       });
       body.innerHTML=html;
     }
+    improspateazaStatistici();
   }
 
   function copyRank(){
@@ -3474,7 +3492,10 @@
   function statsHtml(){
     var all=[];
     var allEx=[];
-    var scopes = rankScope==='total' ? manseRange() : [rankScope];
+    /* Statisticile sunt o privire peste TOT concursul, nu peste manșa aleasă în
+       clasamente: stăteau în același rând de butoane, deci ascultau de ele fără rost. */
+    var toate = "total";
+    var scopes = manseRange();
     state.participants.forEach(function(p){
       scopes.forEach(function(mi){
         var m=mOf(p,mi);
@@ -3482,11 +3503,11 @@
         (m.extras||[]).forEach(function(v){ allEx.push({v:+v||0, p:p}); });
       });
     });
-    if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă — '+esc(scopeLabel(rankScope))+'.</div>';
+    if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă.</div>';
     var totalC=0; all.forEach(function(c){ totalC+=c.v; });
     allEx.forEach(function(c){ totalC+=c.v; });
     var cmmcBig=null; allEx.forEach(function(c){ if(!cmmcBig||c.v>cmmcBig.v) cmmcBig=c; });
-    var html='<p class="hint" style="margin:0 0 10px;">'+esc(scopeLabel(rankScope))+'</p>'+
+    var html=''+
     '<div class="summary">'+
       '<div class="stat"><div class="n num">'+allEx.length+'</div><div class="l">Nr. pești extra</div></div>'+
       '<div class="stat"><div class="n num">'+fmt(totalC)+'</div><div class="l">Total captură (kg)</div></div>'+
@@ -3496,7 +3517,7 @@
     '</div>'+
     '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>';
     var secs={};
-    state.participants.forEach(function(p){ var k=sectorOfM(p,rankScope)||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,rankScope); });
+    state.participants.forEach(function(p){ var k=sectorOfM(p,toate)||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,toate); });
     var sk=Object.keys(secs).sort(function(a,b){return a.localeCompare(b,"ro");});
     if(sk.length>1){
       var mx=0; sk.forEach(function(k){ if(secs[k]>mx) mx=secs[k]; });
@@ -3509,7 +3530,7 @@
 
       // Media pe pescar: totalul de mai sus avantajează sectorul cu mai mulți oameni.
       var cnt={};
-      state.participants.forEach(function(p){ var kk=sectorOfM(p,rankScope)||"Fără sector"; cnt[kk]=(cnt[kk]||0)+1; });
+      state.participants.forEach(function(p){ var kk=sectorOfM(p,toate)||"Fără sector"; cnt[kk]=(cnt[kk]||0)+1; });
       var inegal=sk.some(function(k){ return cnt[k]!==cnt[sk[0]]; });
       var avg={}, mxa=0;
       sk.forEach(function(k){ avg[k]=secs[k]/Math.max(1,cnt[k]); if(avg[k]>mxa) mxa=avg[k]; });
@@ -3815,8 +3836,7 @@
       };
     }
 
-    // Statisticile nu sunt un clasament: se desenează clasamentul final, iar subtitlul o spune.
-    var mod = rankMode==="stat" ? "fin" : rankMode;
+    var mod = rankMode;
 
     if(mod==="sec"){
       plan.arataPct=true;
