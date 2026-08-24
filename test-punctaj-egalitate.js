@@ -423,10 +423,15 @@ t("invariant sumă ține și cu egalități",
 t("egalitate în etapa mică, întinsă",
   placesOf([{kg:9},{kg:5},{kg:5},{kg:1}], 7)[1] === placesOf([{kg:9},{kg:5},{kg:5},{kg:1}], 7)[2], true);
 
-// fmtPts din sezon trebuie să arate fracțiile fine, nu să le rotunjească
+// fmtPts din sezon scrie o zecimală: mediile pe etapă ies oricum cu coadă lungă
+// (3,5466), iar a doua zecimală era zgomot. Rotunjirea rămâne însă cinstită — nu
+// urcă la jumătatea de punct și nu strică întregii.
 t("fmtPts din sezon: 3,5", vm.runInContext("fmtPts(3.5)", sez), "3,5");
-t("fmtPts din sezon: 3,25 nu devine 3,5", vm.runInContext("fmtPts(3.25)", sez), "3,25");
+t("fmtPts din sezon: 3,5466 → 3,5", vm.runInContext("fmtPts(3.5466)", sez), "3,5");
+t("fmtPts din sezon: 3,8566 → 3,9", vm.runInContext("fmtPts(3.8566)", sez), "3,9");
+t("fmtPts din sezon: 3,25 nu devine 3,5", vm.runInContext("fmtPts(3.25)", sez), "3,3");
 t("fmtPts din sezon: întregii rămân întregi", vm.runInContext("fmtPts(6)", sez), "6");
+t("fmtPts din sezon: 10 nu devine 1", vm.runInContext("fmtPts(10)", sez), "10");
 
 /* ---------- 10c. media pe etapă și pragul de participări ---------- */
 console.log("\n=== 10c. Sezon: media pe etapă, nu suma ===");
@@ -488,12 +493,16 @@ t("pe kg pragul nu se aplică: toți poartă loc",
 t("pe kg ordinea e după kilograme",
   ordine(doiTrei, 2, "kg").map(r => r[0]), ["Y", "Z", "X"]);
 
-// coloana de puncte arată media la clasamentul pe puncte, suma la cel pe kg
+// Coloana de puncte arată media pe etapă în AMÂNDOUĂ filele. Arăta suma la „După kg",
+// deși capul de tabel scria tot „Pct" iar explicația de dedesubt vorbea despre medie —
+// și suma nici nu semăna cu un loc: patru etape adunate dădeau 26,69.
 sez.__r = { totalPoints: 6, avgPoints: 2, competitions: 3, totalKg: 1, clasat: true };
 vm.runInContext('sortMode="pts";', sez);
 t("pe puncte se afișează media", vm.runInContext("ptsAfisat(__r)", sez), 2);
 vm.runInContext('sortMode="kg";', sez);
-t("pe kg se afișează suma locurilor", vm.runInContext("ptsAfisat(__r)", sez), 6);
+t("pe kg se afișează tot media, nu suma", vm.runInContext("ptsAfisat(__r)", sez), 2);
+t("…adică aceeași cifră în amândouă filele", vm.runInContext(
+  '(function(){var a,b; sortMode="pts"; a=ptsAfisat(__r); sortMode="kg"; b=ptsAfisat(__r); return a===b;})()', sez), true);
 vm.runInContext('sortMode="pts";', sez);
 
 /* ================================================================
