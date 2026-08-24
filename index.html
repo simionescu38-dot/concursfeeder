@@ -254,6 +254,13 @@
   .sl.live .sl-act{color:#8e2a1f;}
   .sl.gata .sl-act{color:#155c39;}
   .sl-act:active{transform:translateY(1px);}
+  /* rezumatul manșei încheiate: exact ce se strigă cu voce tare, la premiere */
+  .sl-rez{margin-top:10px; background:rgba(255,255,255,.14); border-radius:12px; padding:6px 10px;}
+  .sl-rez>div{font-size:14px; font-weight:700; padding:4px 0;}
+  .sl-rez .gol{opacity:.82; font-weight:600;}
+  .sl-vezi{display:block; width:100%; margin-top:2px; background:none; border:0; color:#fff;
+    font-family:inherit; font-size:14px; font-weight:800; text-decoration:underline;
+    padding:14px 0; min-height:44px; cursor:pointer;}
 
   /* un rând din jurnalul cântăririlor */
   .jrand{border-left:3px solid var(--teal); background:#f7fafd; border-radius:0 10px 10px 0; padding:9px 12px; margin-bottom:8px;}
@@ -3629,7 +3636,13 @@
         '<div><b>'+fmt(kg)+'</b><span>⚖️ kg cântărite</span></div>'+
         '<div><b>'+cateCapturi(mi)+'</b><span>🐟 capturi</span></div>'+
       '</div>';
-    if(lider && totalOf(lider)>0){
+    /* Cât se pescuiește, contează cine e în frunte. După ce s-a strigat stop, contează
+       cine a câștigat FIECARE sector — aia se citește cu voce tare. Rândul „Lider" nu se
+       pierde: cine are cele mai multe kilograme își câștigă oricum propriul sector,
+       fiindcă sectoarele se clasează tot pe kilograme. */
+    if(stare==="incheiata"){
+      h += rezumatMansei(mi);
+    } else if(lider && totalOf(lider)>0){
       h+='<div class="sl-lider">🏆 Lider: <b>'+esc(nameOf(lider))+'</b> — '+fmt(totalOf(lider))+' kg'+
          (standOfM(lider,mi)?' <span class="sl-st">Stand '+esc(standOfM(lider,mi))+'</span>':'')+'</div>';
     }
@@ -3642,6 +3655,53 @@
     h+='</div>';
     return h;
   }
+  /** cine a câștigat fiecare sector al manșei, în ordinea sectoarelor.
+      `castigator` e null în sectorul în care încă n-a cântărit nimeni. */
+  function castigatoriPeSectoare(mi){
+    var secs={}, order=[];
+    state.participants.forEach(function(p){
+      // cine n-a fost la manșa asta n-are ce căuta în sectoarele ei
+      if(absentLaMansa(p,mi)) return;
+      var k=sectorOfM(p,mi)||"";
+      if(!secs[k]){ secs[k]=[]; order.push(k); }
+      secs[k].push(p);
+    });
+    order.sort(function(a,b){ return a.localeCompare(b,"ro"); });
+    return order.map(function(k){
+      // ACEEAȘI funcție de clasare ca la ecran și la PDF: sectorul din panou nu poate
+      // ieși în altă ordine decât cel din clasament — greșeala reparată la PDF
+      var pri=sortRankS(secs[k],mi)[0];
+      var kg=pri?totalOfM(pri,mi):0;
+      return { sector:k, castigator: kg>1e-9 ? pri : null, kg:kg };
+    });
+  }
+  /** cel mai mare pește al manșei, sau null dacă nimeni n-are pești extra */
+  function celMaiMarePeste(mi){
+    var cu=state.participants.filter(function(p){ return cmmcAward(p,mi)>0; });
+    if(!cu.length) return null;
+    var best=cu.reduce(function(a,b){ return cmmcAward(b,mi)>cmmcAward(a,mi)?b:a; });
+    return { p:best, kg:cmmcAward(best,mi) };
+  }
+  function rezumatMansei(mi){
+    var h='<div class="sl-rez">';
+    if(!mancheDisputata(mi)){
+      h+='<div class="gol">Nu s-a trecut încă niciun cântar.</div>';
+    } else {
+      castigatoriPeSectoare(mi).forEach(function(s){
+        var cap = s.sector ? "Sector "+esc(s.sector)+": " : "";
+        // sectorul netrecut nu se ascunde: la baltă, tocmai ăsta e lucrul de știut —
+        // cine mai e de cântărit
+        h += s.castigator
+          ? '<div>🥇 '+cap+'<b>'+esc(nameOf(s.castigator))+'</b> — '+fmt(s.kg)+' kg</div>'
+          : '<div class="gol">🥇 '+cap+'încă nimeni cântărit</div>';
+      });
+      var mare=celMaiMarePeste(mi);
+      if(mare) h+='<div>🐟 Cel mai mare pește: <b>'+esc(nameOf(mare.p))+'</b> — '+fmt(mare.kg)+' kg</div>';
+    }
+    h+='<button type="button" class="sl-vezi" onclick="veziClasamentulMansei('+mi+')">Vezi clasamentul manșei →</button>';
+    return h+'</div>';
+  }
+  function veziClasamentulMansei(mi){ meniuGo("rank", null, function(){ setRankScope(mi); }); }
   /** cât mai e — aceeași vorbă și în panou, și când doar curge secunda */
   function textCeas(){
     var now=nowSync();
@@ -3654,12 +3714,29 @@
      altul, iar telefonul n-o mai socotește apăsare. La baltă, tocmai butonul de
      start și cel de final n-au voie să se piardă. */
   var statusSemn=null;
+  /** tot ce se vede în panou, strâns într-un șir: dacă șirul nu s-a schimbat,
+      nici panoul n-are ce redesena */
+  function semnaturaStatus(){
+    var mi=state.manche||1, stare=stareaMansei();
+    var kg=state.participants.reduce(function(s,p){ return s+totalOfM(p,mi); },0);
+    var parti=[stare, mi, state.participants.length, isLocked()?1:0,
+               cateCapturi(mi), fmt(kg), leaderId()||""];
+    /* Pe manșa încheiată, panoul arată câștigătorii pe sectoare și cel mai mare pește.
+       Ăștia se schimbă fără ca totalul, capturile sau liderul să se miște: e destul ca
+       doi oameni din același sector să facă schimb de kilograme. Fără ei aici, pe ecran
+       ar rămâne un câștigător greșit — și tocmai ăla se citește cu voce tare. */
+    if(stare==="incheiata"){
+      castigatoriPeSectoare(mi).forEach(function(s){
+        parti.push(s.sector+"≻"+(s.castigator?s.castigator.id:"")+"≻"+fmt(s.kg));
+      });
+      var mare=celMaiMarePeste(mi);
+      parti.push(mare ? mare.p.id+"≻"+fmt(mare.kg) : "");
+    }
+    return parti.join("|");
+  }
   function improspateazaStatus(){
     var el=document.getElementById("status-live"); if(!el) return;
-    var mi=state.manche||1;
-    var kg=state.participants.reduce(function(s,p){ return s+totalOfM(p,mi); },0);
-    var semn=[stareaMansei(), mi, state.participants.length, isLocked()?1:0,
-              cateCapturi(mi), fmt(kg), leaderId()||""].join("|");
+    var semn=semnaturaStatus();
     if(semn===statusSemn){
       var ceas=el.querySelector(".sl-ceas");
       if(ceas) ceas.textContent="⏱ "+textCeas();

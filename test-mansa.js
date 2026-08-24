@@ -201,10 +201,12 @@ console.log("\n=== 9. Butonul nu are voie să dispară de sub deget ===");
   t("…altfel doar secunda se rescrie", /\.sl-ceas[\s\S]*textContent\s*=/.test(impr), true);
   t("…și se iese fără să se atingă butonul",
     /if\s*\(\s*semn\s*===\s*statusSemn\s*\)\s*\{[\s\S]*?return;[\s\S]*?\}/.test(impr), true);
+  const sem = grabFunction(src, "semnaturaStatus");
   t("semnătura prinde starea, manșa, oamenii, lacătul, capturile, kilogramele și liderul",
-    /stareaMansei\(\)[\s\S]*state\.manche|semn=\[stareaMansei\(\)/.test(impr) &&
-    /isLocked\(\)/.test(impr) && /cateCapturi/.test(impr) && /leaderId/.test(impr) &&
-    /fmt\(kg\)/.test(impr), true);
+    /stareaMansei\(\)/.test(sem) && /state\.manche/.test(sem) && /participants\.length/.test(sem) &&
+    /isLocked\(\)/.test(sem) && /cateCapturi/.test(sem) && /leaderId/.test(sem) &&
+    /fmt\(kg\)/.test(sem), true);
+  t("…iar improspateazaStatus o cere de acolo", /semnaturaStatus\(\)/.test(impr), true);
 }
 
 /* ---------- 10. Butonul de manșă nu arhivează ---------- */
@@ -214,6 +216,171 @@ console.log("\n=== 10. „Gata, s-a terminat manșa\" nu e „Am terminat concur
   t("nu salvează în sezon", /archiveToSeason/.test(opr), false);
   t("nu golește lista", /participants\s*=\s*\[\]/.test(opr), false);
   t("scrie negru pe alb că rămâne cântarul deschis", /Cântarul rămâne deschis/.test(opr), true);
+}
+
+/* ═══════════ REZUMATUL DE FINAL DE MANȘĂ ═══════════
+   Când s-a strigat stop, organizatorul citește cu voce tare cine a câștigat FIECARE
+   sector. Până acum trebuia să deschidă Clasamentul și să pună „Pe sectoare"; acum
+   scrie în panou. Ce se citește la premiere n-are voie să fie altceva decât ce scrie
+   în clasament — de-aia rezumatul folosește exact aceeași funcție de clasare. */
+
+/** o baltă cu tot lanțul de socoteli al aplicației, rulat pe bune */
+function concurs(oameni, o) {
+  o = o || {};
+  const ctx = {
+    console,
+    state: Object.assign({ manche: 1, numManse: 2, durataMin: 0, startAt: 1000, endAt: 2000,
+                           nadireMin: 10, lock: false, pinHash: "" }, o.state || {}),
+    nowSync: () => o.acum || 9e12,      // mult după endAt: manșa e încheiată
+    isLocked: () => !!o.blocat
+  };
+  vm.createContext(ctx);
+  vm.runInContext([
+    "var viewerMode=false;",
+    grabFunction(src, "num"), grabFunction(src, "fmt"), grabFunction(src, "esc"),
+    grabFunction(src, "numManse"), grabFunction(src, "manseRange"),
+    grabFunction(src, "emptyManche"), grabFunction(src, "ensureManche"), grabFunction(src, "mOf"),
+    grabFunction(src, "mancheDisputata"), grabFunction(src, "mancheDeAfisat"),
+    grabFunction(src, "sectorOfM"), grabFunction(src, "standOfM"),
+    grabFunction(src, "cantOfM"), grabFunction(src, "extraOfM"), grabFunction(src, "totalOfM"),
+    grabFunction(src, "cmmcOfM"), grabFunction(src, "cmmcAward"),
+    grabFunction(src, "nameOf"), grabFunction(src, "nameKey"),
+    grabFunction(src, "standKey"), grabFunction(src, "byStand"), grabFunction(src, "sortRankS"),
+    grabFunction(src, "absentLaMansa"), grabFunction(src, "totalOf"),
+    grabFunction(src, "cateCapturi"), grabFunction(src, "stareaMansei"), grabFunction(src, "leaderId"),
+    grabFunction(src, "castigatoriPeSectoare"), grabFunction(src, "celMaiMarePeste"),
+    grabFunction(src, "rezumatMansei"), grabFunction(src, "semnaturaStatus")
+  ].join("\n"), ctx);
+  // [nume, sector, stand, kg, pesteExtra?]
+  ctx.state.participants = oameni.map(function (om, i) {
+    return { id: "p" + i, prenume: om[0], nume: "", stand: om[2], sector: om[1],
+             m: { 1: { catches: om[3] === null ? [] : [om[3]], catchTimes: [], catchPhotos: [],
+                       extras: om[4] ? (Array.isArray(om[4]) ? om[4].slice() : [om[4]]) : [],
+                       stand: om[2], sector: om[1] } } };
+  });
+  return { ctx, ruleaza: c => vm.runInContext(c, ctx) };
+}
+const sectoare = b => b.ruleaza("castigatoriPeSectoare(1)")
+  .map(s => s.sector + ":" + (s.castigator ? s.castigator.prenume : "—") + ":" + b.ruleaza("fmt")(s.kg));
+
+console.log("\n=== 11. Cine a câștigat fiecare sector ===");
+{
+  // Uriaș are cele mai multe kilograme din tot concursul, dar stă în A; B are alt câștigător
+  const b = concurs([["Urias", "A", "1", 31.0], ["Greu", "A", "2", 28.0], ["Mic", "A", "3", 4.0],
+                     ["Micu", "B", "6", 9.0], ["Sub", "B", "7", 7.0]]);
+  t("fiecare sector are câștigătorul lui", sectoare(b), ["A:Urias:31,000", "B:Micu:9,000"]);
+  t("sectoarele vin în ordine", b.ruleaza("castigatoriPeSectoare(1).map(function(s){return s.sector;})"), ["A", "B"]);
+}
+{
+  // ordinea din listă e dinadins pe dos: câștigă cine are kilogramele, nu cine e primul
+  const b = concurs([["Ultim", "A", "1", 2.0], ["Mijloc", "A", "2", 14.0], ["Cel mai greu", "A", "3", 20.0]]);
+  t("câștigă kilogramele, nu ordinea din listă", sectoare(b), ["A:Cel mai greu:20,000"]);
+}
+{
+  const b = concurs([["Ana", "A", "1", 5.0], ["Bogdan", "B", "2", null]]);
+  t("sectorul în care n-a cântărit nimeni n-are câștigător", sectoare(b), ["A:Ana:5,000", "B:—:0"]);
+}
+{
+  // egalitate perfectă pe kilograme: hotărăște standul, prin sortRankS — nu întâmplarea
+  const b = concurs([["StandMare", "A", "9", 6.0], ["StandMic", "A", "2", 6.0]]);
+  t("la kilograme egale hotărăște standul mai mic", sectoare(b), ["A:StandMic:6,000"]);
+}
+{
+  const b = concurs([["Unu", "", "1", 5.0], ["Doi", "", "2", 3.0]]);
+  t("fără sectoare, un singur rând", sectoare(b), [":Unu:5,000"]);
+}
+
+console.log("\n=== 12. Cine n-a fost la manșă nu câștigă sectorul ei ===");
+{
+  // fără stand și fără cântar la manșa asta = absent (absentLaMansa)
+  const b = concurs([["Prezent", "A", "1", 3.0], ["Absent", "", null, null]]);
+  t("absentul nu apare nicăieri", sectoare(b), ["A:Prezent:3,000"]);
+}
+
+console.log("\n=== 13. Cel mai mare pește ===");
+{
+  const b = concurs([["Ana", "A", "1", 10.0, 2.1], ["Bogdan", "B", "2", 20.0, 1.4]]);
+  const mare = b.ruleaza("celMaiMarePeste(1)");
+  t("îl ia pe cel cu peștele mai mare, nu pe cel cu kilogramele", mare.p.prenume, "Ana");
+  t("…cu greutatea peștelui", mare.kg, 2.1, 0.001);
+}
+{
+  const b = concurs([["Ana", "A", "1", 10.0], ["Bogdan", "B", "2", 20.0]]);
+  t("fără pești extra, niciun cel-mai-mare-pește", b.ruleaza("celMaiMarePeste(1)"), null);
+  t("…și rândul lipsește din rezumat", /Cel mai mare pește/.test(b.ruleaza("rezumatMansei(1)")), false);
+}
+
+console.log("\n=== 14. Ce scrie în panou ===");
+{
+  const b = concurs([["Urias", "A", "1", 31.0], ["Micu", "B", "6", 9.0, 2.1], ["Gol", "C", "9", null]]);
+  const h = b.ruleaza("rezumatMansei(1)");
+  t("scrie câștigătorul sectorului A", /Sector A: <b>Urias<\/b> — 31,000 kg/.test(h), true);
+  // Micu are 9,0 în juvelnic ȘI un pește extra de 2,1: Total = Cantitate + Pești extra
+  t("scrie câștigătorul sectorului B", /Sector B: <b>Micu<\/b> — 11,100 kg/.test(h), true);
+  t("sectorul netrecut spune că mai e de cântărit", /Sector C: încă nimeni cântărit/.test(h), true);
+  t("scrie cel mai mare pește", /Cel mai mare pește: <b>Micu<\/b> — 2,100 kg/.test(h), true);
+  t("duce la clasamentul manșei", /veziClasamentulMansei\(1\)/.test(h), true);
+}
+{
+  const b = concurs([["Unu", "A", "1", null], ["Doi", "B", "2", null]]);
+  const h = b.ruleaza("rezumatMansei(1)");
+  t("fără niciun cântar, o spune pe șleau", /Nu s-a trecut încă niciun cântar/.test(h), true);
+  t("…și nu inventează câștigători", /🥇/.test(h), false);
+}
+
+console.log("\n=== 15. Semnătura prinde și rezumatul ===");
+{
+  /* Contraexemplul care a cerut lărgirea semnăturii: în sectorul B, Mimi scade de la
+     4,800 la 3,500 și Sorin urcă de la 3,000 la 4,300. Suma sectorului rămâne 7,800,
+     deci totalul concursului e ACELAȘI, capturile sunt aceleași, liderul (Harry) e
+     același — dar câștigătorul sectorului B s-a schimbat. Fără el în semnătură, pe ecran
+     rămânea numele greșit, exact ăla care se citește cu voce tare. */
+  const inainte = concurs([["Harry", "A", "1", 7.2], ["Mimi", "B", "2", 4.8], ["Sorin", "B", "3", 3.0]]);
+  const dupa    = concurs([["Harry", "A", "1", 7.2], ["Mimi", "B", "2", 3.5], ["Sorin", "B", "3", 4.3]]);
+  const s1 = inainte.ruleaza("semnaturaStatus()"), s2 = dupa.ruleaza("semnaturaStatus()");
+  t("totalul e chiar același", inainte.ruleaza("state.participants.reduce(function(s,p){return s+totalOfM(p,1);},0)"),
+    dupa.ruleaza("state.participants.reduce(function(s,p){return s+totalOfM(p,1);},0)"), 0.0001);
+  t("liderul e chiar același", inainte.ruleaza("leaderId()"), dupa.ruleaza("leaderId()"));
+  t("câștigătorul sectorului B chiar s-a schimbat",
+    [sectoare(inainte)[1], sectoare(dupa)[1]], ["B:Mimi:4,800", "B:Sorin:4,300"]);
+  t("…deci semnătura TREBUIE să fie alta", s1 !== s2, true);
+}
+{
+  /* Și peștele cel mare intră în semnătură. Cazul trebuie ales cu grijă: peștii extra
+     se adună la TOTAL, deci dacă doi oameni fac schimb de câte un pește li se schimbă și
+     kilogramele — iar semnătura ar ieși alta oricum, din sectoare, și testul ar trece
+     degeaba. Aici fiecare are 4,0 kg de pești extra în amândouă stările; se mută doar
+     felul în care sunt împărțiți, deci se schimbă NUMAI cine ține peștele cel mare. */
+  const a = concurs([["Ana", "A", "1", 10.0, [2.0, 2.0]], ["Bob", "A", "2", 3.0, [3.0, 1.0]]]);
+  const c = concurs([["Ana", "A", "1", 10.0, [3.0, 1.0]], ["Bob", "A", "2", 3.0, [2.0, 2.0]]]);
+  t("kilogramele fiecăruia sunt neatinse",
+    [a.ruleaza("state.participants.map(function(p){return fmt(totalOfM(p,1));})"),
+     c.ruleaza("state.participants.map(function(p){return fmt(totalOfM(p,1));})")],
+    [["14,000", "7,000"], ["14,000", "7,000"]]);
+  t("capturile sunt tot atâtea", [a.ruleaza("cateCapturi(1)"), c.ruleaza("cateCapturi(1)")], [6, 6]);
+  t("câștigătorul sectorului e același", [sectoare(a), sectoare(c)], [["A:Ana:14,000"], ["A:Ana:14,000"]]);
+  t("dar peștele cel mare e la altcineva",
+    [a.ruleaza("celMaiMarePeste(1).p.prenume"), c.ruleaza("celMaiMarePeste(1).p.prenume")], ["Bob", "Ana"]);
+  t("…deci semnătura TREBUIE să fie alta",
+    a.ruleaza("semnaturaStatus()") !== c.ruleaza("semnaturaStatus()"), true);
+}
+{
+  // cât manșa e în desfășurare, semnătura n-are de ce să care sectoarele
+  const viu = concurs([["Ana", "A", "1", 5.0]], { acum: 1500 });   // între startAt și endAt
+  t("manșa e în desfășurare", viu.ruleaza("stareaMansei()"), "live");
+  t("…iar semnătura rămâne scurtă", viu.ruleaza("semnaturaStatus()").split("|").length, 7);
+}
+
+console.log("\n=== 16. Rezumatul folosește aceeași clasare ca ecranul și PDF-ul ===");
+{
+  const cps = grabFunction(src, "castigatoriPeSectoare");
+  // dacă cineva sortează aici altfel, panoul poate striga alt câștigător decât clasamentul
+  t("clasează cu sortRankS, ca peste tot", /sortRankS\s*\(/.test(cps), true);
+  t("grupează pe sectorul MANȘEI, nu pe cel de acum", /sectorOfM\s*\(\s*p\s*,\s*mi\s*\)/.test(cps), true);
+  t("scoate absenții", /absentLaMansa\s*\(\s*p\s*,\s*mi\s*\)/.test(cps), true);
+  const panou = grabFunction(src, "statusLiveHtml");
+  t("rezumatul apare doar pe manșa încheiată", /stare===\"incheiata\"/.test(panou), true);
+  t("…și ia locul rândului cu liderul", /else if\s*\(\s*lider/.test(panou), true);
 }
 
 t.raport();
