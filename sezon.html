@@ -140,7 +140,7 @@
   // jumătate de punct ar arăta două punctaje diferite cu aceeași cifră, deci se taie la
   // două zecimale, fără zerouri la coadă: 2 → "2", 2,5 → "2,5", 3,25 → "3,25".
   function fmtPts(n){
-    var v=(Math.round((+n||0)*100)/100).toFixed(2);
+    var v=(Math.round((+n||0)*10)/10).toFixed(1);
     return v.replace(/\.?0+$/,"").replace(".",",");
   }
   function esc(s){ return (s||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
@@ -584,8 +584,11 @@
     });
   }
   function currentSeasonSorted(){ return sortSeason(season.list.slice()); }
-  /** valoarea din coloana de puncte: media pe etapă la clasamentul pe puncte, suma la kg */
-  function ptsAfisat(rec){ return sortMode==="kg" ? rec.totalPoints : rec.avgPoints; }
+  /** Valoarea din coloana de puncte: media pe etapă, în amândouă filele.
+      Arăta suma la „După kg" și media la „După puncte" — același cap de tabel („Pct"),
+      aceeași explicație dedesubt (care vorbea doar despre medie), două înțelesuri. Suma
+      nici nu semăna cu un loc: patru etape adunate dădeau 26,69. */
+  function ptsAfisat(rec){ return rec.avgPoints; }
   /** numerotează doar clasații; neclasatul nu poartă loc. Un singur loc, ca tabelul,
       textul copiat, print-ul și imaginea să spună toate același lucru. */
   function pozitiiSezon(list){
