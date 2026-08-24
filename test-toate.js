@@ -8,6 +8,7 @@ const TESTE = [
   ["Punctaj la egalitate", "test-punctaj-egalitate.js"],
   ["Concursuri întregi (scenarii)", "test-scenarii.js"],
   ["Ieșirile spun același lucru", "test-export.js"],
+  ["Scenariile speciale, prin toate ieșirile", "test-iesiri-scenarii.js"],
   ["Scala sectoarelor", "test-scala-sectoare.js"],
   ["Camera ținută minte", "test-viewer-room.js"],
   ["Sector pe manșă", "test-sector-mansa.js"],
