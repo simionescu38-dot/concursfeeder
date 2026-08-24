@@ -4222,11 +4222,19 @@
   function printRank(){
     if(!state.participants.length){ toast("Nu ai participanți"); return; }
     var pmap=currentPmap();
-    var h='<div class="pr-h1">'+esc(state.name||"Concurs pescuit")+'</div><div class="pr-sub">Clasament oficial · '+esc(scopeLabel(rankScope))+' · '+roDate()+'</div>';
+    /* Hârtia asta se dă la premiere: trebuie să spună exact ce spune ecranul.
+       Sorta MEREU după kilograme — chiar și când pe ecran era „Final · După puncte" —
+       dar tipărea coloana Pct și scria „Clasament oficial". Adică anunța punctele în
+       ordinea kilogramelor: cine câștiga sectorul mic cu 9 kg apărea al doilea pe ecran
+       și al patrulea pe hârtie. Aceeași condiție ca în renderRank și copyRank. */
+    var pePuncte = (rankMode==="fin" && finMethod==="pct");
+    var h='<div class="pr-h1">'+esc(state.name||"Concurs pescuit")+'</div><div class="pr-sub">Clasament oficial · '+esc(scopeLabel(rankScope))+' · '+(pePuncte?"După puncte":"După kg")+' · '+roDate()+'</div>';
     var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
     if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); h+='<div class="pr-sub"><b>CMMC (cel mai mare pește):</b> '+esc(nameOf(best))+' — '+fmt(cmmcAward(best,rankScope))+' kg</div>'; }
     h+='<div class="pr-sec">Clasament final</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Sector</th><th>Pct</th><th>Total kg</th></tr>';
-    sortRankS(state.participants,rankScope).forEach(function(p,i){
+    var lista = pePuncte ? sortByPointsS(state.participants,pmap,rankScope)
+                         : sortRankS(state.participants,rankScope);
+    lista.forEach(function(p,i){
       h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="c">'+esc(sectorOfM(p,rankScope)||"–")+'</td><td class="c">'+fmtPts(pmap[p.id])+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
     });
     h+='</table>';

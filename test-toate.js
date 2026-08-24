@@ -7,6 +7,7 @@ const TESTE = [
   ["Sintaxa scripturilor", "test-sintaxa.js"],
   ["Punctaj la egalitate", "test-punctaj-egalitate.js"],
   ["Concursuri întregi (scenarii)", "test-scenarii.js"],
+  ["Ieșirile spun același lucru", "test-export.js"],
   ["Scala sectoarelor", "test-scala-sectoare.js"],
   ["Camera ținută minte", "test-viewer-room.js"],
   ["Sector pe manșă", "test-sector-mansa.js"],
