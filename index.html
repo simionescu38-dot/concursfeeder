@@ -231,6 +231,21 @@
   .pliant-cap::after{content:"▾"; margin-left:auto; transition:transform .15s;}
   .pliant.deschis .pliant-cap::after{transform:rotate(180deg);}
   .pliant.deschis .pliant-cap{margin-bottom:10px;}
+  /* panoul de status al concursului, pe Acasă */
+  .sl{border-radius:16px; padding:14px 16px; margin-bottom:12px; color:#fff; text-align:left;
+    box-shadow:var(--shadow-md); background:linear-gradient(135deg,#0f4fa8,#0b3a7d);}
+  .sl.live{background:linear-gradient(135deg,#c0392b,#8e2a1f);}
+  .sl.gata{background:linear-gradient(135deg,#1f7a4d,#155c39);}
+  .sl-cap{font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; opacity:.95;}
+  .sl-ceas{font-size:26px; font-weight:800; margin-top:4px; font-variant-numeric:tabular-nums;}
+  .sl-cifre{display:flex; gap:8px; margin-top:12px;}
+  .sl-cifre>div{flex:1; background:rgba(255,255,255,.14); border-radius:12px; padding:8px 6px; text-align:center;}
+  .sl-cifre b{display:block; font-size:19px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .sl-cifre span{font-size:10.5px; font-weight:700; opacity:.9;}
+  .sl-lider{margin-top:10px; font-size:14px; font-weight:700; background:rgba(255,255,255,.14);
+    border-radius:12px; padding:8px 10px;}
+  .sl-st{opacity:.85; font-weight:700;}
+
   /* un rând din jurnalul cântăririlor */
   .jrand{border-left:3px solid var(--teal); background:#f7fafd; border-radius:0 10px 10px 0; padding:9px 12px; margin-bottom:8px;}
   .jrand.sters{border-left-color:#b23b2e; background:#fdf7f6;}
@@ -443,10 +458,16 @@
       <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
     </div>
 
-    <div class="card" style="text-align:left;" id="card-meteo">
-      <div class="sec-title">Vremea la baltă și solunarul</div>
-      <div id="wx-body"></div>
-      <button class="btn btn-ghost" style="margin-top:10px;" onclick="loadWeather(true)">📍 Folosește locația mea</button>
+    <div id="status-live"></div>
+
+    <div class="pliant" id="pliant-vreme">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideVremea()">🌤 Vremea la baltă și solunarul</button>
+      <div class="pliant-in" hidden>
+        <div class="card" style="text-align:left; margin:0;" id="card-meteo">
+          <div id="wx-body"></div>
+          <button class="btn btn-ghost" style="margin-top:10px;" onclick="loadWeather(true)">📍 Folosește locația mea</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -2719,7 +2740,7 @@
     if(v==="rank") renderRank();
     if(v==="cantar") renderList(); // standul se scrie din formularul fiecărui participant
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
-    if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); }
+    if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); improspateazaStatus(); }
     if(v==="strat"){ renderStrat(); loadPasPicheti(); }
     if(v==="reg") renderReg();
     if(v==="spons") renderSpons();
@@ -3564,6 +3585,58 @@
 
   // ---------- ora capturii / lider / statistici ----------
   function hhmm(t){ var d=new Date(t); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
+  /* ---------- panoul de status al concursului, pe Acasă ----------
+     Ce se știa până acum era împrăștiat: timpul rămas sus în bară, concurenții și
+     kilogramele pe Cântar, liderul doar ca banner când se schimba. Aici stau la un loc,
+     ca la un panou de concurs: în ce manșă ești, cât mai e, câți oameni, cât pește.
+     Nu se inventează nicio cifră — toate se socotesc din ce e deja în telefon. */
+  function cateCapturi(mi){
+    return state.participants.reduce(function(s,p){
+      var m=mOf(p, mi); return s + ((m.catches||[]).length) + ((m.extras||[]).length);
+    }, 0);
+  }
+  /** în ce stare e manșa la care lucrezi, după ceasul concursului */
+  function stareaMansei(){
+    var now=nowSync();
+    if(!state.endAt) return "fara-ceas";
+    if(state.startAt && now < state.startAt) return "neinceputa";
+    if(now <= state.endAt) return "live";
+    return "incheiata";
+  }
+  function statusLiveHtml(){
+    if(!state.participants.length) return "";
+    var mi=state.manche||1;
+    var stare=stareaMansei();
+    var cap={ "live":["🔴","ÎN DESFĂȘURARE","live"], "neinceputa":["⏸","NU A ÎNCEPUT","astept"],
+              "incheiata":["🏁","ÎNCHEIATĂ","gata"], "fara-ceas":["🎣","SE CÂNTĂREȘTE","astept"] }[stare];
+    var kg=state.participants.reduce(function(s,p){ return s+totalOfM(p,mi); },0);
+    var lid=leaderId(), lider=lid ? state.participants.find(function(p){return p.id===lid;}) : null;
+    var h='<div class="sl '+cap[2]+'">'+
+      '<div class="sl-cap">'+cap[0]+' MANȘA '+mi+' – '+cap[1]+'</div>';
+    if(state.endAt){
+      var now=nowSync(), t="";
+      if(state.startAt && now<state.startAt) t="Începe în "+fmtDur(state.startAt-now);
+      else if(now<=state.endAt) t="Timp rămas: "+fmtDur(state.endAt-now);
+      else t="Timpul s-a scurs";
+      h+='<div class="sl-ceas">⏱ '+t+'</div>';
+    }
+    h+='<div class="sl-cifre">'+
+        '<div><b>'+state.participants.length+'</b><span>👥 concurenți</span></div>'+
+        '<div><b>'+fmt(kg)+'</b><span>⚖️ kg cântărite</span></div>'+
+        '<div><b>'+cateCapturi(mi)+'</b><span>🐟 capturi</span></div>'+
+      '</div>';
+    if(lider && totalOf(lider)>0){
+      h+='<div class="sl-lider">🏆 Lider: <b>'+esc(nameOf(lider))+'</b> — '+fmt(totalOf(lider))+' kg'+
+         (standOfM(lider,mi)?' <span class="sl-st">Stand '+esc(standOfM(lider,mi))+'</span>':'')+'</div>';
+    }
+    h+='</div>';
+    return h;
+  }
+  function improspateazaStatus(){
+    var el=document.getElementById("status-live"); if(!el) return;
+    el.innerHTML=statusLiveHtml();
+  }
+  function deschideVremea(){ plianteaza("pliant-vreme"); }
   function leaderId(){
     var best=null, bt=0;
     state.participants.forEach(function(q){ var t=totalOf(q); if(t>bt+1e-9){ bt=t; best=q.id; } });
@@ -3845,6 +3918,10 @@
       }
     }
     if(bar){ bar.style.display=show?"block":"none"; bar.textContent=txt; }
+    // panoul de pe Acasă are un ceas care curge, deci se împrospătează odată cu bara —
+    // dar numai când chiar se vede, ca să nu redesenăm degeaba în timpul cântăririi
+    var acasa=document.getElementById("view-part");
+    if(acasa && acasa.classList.contains("active")) improspateazaStatus();
   }
   function startTimerLoop(){ if(timerInt) clearInterval(timerInt); timerTick(); timerInt=setInterval(timerTick,1000); }
   function alarmNadire(){
