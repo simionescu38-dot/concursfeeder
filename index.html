@@ -245,6 +245,15 @@
   .sl-lider{margin-top:10px; font-size:14px; font-weight:700; background:rgba(255,255,255,.14);
     border-radius:12px; padding:8px 10px;}
   .sl-st{opacity:.85; font-weight:700;}
+  /* butonul de manșă stă ÎN panou: panoul spune în ce stare e, butonul o schimbă.
+     Alb pe fundal colorat — nu e al doilea albastru pe ecran. */
+  .sl-act{display:block; width:100%; margin-top:12px; border:0; border-radius:999px;
+    min-height:48px; padding:14px 12px; font-size:16px; font-weight:800;
+    font-family:inherit; cursor:pointer; background:#fff; color:#0b3a7d;
+    box-shadow:0 2px 6px rgba(0,0,0,.18);}
+  .sl.live .sl-act{color:#8e2a1f;}
+  .sl.gata .sl-act{color:#155c39;}
+  .sl-act:active{transform:translateY(1px);}
 
   /* un rând din jurnalul cântăririlor */
   .jrand{border-left:3px solid var(--teal); background:#f7fafd; border-radius:0 10px 10px 0; padding:9px 12px; margin-bottom:8px;}
@@ -2653,6 +2662,7 @@
     if(state.numManse!==2 && state.numManse!==3) state.numManse=2;
     if(typeof state.scalaSectoare!=="boolean") state.scalaSectoare=false;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
+    if(!(state.durataMin>0)) state.durataMin=0;
     if(typeof state.rules!=="string") state.rules="";
     if(typeof state.balta!=="string") state.balta="";
     if(state.numStanduri===undefined || state.numStanduri===null) state.numStanduri="";
@@ -3613,13 +3623,7 @@
     var lid=leaderId(), lider=lid ? state.participants.find(function(p){return p.id===lid;}) : null;
     var h='<div class="sl '+cap[2]+'">'+
       '<div class="sl-cap">'+cap[0]+' MANȘA '+mi+' – '+cap[1]+'</div>';
-    if(state.endAt){
-      var now=nowSync(), t="";
-      if(state.startAt && now<state.startAt) t="Începe în "+fmtDur(state.startAt-now);
-      else if(now<=state.endAt) t="Timp rămas: "+fmtDur(state.endAt-now);
-      else t="Timpul s-a scurs";
-      h+='<div class="sl-ceas">⏱ '+t+'</div>';
-    }
+    if(state.endAt) h+='<div class="sl-ceas">⏱ '+textCeas()+'</div>';
     h+='<div class="sl-cifre">'+
         '<div><b>'+state.participants.length+'</b><span>👥 concurenți</span></div>'+
         '<div><b>'+fmt(kg)+'</b><span>⚖️ kg cântărite</span></div>'+
@@ -3629,12 +3633,86 @@
       h+='<div class="sl-lider">🏆 Lider: <b>'+esc(nameOf(lider))+'</b> — '+fmt(totalOf(lider))+' kg'+
          (standOfM(lider,mi)?' <span class="sl-st">Stand '+esc(standOfM(lider,mi))+'</span>':'')+'</div>';
     }
+    // un singur buton, cel care are sens acum. Pescarul care se uită nu-l vede deloc.
+    if(!isLocked()){
+      h += (stare==="live")
+        ? '<button type="button" class="sl-act" onclick="opresteMansa()">🏁 Gata, s-a terminat manșa</button>'
+        : '<button type="button" class="sl-act" onclick="pornesteMansa()">▶️ Pornește manșa '+mi+'</button>';
+    }
     h+='</div>';
     return h;
   }
+  /** cât mai e — aceeași vorbă și în panou, și când doar curge secunda */
+  function textCeas(){
+    var now=nowSync();
+    if(state.startAt && now<state.startAt) return "Începe în "+fmtDur(state.startAt-now);
+    if(now<=state.endAt) return "Timp rămas: "+fmtDur(state.endAt-now);
+    return "Timpul s-a scurs";
+  }
+  /* Panoul se redesenează doar când se schimbă ceva. Altfel, la fiecare secundă,
+     butonul ar fi înlocuit sub deget: apăsarea începe pe un buton și se termină pe
+     altul, iar telefonul n-o mai socotește apăsare. La baltă, tocmai butonul de
+     start și cel de final n-au voie să se piardă. */
+  var statusSemn=null;
   function improspateazaStatus(){
     var el=document.getElementById("status-live"); if(!el) return;
+    var mi=state.manche||1;
+    var kg=state.participants.reduce(function(s,p){ return s+totalOfM(p,mi); },0);
+    var semn=[stareaMansei(), mi, state.participants.length, isLocked()?1:0,
+              cateCapturi(mi), fmt(kg), leaderId()||""].join("|");
+    if(semn===statusSemn){
+      var ceas=el.querySelector(".sl-ceas");
+      if(ceas) ceas.textContent="⏱ "+textCeas();
+      return;
+    }
+    statusSemn=semn;
     el.innerHTML=statusLiveHtml();
+  }
+  /** cât ține o manșă, în minute: întâi cât s-a pus ultima oară, apoi cât e pe ceasul
+      din Cronometru. Zero înseamnă „nu știu încă" — atunci se întreabă o dată. */
+  function durataMansei(){
+    if(state.durataMin>0) return state.durataMin;
+    if(state.startAt && state.endAt && state.endAt>state.startAt)
+      return Math.round((state.endAt-state.startAt)/60000);
+    return 0;
+  }
+  /* ▶️ Ceasul se mută pe „acum + durata". Concursul începe rar la fix: ori se
+     întârzie cu tragerea la sorți, ori se pornește mai devreme. Până acum trebuia
+     rescrise amândouă orele în Cronometru, cu telefonul într-o mână și cântarul în
+     cealaltă; acum e o apăsare. */
+  function pornesteMansa(){
+    if(guard()) return;
+    var mi=state.manche||1, now=nowSync();
+    var min=durataMansei();
+    if(!min){
+      var r=prompt("Cât ține manșa "+mi+", în ore?", "4");
+      if(r===null) return;
+      var ore=parseFloat((""+r).replace(",","."));
+      if(!(ore>0)){ toast("N-am înțeles câte ore ține manșa"); return; }
+      min=Math.round(ore*60);
+    }
+    // ora pusă dinainte nu se calcă în picioare dintr-o apăsare greșită
+    if(state.startAt && now<state.startAt &&
+       !confirm("Manșa "+mi+" e pusă să înceapă la "+hhmm(state.startAt)+".\n\nO pornești acum, la "+hhmm(now)+"?")) return;
+    state.durataMin=min;
+    state.startAt=now;
+    state.endAt=now+min*60000;
+    // queueSave, nu save: ora trebuie să ajungă și pe telefoanele care privesc camera,
+    // altfel doar organizatorul vede cât mai e
+    queueSave();
+    // nădirea grea rămâne în urmă când pornești pe loc; claxonul de start îl sună timerTick
+    timerWasRunning=false; nadireAlerted=true; startAlerted=false;
+    resetWarnings(); startTimerLoop(); improspateazaStatus();
+  }
+  /* 🏁 Doar ceasul. Cântarul rămâne deschis, fiindcă pescarii vin cu juvelnicele
+     DUPĂ ce s-a strigat stop. Concursul se salvează în sezon tot cu „Am terminat
+     concursul", de la Clasament — butonul ăsta nu arhivează nimic. */
+  function opresteMansa(){
+    if(guard()) return;
+    var mi=state.manche||1;
+    if(!confirm("Oprești manșa "+mi+" acum?\n\nSună claxonul de final și ceasul se oprește. Cântarul rămâne deschis, ca să treci greutățile.")) return;
+    state.endAt=nowSync();
+    queueSave(); startTimerLoop(); improspateazaStatus();
   }
   function deschideVremea(){ plianteaza("pliant-vreme"); }
   function leaderId(){
