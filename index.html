@@ -85,12 +85,16 @@
   .w-stand{flex:0 0 78px;}
 
   button.btn{
-    border:0; border-radius:12px; padding:12px 14px; font-size:15px; font-weight:800;
+    border:0; border-radius:12px; padding:15px 14px; min-height:48px; font-size:15px; font-weight:800;
     cursor:pointer; font-family:inherit; width:100%;
     transition:transform .1s ease, filter .15s ease, background .15s ease;
   }
   button.btn:active{transform:scale(.98);}
   .btn-primary{background:linear-gradient(135deg,var(--teal) 0%,var(--teal-d) 100%); color:#fff; box-shadow:0 6px 16px -6px rgba(15,79,168,.5);}
+  /* Butonul scos în față e rotunjit de tot, ca să se deosebească de restul dintr-o
+     privire. Scris cu două clase (0,2,0) fiindcă regula de bază e „button.btn" (0,1,1):
+     un simplu „.btn-primary" ar fi pierdut, iar colțurile ar fi rămas de 12px. */
+  .btn.btn-primary{border-radius:999px;}
   .btn-primary:active{filter:brightness(.94);}
   .btn-amber{background:linear-gradient(135deg,var(--amber) 0%,#d97b0a 100%); color:#fff; box-shadow:0 6px 16px -6px rgba(217,123,10,.45);}
   .btn-ghost{background:var(--teal-soft); color:var(--teal-d); border:1.5px solid var(--line);}
@@ -131,7 +135,9 @@
   .mlabel{display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:5px;}
   .catch-row{display:flex; gap:8px;}
   .catch-in{flex:1; text-align:center; font-weight:700; padding:10px 8px;}
-  .catch-add{flex:0 0 50px; border:0; border-radius:10px; background:var(--teal); color:#fff; font-size:24px; font-weight:800; line-height:1; cursor:pointer;}
+  /* Cel mai apăsat buton al zilei: se apasă cu degetul, în picioare, cu cântarul în
+     cealaltă mână. Rândul fiind flex, crește odată cu el și câmpul de scris greutatea. */
+  .catch-add{flex:0 0 58px; min-height:52px; border:0; border-radius:999px; background:var(--teal); color:#fff; font-size:26px; font-weight:800; line-height:1; cursor:pointer;}
   .catch-add:active{background:var(--teal-d);}
   .chips-c{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center;}
   .chips-empty{font-size:12px; color:var(--muted);}
@@ -193,7 +199,7 @@
 
   /* toggle */
   .seg{display:flex; background:#dce6f0; border-radius:11px; padding:4px; margin-bottom:14px;}
-  .seg button{flex:1; border:0; background:none; padding:9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
+  .seg button{flex:1; border:0; background:none; padding:14px 9px; border-radius:8px; font-weight:800; font-size:14px; color:var(--muted); cursor:pointer; font-family:inherit;}
   .seg button.on{background:#fff; color:var(--teal-d); box-shadow:0 1px 3px rgba(0,0,0,.08);}
 
   .cmmc{background:linear-gradient(120deg,#fff5e4,#fbe9cf); border:1.5px solid #f0d29a; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
