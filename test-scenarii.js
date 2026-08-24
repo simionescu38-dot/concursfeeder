@@ -299,4 +299,130 @@ t("are cel mai mare total de puncte, deci ultimul loc", tabel("total").slice(-1)
 t("ia câte un punct peste ultimul loc, în fiecare manșă", puncte("total", "N-a fost"), 6);
 t("prezenții rămân neatinși", [puncte("total", "Cristi"), puncte("total", "Paul")], [2, 4]);
 
+/* ================================================================
+   11. Lanțul de departajare, treaptă cu treaptă
+
+   sortByPointsS are cinci trepte: puncte → kilograme → cea mai bună manșă (doar la
+   General) → cel mai mare pește → numărul standului. Primele două se încercau deja;
+   ultimele trei, nicăieri. Ele decid cupa exact când doi sunt la egalitate perfectă,
+   adică atunci când contestația e cea mai probabilă.
+   ================================================================ */
+console.log("\n=== 11a. Treapta 3: cea mai bună manșă (la General) ===");
+concurs(2, false, [
+  // Amândoi termină cu 15 kg și 3 puncte; îi desparte doar manșa cea mai bună.
+  // Standurile sunt puse dinadins INVERS: dacă treapta „cea mai bună manșă" ar dispărea,
+  // departajarea ar cădea pe stand și ar câștiga Constant. Așa proba chiar dovedește ceva.
+  ["Explozie", [["8", "A", 12.0], ["8", "A",  3.0]]],
+  ["Constant", [["1", "A",  8.0], ["1", "A",  7.0]]]
+]);
+t("puncte egale la General", [puncte("total", "Explozie"), puncte("total", "Constant")], [3, 3]);
+t("kilograme egale la General",
+  vm.runInContext("[totalOfM(state.participants[0],'total'), totalOfM(state.participants[1],'total')]", box), [15, 15]);
+t("cea mai bună manșă îi desparte: 12 kg bate 8 kg",
+  tabel("total").map(r => r[0]), ["Explozie", "Constant"]);
+
+console.log("\n=== 11b. Treapta 4: cel mai mare pește ===");
+concurs(1, false, [
+  // 10 kg fiecare, dar unul are un pește de 3 kg; standul e pus dinadins invers,
+  // ca să se vadă că CMMC-ul decide ÎNAINTEA standului
+  ["FaraPeste", [["2", "A", 10.0]]],
+  ["CuPeste",   [["5", "A",  7.0, 3.0]]]
+]);
+t("amândoi au 10 kg",
+  vm.runInContext("[totalOfM(state.participants[0],1), totalOfM(state.participants[1],1)]", box), [10, 10]);
+t("deci împart locurile 1-2", [puncte(1, "FaraPeste"), puncte(1, "CuPeste")], [1.5, 1.5]);
+t("CMMC-ul decide, deși are standul mai mare", tabel(1).map(r => r[0]), ["CuPeste", "FaraPeste"]);
+
+console.log("\n=== 11c. Treapta 5: numărul standului ===");
+concurs(1, false, [
+  ["StandMare", [["9", "A", 10.0]]],
+  ["StandMic",  [["2", "A", 10.0]]]
+]);
+t("totul egal — puncte, kilograme, niciun pește extra",
+  [puncte(1, "StandMare"), puncte(1, "StandMic")], [1.5, 1.5]);
+t("standul mai mic trece primul", tabel(1).map(r => r[0]), ["StandMic", "StandMare"]);
+t("standul 10 nu se compară ca text cu standul 9", (function () {
+  concurs(1, false, [["Stand10", [["10", "A", 10.0]]], ["Stand9", [["9", "A", 10.0]]]]);
+  return tabel(1).map(r => r[0]);
+})(), ["Stand9", "Stand10"]);
+
+/* ================================================================
+   12. Concurs în care nu s-a prins absolut nimic
+   ================================================================ */
+console.log("\n=== 12. Nimeni n-a prins nimic ===");
+concurs(1, false, [
+  ["A1", [["4", "A", 0]]], ["A2", [["1", "A", 0]]],
+  ["B1", [["7", "B", 0]]], ["B2", [["3", "B", 0]]]
+]);
+t("fiecare sector împarte locurile 1-2",
+  [puncte(1, "A1"), puncte(1, "A2"), puncte(1, "B1"), puncte(1, "B2")], [1.5, 1.5, 1.5, 1.5]);
+t("nimeni nu e „absent\": toți au extras stand",
+  vm.runInContext("state.participants.filter(function(p){return absentLaMansa(p,1);}).length", box), 0);
+t("ordinea cade pe stand, fiindcă tot restul e egal",
+  tabel(1).map(r => r[0]), ["A2", "B2", "A1", "B1"]);
+t("totalul concursului e zero",
+  vm.runInContext("state.participants.reduce(function(s,p){return s+totalOfM(p,1);},0)", box), 0);
+
+/* ================================================================
+   13. Pescari fără sector
+   ================================================================ */
+console.log("\n=== 13. Fără sector ===");
+concurs(1, false, [
+  ["Fara1", [["1", "", 10.0]]],
+  ["Fara2", [["2", "", 6.0]]],
+  ["Fara3", [["3", "", 2.0]]],
+  ["Are1",  [["4", "A", 9.0]]],
+  ["Are2",  [["5", "A", 1.0]]]
+]);
+t("cei fără sector formează o grupă a lor, de trei",
+  [puncte(1, "Fara1"), puncte(1, "Fara2"), puncte(1, "Fara3")], [1, 2, 3]);
+t("cei cu sector se punctează între ei, ca de obicei",
+  [puncte(1, "Are1"), puncte(1, "Are2")], [1, 2]);
+t("primul din fiecare grupă ia 1 punct — kilogramele departajează",
+  tabel(1).slice(0, 2).map(r => r[0]), ["Fara1", "Are1"]);
+
+/* ================================================================
+   14. „Îndreptat" pe două manșe
+   ================================================================ */
+console.log("\n=== 14. Scala comună, pe două manșe ===");
+concurs(2, true, [
+  ["A1", [["1", "A", 10.0], ["1", "A", 10.0]]],
+  ["A2", [["2", "A",  8.0], ["2", "A",  8.0]]],
+  ["A3", [["3", "A",  6.0], ["3", "A",  6.0]]],
+  ["A4", [["4", "A",  4.0], ["4", "A",  4.0]]],
+  ["B1", [["5", "B",  9.0], ["5", "B",  9.0]]],
+  ["B2", [["6", "B",  1.0], ["6", "B",  1.0]]]
+]);
+t("în sectorul mic, ultimul ia tot cât ultimul din sectorul mare",
+  [puncte(1, "B2"), puncte(1, "A4")], [4, 4]);
+t("primii din fiecare sector iau 1", [puncte(1, "A1"), puncte(1, "B1")], [1, 1]);
+t("la General punctele se adună, deci se dublează",
+  [puncte("total", "A1"), puncte("total", "B2")], [2, 8]);
+t("tabelul General, pe scala comună",
+  tabel("total").map(r => r[0]), ["A1", "B1", "A2", "A3", "A4", "B2"]);
+box.state.scalaSectoare = false;
+
+/* ================================================================
+   15. Tragere nouă între manșe: fiecare manșă pe sectoarele ei
+   ================================================================ */
+console.log("\n=== 15. Alt sector în manșa 2 ===");
+concurs(2, false, [
+  // în manșa 1 sunt toți trei în A; în manșa 2 primii doi trec în B
+  ["Unu",  [["1", "A", 10.0], ["7", "B", 3.0]]],
+  ["Doi",  [["2", "A",  6.0], ["8", "B", 9.0]]],
+  ["Trei", [["3", "A",  2.0], ["9", "A", 5.0]]]
+]);
+t("manșa 1: un singur sector, cu trei oameni",
+  [puncte(1, "Unu"), puncte(1, "Doi"), puncte(1, "Trei")], [1, 2, 3]);
+t("manșa 2: doi în B, unul singur în A",
+  [puncte(2, "Doi"), puncte(2, "Unu"), puncte(2, "Trei")], [1, 2, 1]);
+t("sectorul se citește din manșa cerută, nu din prima",
+  vm.runInContext("[sectorOfM(state.participants[0],1), sectorOfM(state.participants[0],2)]", box), ["A", "B"]);
+t("standul la fel",
+  vm.runInContext("[standOfM(state.participants[0],1), standOfM(state.participants[0],2)]", box), ["1", "7"]);
+t("General adună punctele celor două manșe",
+  [puncte("total", "Unu"), puncte("total", "Doi"), puncte("total", "Trei")], [3, 3, 4]);
+t("la egalitate de puncte, kilogramele decid: Doi (15) înaintea lui Unu (13)",
+  tabel("total").map(r => r[0]), ["Doi", "Unu", "Trei"]);
+
 t.raport();
