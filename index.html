@@ -231,6 +231,16 @@
   .pliant-cap::after{content:"▾"; margin-left:auto; transition:transform .15s;}
   .pliant.deschis .pliant-cap::after{transform:rotate(180deg);}
   .pliant.deschis .pliant-cap{margin-bottom:10px;}
+  /* un rând din jurnalul cântăririlor */
+  .jrand{border-left:3px solid var(--teal); background:#f7fafd; border-radius:0 10px 10px 0; padding:9px 12px; margin-bottom:8px;}
+  .jrand.sters{border-left-color:#b23b2e; background:#fdf7f6;}
+  .jcap{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);}
+  .jnume{font-weight:800; font-size:15px; margin-top:1px;}
+  .jkg{font-weight:800; font-size:16px; margin-top:3px; color:var(--teal-d);}
+  .jrand.sters .jkg{color:#b23b2e;}
+  .jsag{color:var(--muted); font-weight:700; margin:0 2px;}
+  .jet{font-size:12px; font-weight:700; color:var(--muted); margin-top:2px;}
+  .jsub{font-size:11.5px; color:var(--muted); margin-top:4px;}
   .pliant-cap .rar{font-size:11px; font-weight:700; letter-spacing:.04em;
     text-transform:uppercase; opacity:.7;}
   .pliant-in[hidden]{display:none;}
@@ -470,6 +480,11 @@
     <div id="warn-sector" style="display:none;"></div>
     <input id="search-part" placeholder="🔎 Caută după nume sau stand…" oninput="renderList()" style="margin-bottom:12px;">
     <div id="list"></div>
+
+    <div class="pliant mt" id="pliant-jurnal">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideJurnal()">📜 Jurnalul cântăririlor <span class="rar">nu se șterge</span></button>
+      <div class="pliant-in" hidden><div id="jurnalBody"></div></div>
+    </div>
   </section>
 
   <!-- CALENDAR -->
@@ -2621,6 +2636,7 @@
     if(typeof state.balta!=="string") state.balta="";
     if(state.numStanduri===undefined || state.numStanduri===null) state.numStanduri="";
     if(!Array.isArray(state.sponsors)) state.sponsors=[];
+    if(!Array.isArray(state.jurnal)) state.jurnal=[];
     (state.participants||[]).forEach(function(p){
       if(!p.m){
         if(!Array.isArray(p.catches)){ var v=num(p.cant); p.catches = v>0 ? [v] : []; }
@@ -2795,6 +2811,23 @@
     h+='<span class="chip-sum">= '+fmt(cantOf(p))+' kg</span>';
     return h;
   }
+  /* Jurnalul cântăririlor: se ADAUGĂ, niciodată nu se șterge și nu se rescrie. E dovada
+     care rămâne dacă cineva contestă un rezultat la premiere. Stă în datele concursului,
+     deci pleacă în arhivă odată cu el la 🏁 și supraviețuiește golirii telefonului.
+
+     Numele, standul și sectorul se scriu ca fotografie a clipei: dacă pescarul e mutat pe
+     alt stand sau scos din listă mai târziu, rândul din jurnal tot spune cine și de unde.
+     „inainte" și „dupa" sunt totalul lui pe manșa aceea, ca rândul să se citească exact
+     cum se vede pe cântar: 15,420 kg → 15,920 kg. */
+  function scrieInJurnal(p, mi, fel, act, kg, inainte, dupa){
+    if(!Array.isArray(state.jurnal)) state.jurnal=[];
+    state.jurnal.push({
+      id: uid(), t: Date.now(), pid: p.id, nume: nameOf(p),
+      stand: standOfM(p, mi)||"", sector: sectorOfM(p, mi)||"", m: mi,
+      fel: fel, act: act, kg: kg, inainte: inainte, dupa: dupa,
+      cine: "Organizator"
+    });
+  }
   function addCatchCore(id, photo){
     var el=document.getElementById("catch-"+id); if(!el) return;
     var v=num(el.value);
@@ -2803,9 +2836,11 @@
     if(v>0){
       var prevLeader=leaderId();
       var vr=Math.round(v*1000)/1000;
+      var mi=state.manche||1, inainte=totalOfM(p, mi);
       m.catches.push(vr);
       m.catchTimes.push(Date.now());
       m.catchPhotos.push(photo||null);
+      scrieInJurnal(p, mi, "captura", "adaugat", vr, inainte, totalOfM(p, mi));
       queueSave(); refreshCard(id);
       var newLeader=leaderId();
       var isLeaderNow = (prevLeader && newLeader===p.id && newLeader!==prevLeader);
@@ -2832,9 +2867,11 @@
     var m=mOf(p, state.manche||1);
     var v=m.catches[idx];
     if(!confirm("Ștergi captura de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
+    var mi=state.manche||1, inainte=totalOfM(p, mi);
     m.catches.splice(idx,1);
     m.catchTimes.splice(idx,1);
     m.catchPhotos.splice(idx,1);
+    scrieInJurnal(p, mi, "captura", "sters", v, inainte, totalOfM(p, mi));
     queueSave(); refreshCard(id);
   }
   function addExtra(id){
@@ -2846,7 +2883,9 @@
     if(v>0){
       var prevLeader=leaderId();
       var vr=Math.round(v*1000)/1000;
+      var mi=state.manche||1, inainte=totalOfM(p, mi);
       m.extras.push(vr);
+      scrieInJurnal(p, mi, "extra", "adaugat", vr, inainte, totalOfM(p, mi));
       queueSave(); refreshCard(id);
       var newLeader=leaderId();
       if(prevLeader && newLeader===p.id && newLeader!==prevLeader){ showNewLeader(p); }
@@ -2860,7 +2899,10 @@
     var m=mOf(p, state.manche||1);
     var v=m.extras[idx];
     if(!confirm("Ștergi peștele extra de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
-    m.extras.splice(idx,1); queueSave(); refreshCard(id);
+    var mi=state.manche||1, inainte=totalOfM(p, mi);
+    m.extras.splice(idx,1);
+    scrieInJurnal(p, mi, "extra", "sters", v, inainte, totalOfM(p, mi));
+    queueSave(); refreshCard(id);
   }
   function extrasChipsHtml(p){
     var m=mOf(p, state.manche||1);
@@ -2880,6 +2922,45 @@
     var tot=document.getElementById("tot-"+id); if(tot) tot.innerHTML=fmt(totalOf(p))+' <small>kg</small>';
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
     improspateazaCantariti();
+    improspateazaJurnal();
+  }
+
+  /* ---------- jurnalul cântăririlor ---------- */
+  function deschideJurnal(){
+    plianteaza("pliant-jurnal");
+    improspateazaJurnal();
+  }
+  function improspateazaJurnal(){
+    var cuprins=document.querySelector("#pliant-jurnal .pliant-in");
+    var box=document.getElementById("jurnalBody");
+    if(!cuprins || !box || cuprins.hidden) return;
+    box.innerHTML=jurnalHtml();
+  }
+  function jurnalDataOra(t){
+    var d=new Date(t);
+    return ("0"+d.getDate()).slice(-2)+"."+("0"+(d.getMonth()+1)).slice(-2)+"."+d.getFullYear()+
+      ", "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+  }
+  function jurnalHtml(){
+    var j=(state.jurnal||[]);
+    if(!j.length){
+      return '<p class="hint" style="margin:0;">Încă nicio cântărire. Fiecare captură trecută sau ștearsă se scrie aici, cu ora, și rămâne — inclusiv în arhiva concursului.</p>';
+    }
+    // cele mai noi sus: la baltă te uiți după ce tocmai s-a întâmplat
+    var h='<p class="hint" style="margin:0 0 10px;">'+j.length+' '+(j.length===1?"înregistrare":"înregistrări")+
+      ' · se adaugă, nu se șterg niciodată. Pleacă în arhivă odată cu concursul.</p>';
+    j.slice().sort(function(a,b){ return (b.t||0)-(a.t||0); }).forEach(function(x){
+      var sters = x.act==="sters";
+      var eticheta = (sters?"− ":"+ ")+fmt(x.kg)+" kg "+(x.fel==="extra" ? "pește extra" : "captură")+(sters?" ștearsă":"");
+      h+='<div class="jrand'+(sters?' sters':'')+'">'+
+        '<div class="jcap">Stand '+esc(x.stand||"–")+' · Manșa '+(x.m||1)+(x.sector?' · Sector '+esc(x.sector):'')+'</div>'+
+        '<div class="jnume">'+esc(x.nume||"—")+'</div>'+
+        '<div class="jkg">'+fmt(x.inainte)+' kg <span class="jsag">→</span> '+fmt(x.dupa)+' kg</div>'+
+        '<div class="jet">'+esc(eticheta)+'</div>'+
+        '<div class="jsub">👤 '+esc(x.cine||"Organizator")+' · 🕒 '+jurnalDataOra(x.t)+'</div>'+
+      '</div>';
+    });
+    return h;
   }
 
   function sectorOptions(sel){ return state.sectors.map(function(s){ return '<option value="'+esc(s)+'"'+(s===sel?' selected':'')+'>Sector '+esc(s)+'</option>'; }).join(''); }
@@ -3017,6 +3098,7 @@
     });
     list.innerHTML=html;
     applyPhotos();
+    improspateazaJurnal();
   }
   function applyPhotos(){
     state.participants.forEach(function(p){
@@ -4151,6 +4233,14 @@
           if(i>=0){ state.participants[i]=np; updated++; } else { state.participants.push(np); added++; }
         });
         if(data.name && !state.name) state.name=data.name;
+        // Jurnalul se ADUNĂ, nu se înlocuiește: la „Combină", rândurile scrise pe celălalt
+        // telefon trebuie să rămână lângă ale noastre. Se potrivesc după id, ca aceeași
+        // cântărire importată de două ori să nu apară de două ori.
+        if(Array.isArray(data.jurnal) && data.jurnal.length){
+          if(!Array.isArray(state.jurnal)) state.jurnal=[];
+          var stiute={}; state.jurnal.forEach(function(x){ if(x && x.id) stiute[x.id]=1; });
+          data.jurnal.forEach(function(x){ if(x && x.id && !stiute[x.id]){ state.jurnal.push(x); stiute[x.id]=1; } });
+        }
         normalize(); save();
         toast(added+" adăugați, "+updated+" actualizați");
       }
@@ -4209,7 +4299,9 @@
     // concursului, se șterge odată cu el. Balta la fel: e a locului, iar etapa
     // următoare e de obicei tot acolo — rămâne scrisă în câmp, deci se vede și se
     // schimbă dintr-o atingere când chiar se mută concursul.
-    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice(), numManse:state.numManse, balta:state.balta||"" };
+    // jurnalul pornește gol pentru concursul următor: cel vechi a plecat deja în arhivă,
+    // împreună cu concursul lui, iar puneDeoParte() ține și o copie pe telefon
+    state={ name:"", sectors:["A","B","C"], participants:[], rules:"", sponsors:(state.sponsors||[]).slice(), numManse:state.numManse, balta:state.balta||"", jurnal:[] };
     save(); saveArchiveId("");
     document.getElementById("set-name").value=""; document.getElementById("compName").textContent="";
     document.getElementById("nm-2").classList.toggle("on", numManse()===2);
