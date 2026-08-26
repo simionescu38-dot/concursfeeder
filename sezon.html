@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Clasament de Sezon — Pescuit</title>
-<meta name="theme-color" content="#1c6fd9">
+<meta name="theme-color" content="#070d14">
 <link rel="icon" href="icon-192.png">
 <style>
   :root{
@@ -88,6 +88,82 @@
   button.btn:active{transform:scale(.98);}
   .btn-ghost{background:var(--teal-soft); color:var(--teal-d); border:1.5px solid var(--line);}
 
+  /* Dark Premium – identic cu aplicația principală. Calculele sezonului rămân separate. */
+  :root{
+    color-scheme:dark;
+    --pine:#f4f8ff; --teal:#19d3d1; --teal-d:#69ebe4; --teal-soft:#102d37;
+    --amber:#f2b84b; --amber-soft:#2d2414;
+    --bg:#070d14; --card:#101a25; --line:#22384a; --muted:#8da2b5;
+    --shadow-sm:0 12px 30px -24px rgba(0,0,0,.9);
+  }
+  body{background:radial-gradient(circle at 50% -120px,#12313c 0,#070d14 430px);}
+  header{background:rgba(7,13,20,.96); border-bottom:1px solid #16424b; box-shadow:0 12px 34px -28px rgba(25,211,209,.65); backdrop-filter:blur(14px);}
+  .header-inner{max-width:640px; margin:0 auto;}
+  .header-top{display:flex; align-items:center; gap:12px;}
+  .back-home{flex:0 0 40px; width:40px; height:40px; display:grid; place-items:center; color:var(--teal); border:1px solid #274253; border-radius:12px; background:#101d29; text-decoration:none;}
+  .header-copy{min-width:0; flex:1;}
+  .title-row{display:flex; align-items:center; gap:8px;}
+  .title-row .ui-ico{width:21px; height:21px; color:var(--teal);}
+  .ui-icons{position:absolute; width:0; height:0; overflow:hidden;}
+  .ui-ico{width:18px; height:18px; display:inline-block; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; vertical-align:-4px; flex:0 0 auto;}
+  header .kicker{color:var(--teal); opacity:.9;}
+  header .comp{color:#a6b7c6; opacity:1;}
+  main{padding-top:16px;}
+  .card,.stat{background:linear-gradient(145deg,#101d29,#0b141e); border-color:var(--line);}
+  .card{border-radius:18px;}
+  .sec-title{display:flex; align-items:center; gap:7px; color:var(--teal);}
+  .sec-title .ui-ico{width:16px; height:16px;}
+  .summary{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .stat{position:relative; overflow:hidden; min-height:82px; border-radius:16px; padding:13px 14px;}
+  .stat::after{content:""; position:absolute; right:-14px; bottom:-22px; width:64px; height:64px; border-radius:50%; background:rgba(25,211,209,.06);}
+  .stat .n{color:#f4fbff; font-size:27px;}
+  .stat .l{color:#8da2b5;}
+  .seg{background:#09131d; border:1px solid var(--line); padding:5px;}
+  .seg button{color:#8ca0b2; min-height:42px;}
+  .seg button.on{background:#14303d; color:var(--teal); box-shadow:none;}
+  .cmmc{background:linear-gradient(135deg,#2b2517,#18170f); border-color:#665225; border-radius:16px; padding:13px 14px;}
+  .cmmc .medal{width:42px; height:42px; display:grid; place-items:center; border-radius:13px; background:#342b18; color:#f2c14e;}
+  .cmmc .medal .ui-ico{width:23px; height:23px;}
+  .cmmc .t,.cmmc .kg{color:#f2c96b;}
+  .cmmc .who span{color:#c7ad70 !important;}
+  .cmmc.loyal{background:linear-gradient(135deg,#123027,#0d1d19); border-color:#275b48;}
+  .cmmc.loyal .medal{background:#153b31; color:#69ebe4;}
+  .cmmc.loyal .t,.cmmc.loyal .kg{color:#69ebe4;}
+  table{background:#0d1722; border-color:var(--line); box-shadow:var(--shadow-sm);}
+  th{background:#101f2c; color:#91a6b8;}
+  td{border-color:var(--line);}
+  tbody tr:nth-child(even):not(.p1):not(.p2):not(.p3) td{background:#0f1a25;}
+  tr.p1 td{background:linear-gradient(90deg,rgba(242,193,78,.14),rgba(37,31,19,.68));}
+  tr.p2 td{background:linear-gradient(90deg,rgba(174,189,202,.10),rgba(20,29,38,.68));}
+  tr.p3 td{background:linear-gradient(90deg,rgba(216,137,88,.12),rgba(35,27,23,.68));}
+  tr.histrow td{background:#09131d;}
+  tr.pclick:active{background:#12303a;}
+  .place-badge,.podium-badge{display:inline-grid; place-items:center; font-weight:900; font-variant-numeric:tabular-nums;}
+  .place-badge{width:29px; height:29px; border-radius:50%; background:#102431; color:#9fb0bf; border:1px solid #294252; font-size:12px;}
+  .place-badge.gold{background:linear-gradient(145deg,#ffe58d,#d99a2d); color:#281b03; border-color:#f5cc64;}
+  .place-badge.silver{background:linear-gradient(145deg,#eef5fa,#91a3b2); color:#17212a; border-color:#c5d1db;}
+  .place-badge.bronze{background:linear-gradient(145deg,#efb188,#b7653f); color:#29140b; border-color:#dc946d;}
+  .podium-badge{width:23px; height:23px; margin-right:7px; border-radius:8px; background:#14303d; color:var(--teal); font-size:11px;}
+  .comp-card{margin:0 0 9px; padding:11px 12px; border:1px solid var(--line); border-radius:13px; background:#0d1823;}
+  .comp-card:first-child{border-top:1px solid var(--line);}
+  .comp-card-h{align-items:flex-start;}
+  .comp-card-h .cd{color:#8599aa;}
+  .comp-podium-row{align-items:center; padding:4px 0;}
+  .comp-podium-row>span:first-child{display:flex; align-items:center; min-width:0;}
+  .btn-ghost{background:#112634; color:#8cf2eb; border-color:#284454;}
+  button.btn{display:flex; align-items:center; justify-content:center; gap:7px; min-height:46px;}
+  .empty{border:1px dashed #294252; border-radius:18px; background:#0d1722;}
+  .empty .ui-ico{width:34px; height:34px; color:var(--teal); margin-bottom:8px;}
+  .loading-ring{width:32px; height:32px; margin:0 auto 12px; border:3px solid #203747; border-top-color:var(--teal); border-radius:50%; animation:seasonSpin .9s linear infinite;}
+  @keyframes seasonSpin{to{transform:rotate(360deg);}}
+  @media (max-width:430px){
+    th,td{padding:9px 6px; font-size:13px;}
+    td.pos{width:32px;}
+    .cmmc{align-items:flex-start; flex-wrap:wrap;}
+    .cmmc .kg{margin-left:54px; margin-top:-8px; width:calc(100% - 54px);}
+    .row.action-row{display:grid; grid-template-columns:1fr;}
+  }
+
   #printArea{display:none;}
   @media print{
     body>*:not(#printArea){display:none !important;}
@@ -105,15 +181,33 @@
 </head>
 <body>
 
+<svg class="ui-icons" aria-hidden="true">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v4c0 4-1.8 6-4 6s-4-2-4-6V4Z"/><path d="M8 6H4v2c0 2 1.2 3.5 3.4 3.8M16 6h4v2c0 2-1.2 3.5-3.4 3.8M12 14v4M8 21h8M9 18h6"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 24 24"><path d="M4 12c3-5 8-7 13-4l4-3v14l-4-3c-5 3-10 1-13-4Z"/><circle cx="14.5" cy="11" r=".7" fill="currentColor" stroke="none"/><path d="M4 12H2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.7-5 3.3-7 8-7s7.3 2 8 7"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m4 18 5-5 4 3 3-4 5 6"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 4v6h6M5 9a8 8 0 1 1-1 6"/><path d="M12 8v5l3 2"/></symbol>
+  <symbol id="i-location" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5M12 18h.01"/></symbol>
+</svg>
+
 <header>
-  <div class="kicker">Sezon complet</div>
-  <h1>🏆 Clasament de sezon</h1>
-  <div class="comp" id="subline">Se încarcă concursurile…</div>
+  <div class="header-inner"><div class="header-top">
+    <a class="back-home" href="index.html" aria-label="Înapoi în aplicație"><svg class="ui-ico"><use href="#i-back"></use></svg></a>
+    <div class="header-copy"><div class="kicker">Sezon complet</div>
+      <div class="title-row"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg><h1>Clasament de sezon</h1></div>
+      <div class="comp" id="subline">Se încarcă concursurile…</div>
+    </div>
+  </div></div>
 </header>
 
 <main>
   <div id="content">
-    <div class="empty"><div class="big">⏳</div>Se încarcă datele din toate concursurile…</div>
+    <div class="empty"><div class="loading-ring" aria-hidden="true"></div>Se încarcă datele din toate concursurile…</div>
   </div>
 </main>
 
@@ -477,7 +571,7 @@
     pozitiiSezon(currentSeasonSorted()).forEach(function(p, i){
       var rec=p.rec, loc=p.loc;
       var cls = p.clasat && loc===1?"p1":p.clasat && loc===2?"p2":p.clasat && loc===3?"p3":"";
-      var medal = !p.clasat ? "–" : loc===1?"🥇":loc===2?"🥈":loc===3?"🥉":loc;
+      var medal = !p.clasat ? "–" : '<span class="place-badge '+(loc===1?'gold':loc===2?'silver':loc===3?'bronze':'')+'">'+loc+'</span>';
       var subsol = rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+
         (p.clasat ? '' : ' · sub pragul de '+season.prag+', neclasat')+' · atinge pentru istoric';
       rows += '<tr class="'+cls+' pclick" onclick="toggleHist('+i+')">'+
@@ -499,21 +593,20 @@
     var body = document.getElementById("content");
     var cmmcHtml = "";
     if(season.seasonFish){
-      cmmcHtml = '<div class="cmmc"><div class="medal">🐟</div><div><div class="t">CMMC sezon — cel mai mare pește</div>'+
+      cmmcHtml = '<div class="cmmc"><div class="medal"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg></div><div><div class="t">CMMC sezon — cel mai mare pește</div>'+
         '<div class="who">'+esc(season.seasonFish.name)+' <span style="font-weight:600;color:#8a5a12;">· '+esc(season.seasonFish.comp)+'</span></div></div>'+
         '<div class="kg num">'+fmt(season.seasonFish.v)+' kg</div></div>';
     }
     var loyalHtml = "";
     if(season.mostLoyal && season.mostLoyal.length && season.comps.length>1){
       var loyalNames = season.mostLoyal.map(function(r){ return esc(r.name); }).join(", ");
-      loyalHtml = '<div class="cmmc loyal"><div class="medal">🎯</div><div><div class="t">Cel mai fidel participant</div>'+
+      loyalHtml = '<div class="cmmc loyal"><div class="medal"><svg class="ui-ico" aria-hidden="true"><use href="#i-user"></use></svg></div><div><div class="t">Cel mai fidel participant</div>'+
         '<div class="who">'+loyalNames+'</div></div>'+
         '<div class="kg num">'+season.mostLoyal[0].competitions+' concursuri</div></div>';
     }
     var compListHtml = season.comps.map(function(c){
       var podium = (c.top3||[]).map(function(t,i){
-        var medal = i===0?"🥇":i===1?"🥈":"🥉";
-        return '<div class="comp-podium-row"><span>'+medal+' '+esc(t.name)+'</span><span class="kg num">'+fmt(t.kg)+' kg</span></div>';
+        return '<div class="comp-podium-row"><span><span class="podium-badge">'+(i+1)+'</span>'+esc(t.name)+'</span><span class="kg num">'+fmt(t.kg)+' kg</span></div>';
       }).join("");
       return '<div class="comp-card"><div class="comp-card-h"><span class="cn">'+esc(c.name)+'</span><span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' particip.</span></div>'+
         (podium || '<p class="hint" style="margin:0;">Fără rezultate cu nume.</p>')+
@@ -522,10 +615,10 @@
 
     var standHtml = season.locStands.map(function(L){
       var randuri = L.standuri.slice(0,15).map(function(s,i){
-        var medal = i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+        var loc=i+1, medal='<span class="place-badge '+(loc===1?'gold':loc===2?'silver':loc===3?'bronze':'')+'">'+loc+'</span>';
         return '<tr><td class="pos">'+medal+'</td><td>Stand '+esc(s.stand)+'</td><td class="kg num">'+s.uses+'</td><td class="kg num">'+fmt(s.totalKg)+'</td></tr>';
       }).join("");
-      return '<div class="card" style="margin-top:14px;"><div class="sec-title">Cel mai productiv stand · '+esc(L.loc)+'</div>'+
+      return '<div class="card" style="margin-top:14px;"><div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-location"></use></svg>Cel mai productiv stand · '+esc(L.loc)+'</div>'+
         '<table><thead><tr><th class="pos">#</th><th>Stand</th><th class="kg">Cântăriri</th><th class="kg">Total kg</th></tr></thead><tbody>'+randuri+'</tbody></table></div>';
     }).join("");
     if(standHtml){
@@ -546,15 +639,15 @@
       '<table><thead><tr><th class="pos">#</th><th>Concurent</th><th class="kg">Pct</th><th class="kg">Total kg</th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<p class="hint">Puncte = <b>media</b> locurilor ocupate în etapele la care ai fost (loc 1 = 1 punct) — câștigă cine are media mai mică. Se ia media, nu suma, ca prezența să nu te coste: cu suma, cine venea la o etapă și o câștiga bătea pe cine venea la toate și le câștiga pe toate. Etapele cu mai puțini participanți se aduc pe scala celei mai numeroase, ca ultimul dintr-o etapă mică să nu încaseze mai puțin decât ultimul dintr-una mare.</p>'+
       '<p class="hint">Ca să fii clasat îți trebuie minim <b>'+(season.prag||2)+'</b> '+((season.prag||2)===1?'etapă':'etape')+' — jumătate din cele ținute, rotunjit în sus. Altfel o singură apariție câștigată ar da media perfectă 1, pe care nimeni n-ar putea-o întrece. Cine e sub prag rămâne în tabel, cu rezultatele lui, dar fără loc. La medii egale departajează numărul de etape, apoi kilogramele. Total kg = suma capturilor + peștilor extra din toate concursurile.</p>'+
-      '<button class="btn btn-ghost mt" onclick="copySeasonText()">⧉ Copiază clasamentul</button>'+
-      '<div class="row mt">'+
-        '<button class="btn btn-ghost" onclick="printSeason()">🖨 Print / PDF</button>'+
-        '<button class="btn btn-ghost" onclick="shareSeasonImage()">🖼 Imagine WhatsApp</button>'+
+      '<button class="btn btn-ghost mt" onclick="copySeasonText()"><svg class="ui-ico" aria-hidden="true"><use href="#i-copy"></use></svg>Copiază clasamentul</button>'+
+      '<div class="row action-row mt">'+
+        '<button class="btn btn-ghost" onclick="printSeason()"><svg class="ui-ico" aria-hidden="true"><use href="#i-print"></use></svg>Print / PDF</button>'+
+        '<button class="btn btn-ghost" onclick="shareSeasonImage()"><svg class="ui-ico" aria-hidden="true"><use href="#i-image"></use></svg>Imagine WhatsApp</button>'+
       '</div>'+
       standHtml+
-      '<div class="card" style="margin-top:14px;"><div class="sec-title">Istoric concursuri</div>'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div>'+
-      '<div class="card" style="margin-top:14px;"><div class="sec-title">Backup</div>'+
-        '<button class="btn btn-ghost" onclick="downloadSeasonBackup()">⇩ Descarcă backup sezon (JSON)</button>'+
+      '<div class="card" style="margin-top:14px;"><div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-history"></use></svg>Istoric concursuri</div>'+(compListHtml||'<span class="hint">Niciunul.</span>')+'</div>'+
+      '<div class="card" style="margin-top:14px;"><div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Backup</div>'+
+        '<button class="btn btn-ghost" onclick="downloadSeasonBackup()"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Descarcă backup sezon (JSON)</button>'+
         '<p class="hint">Salvează pe telefon toate concursurile arhivate (din cloud și din cele adăugate manual în repo) — o plasă de siguranță, în caz că se întâmplă ceva cu baza de date.</p>'+
       '</div>';
   }
@@ -664,9 +757,9 @@
 
     var c=document.createElement("canvas"); c.width=W; c.height=H;
     var x=c.getContext("2d");
-    x.fillStyle="#f2f6fb"; x.fillRect(0,0,W,H);
+    x.fillStyle="#070d14"; x.fillRect(0,0,W,H);
     var gr=x.createLinearGradient(0,0,0,ANTET);
-    gr.addColorStop(0,"#1c6fd9"); gr.addColorStop(1,"#0f4fa8");
+    gr.addColorStop(0,"#0d2831"); gr.addColorStop(1,"#071018");
     x.fillStyle=gr; x.fillRect(0,0,W,ANTET);
     if(logo){ try{ x.drawImage(logo,44,56,150,150); }catch(e){} }
     x.fillStyle="#ffffff"; x.textAlign="center";
@@ -677,18 +770,18 @@
 
     var y=ANTET+SUS;
     if(season.seasonFish){
-      x.fillStyle="#fdecd2"; rr(x,60,y-20,W-120,80,16); x.fill();
-      x.fillStyle="#8a5a12"; x.font="bold 34px Arial";
-      x.fillText("🐟 CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg", W/2, y+32, W-160);
+      x.fillStyle="#2d2414"; rr(x,60,y-20,W-120,80,16); x.fill();
+      x.fillStyle="#f2c96b"; x.font="bold 34px Arial";
+      x.fillText("CMMC sezon: "+season.seasonFish.name+" — "+fmt(season.seasonFish.v)+" kg", W/2, y+32, W-160);
       y+=100;
     }
     arr.forEach(function(rec,i){
-      x.fillStyle = i===0 ? "#fdf6e6" : "#ffffff";
+      x.fillStyle = i===0 ? "#2a2416" : "#101d29";
       rr(x,60,y,W-120,boxH,16); x.fill();
       var mij=y+Math.round(boxH*0.62);
-      x.fillStyle="#0f1b2d"; x.textAlign="left"; x.font="bold "+fNume+"px Arial";
+      x.fillStyle="#f4f8ff"; x.textAlign="left"; x.font="bold "+fNume+"px Arial";
       var loc=poz[i].loc;
-      var medal = loc<=3 ? ["🥇","🥈","🥉"][loc-1] : loc+".";
+      var medal = loc+".";
       x.fillText(medal, 92, mij);
       x.fillText(rec.name, 185, mij, pePuncte?380:540);
       x.textAlign="right";
@@ -696,12 +789,12 @@
       // antetul scria „După puncte" dar poza arăta doar kilograme: se vedea altă ordine
       // decât cea pe care o anunța, fără nicio explicație
       if(pePuncte){
-        x.fillStyle="#0e7c86"; x.font="bold "+fPct+"px Arial";
+        x.fillStyle="#19d3d1"; x.font="bold "+fPct+"px Arial";
         x.fillText(fmtPts(ptsAfisat(rec))+" pct", W-330, mij);
       }
       y+=rowH;
     });
-    x.textAlign="center"; x.fillStyle="#5c7189"; x.font="bold 26px Arial";
+    x.textAlign="center"; x.fillStyle="#8da2b5"; x.font="bold 26px Arial";
     x.fillText("Clasament de sezon — "+roDate(), W/2, H-28);
     c.toBlob(function(b){
       if(!b){ toast("Nu am putut genera imaginea"); return; }
@@ -749,13 +842,13 @@
     season = res;
     document.getElementById("subline").textContent = season.comps.length+" concursuri · "+season.list.length+" concurenți";
     if(!season.list.length){
-      document.getElementById("content").innerHTML = '<div class="empty"><div class="big">🎣</div>Niciun rezultat găsit încă în concursuri.</div>';
+      document.getElementById("content").innerHTML = '<div class="empty"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg><div>Niciun rezultat găsit încă în concursuri.</div></div>';
       return;
     }
     renderTable();
   }).catch(function(err){
     document.getElementById("subline").textContent = "Eroare la încărcare";
-    document.getElementById("content").innerHTML = '<div class="empty"><div class="big">⚠️</div>Nu s-au putut încărca datele: '+esc(err.message||String(err))+'</div>';
+    document.getElementById("content").innerHTML = '<div class="empty"><svg class="ui-ico" aria-hidden="true"><use href="#i-alert"></use></svg><div>Nu s-au putut încărca datele: '+esc(err.message||String(err))+'</div></div>';
   });
 </script>
 </body>
