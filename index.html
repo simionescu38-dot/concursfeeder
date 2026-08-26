@@ -1321,7 +1321,7 @@
       '<div class="kg num">'+fmt(fish.kg)+' kg</div></div>'+
       '<button class="btn btn-ghost mt" onclick="downloadFishSpotlight()">🖼 Descarcă imagine</button>';
   }
-  function loadAcasaRegional(){ Promise.all([ fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).catch(function(){ return null; }), fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).catch(function(){ return null; }) ]).then(function(results){ var evJ=results[0], roomJ=results[1]; var events = (evJ && evJ.ok) ? (evJ.events||[]) : []; var rooms = (roomJ && roomJ.ok) ? (roomJ.rooms||[]) : []; var orgSet={}; events.forEach(function(e){ if(e.organizer) orgSet[e.organizer.trim().toLowerCase()]=1; }); var now = Date.now(); var twoHoursAgo = now - (2*60*60*1000); var activeRooms = rooms.filter(function(room){ if (room.name && (room.name.toLowerCase().includes("test") || room.name.toLowerCase().includes("mock") || room.name.toLowerCase().includes("demo"))) return false; if (!room.code || room.code.trim() === "") return false; if (room.archived || room.deleted) return false; if (room.updated_at) { try { var lastUpdate = new Date(room.updated_at).getTime(); if (lastUpdate < twoHoursAgo) return false; } catch(e){} } return true; }); if(!activeRooms.length){ renderHeroStats({upcoming:events.length, live:0, organizers:Object.keys(orgSet).length}); heroFish=null; renderHeroSpotlight(null); return; } Promise.all(activeRooms.map(function(r){ return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code)).then(function(res){ return res.json(); }).catch(function(){ return null; }); })).then(function(states){
+  function loadAcasaRegional(){ Promise.all([ fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).catch(function(){ return null; }), fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).catch(function(){ return null; }) ]).then(function(results){ var evJ=results[0], roomJ=results[1]; var events = doarViitoare((evJ && evJ.ok) ? evJ.events : []); var rooms = (roomJ && roomJ.ok) ? (roomJ.rooms||[]) : []; var orgSet={}; events.forEach(function(e){ if(e.organizer) orgSet[e.organizer.trim().toLowerCase()]=1; }); var now = Date.now(); var twoHoursAgo = now - (2*60*60*1000); var activeRooms = rooms.filter(function(room){ if (room.name && (room.name.toLowerCase().includes("test") || room.name.toLowerCase().includes("mock") || room.name.toLowerCase().includes("demo"))) return false; if (!room.code || room.code.trim() === "") return false; if (room.archived || room.deleted) return false; if (room.updated_at) { try { var lastUpdate = new Date(room.updated_at).getTime(); if (lastUpdate < twoHoursAgo) return false; } catch(e){} } return true; }); if(!activeRooms.length){ renderHeroStats({upcoming:events.length, live:0, organizers:Object.keys(orgSet).length}); heroFish=null; renderHeroSpotlight(null); return; } Promise.all(activeRooms.map(function(r){ return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code)).then(function(res){ return res.json(); }).catch(function(){ return null; }); })).then(function(states){
       /* O cameră proaspătă dar goală nu e un concurs în desfășurare. Filtrul se uita doar
          la ora ultimei scrieri, așa că o cameră pregătită dinainte — sau una rămasă de la o
          probă — se anunța pe pagina de Acasă drept „LIVE ACUM". Pe 18 august scria trei,
@@ -1414,6 +1414,21 @@
     if(a.length!==3 || b.length!==3) return start;
     if(a[0]===b[0] && a[1]===b[1]) return start+"/"+b[2];   // aceeași lună
     return start+"/"+b[1]+"-"+b[2];                          // lună diferită
+  }
+  /* Serverul întoarce o fereastră largă de zile, ca să încapă și concursurile de mai
+     multe zile: filtrul lui se uită numai la data de ÎNCEPUT, deci un concurs de trei
+     zile ar dispărea chiar în ultima zi. Lărgind fereastra acolo, cele de o zi ar rămâne
+     agățate în calendar mult după ce s-au terminat — de-aia selecția fină se face aici,
+     pe data de SFÂRȘIT a fiecărui concurs.
+
+     Un concurs de o zi dispare a doua zi, exact ca înainte. Unul de trei zile stă până
+     se termină. Merge și cu fereastra veche a serverului, deci se poate livra oricând. */
+  function doarViitoare(lista){
+    var prag=new Date(Date.now()-24*3600*1000).toISOString().slice(0,10);
+    return (lista||[]).filter(function(e){
+      var d=despartData((e&&e.event_date)||"");
+      return (d.sfarsit || d.start || "") >= prag;
+    });
   }
   function dateLabelCal(ymd){
     if(!ymd) return "fără dată";
@@ -1554,7 +1569,7 @@
     renderTypeFilterChips();
     fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).then(function(j){
       if(!j || !j.ok) throw new Error("bad response");
-      eventsCache = j.events||[];
+      eventsCache = doarViitoare(j.events);
       renderEventsList();
     }).catch(function(){ el.innerHTML='<p class="hint">Nu am putut încărca concursurile programate.</p>'; });
   }
@@ -1566,7 +1581,7 @@
     el.innerHTML='<p class="hint">Se încarcă…</p>';
     fetch(API_BASE+"/api/events").then(function(r){ return r.json(); }).then(function(j){
       if(!j || !j.ok) throw new Error("bad response");
-      var events=j.events||[];
+      var events=doarViitoare(j.events);
       if(!events.length){ el.innerHTML='<p class="hint">Niciun concurs programat.</p>'; return; }
       el.innerHTML = events.map(function(e){
         return '<div class="row" style="align-items:center; margin-bottom:8px;">'+

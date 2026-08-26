@@ -25,8 +25,15 @@ const t = H.creeazaVerificator();
 /* ---------- codul adevărat, rulat ---------- */
 const ctx = { console };
 vm.createContext(ctx);
+/** ceas fals: „azi" se mută din test, ca să se poată verifica ziua 1, 2, 3 și după */
+let AZI = "2026-09-12";
+class CeasFals extends Date {
+  constructor(...a) { if (a.length) super(...a); else super(AZI + "T12:00:00Z"); }
+  static now() { return new Date(AZI + "T12:00:00Z").getTime(); }
+}
+ctx.Date = CeasFals;
 vm.runInContext(
-  ["despartData", "legData", "dateLabelCal"].map(n => H.grabFunction(src, n)).join("\n"),
+  ["despartData", "legData", "dateLabelCal", "doarViitoare"].map(n => H.grabFunction(src, n)).join("\n"),
   ctx);
 const leg = (a, b) => vm.runInContext("legData(" + JSON.stringify(a) + "," + JSON.stringify(b) + ")", ctx);
 const desp = v => vm.runInContext("despartData(" + JSON.stringify(v) + ")", ctx);
@@ -174,5 +181,60 @@ console.log("\n=== 7. Nimic nu s-a schimbat pe server ===");
   t("worker-ul ține tot o singură coloană de dată", /event_date/.test(w), true);
   t("…și taie tot la 20 de caractere", /eventDate[\s\S]{0,80}slice\(0,\s*20\)/.test(w), true);
 }
+
+/* ================================================================
+   8. Selecția fină din aplicație
+   Serverul întoarce o fereastră largă ca să încapă și concursurile de mai multe zile;
+   aici se hotărăște ce chiar se mai vede. Fără partea asta, un concurs de o zi ar rămâne
+   agățat în calendar cât ține fereastra serverului.
+   ================================================================ */
+console.log("\n=== 8. Ce rămâne în calendar, după data de SFÂRȘIT ===");
+/** lista pe zile: numele concursurilor care se mai văd în ziua dată */
+function inZiua(zi, lista) {
+  AZI = zi;
+  return vm.runInContext("doarViitoare(" + JSON.stringify(lista) + ").map(function(e){return e.name;})", ctx);
+}
+{
+  const concursuri = [
+    { name: "o zi", event_date: "2026-09-12" },
+    { name: "două zile", event_date: "2026-09-12/13" },
+    { name: "trei zile", event_date: "2026-09-12/14" }
+  ];
+  t("în ziua 1 se văd toate", inZiua("2026-09-12", concursuri), ["o zi", "două zile", "trei zile"]);
+  t("în ziua 2 se văd toate", inZiua("2026-09-13", concursuri), ["o zi", "două zile", "trei zile"]);
+  // cel de o zi dispare a treia zi, exact ca înainte de schimbarea asta
+  t("în ziua 3 rămân doar cele care încă țin", inZiua("2026-09-14", concursuri), ["două zile", "trei zile"]);
+  t("a patra zi rămâne doar cel de trei zile", inZiua("2026-09-15", concursuri), ["trei zile"]);
+  t("a cincea zi nu mai rămâne niciunul", inZiua("2026-09-16", concursuri), []);
+}
+{
+  // asta e greșeala pe care o repară: cu fereastra lărgită în worker și fără filtrul de
+  // aici, un concurs terminat de o săptămână ar sta mai departe în calendar
+  const vechi = [{ name: "terminat demult", event_date: "2026-08-27" }];
+  t("un concurs vechi de o săptămână nu mai apare", inZiua("2026-09-04", vechi), []);
+}
+{
+  const pesteLuna = [{ name: "peste lună", event_date: "2026-08-30/09-01" }];
+  t("peste lună — în ultima zi, se vede", inZiua("2026-09-01", pesteLuna), ["peste lună"]);
+  t("peste lună — a doua zi după, dispare", inZiua("2026-09-03", pesteLuna), []);
+}
+{
+  // o dată stricată nu trebuie să arunce lista la gunoi, nici să crape
+  const strambe = [{ name: "fără dată", event_date: "" }, { name: "aiurea", event_date: "aiurea" },
+                   { name: "bun", event_date: "2026-09-12" }];
+  AZI = "2026-09-12";
+  const iesit = vm.runInContext("doarViitoare(" + JSON.stringify(strambe) + ").map(function(e){return e.name;})", ctx);
+  t("cel bun trece", iesit.indexOf("bun") >= 0, true);
+  t("cel fără dată nu trece", iesit.indexOf("fără dată") < 0, true);
+  t("nimic nu crapă", Array.isArray(iesit), true);
+}
+
+console.log("\n=== 9. Toate cele trei liste trec prin aceeași selecție ===");
+["loadEvents", "loadAcasaRegional", "loadModEvents"].forEach(function (n) {
+  t(n + " filtrează lista", /doarViitoare\s*\(/.test(H.grabFunction(src, n)), true);
+});
+// dacă rămâne vreun „j.events||[]" nefiltrat, o listă scapă prin plasă
+t("nicio listă nu mai trece nefiltrată",
+  /=\s*j\.events\s*\|\|\s*\[\]/.test(src), false);
 
 t.raport();
