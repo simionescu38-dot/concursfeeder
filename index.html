@@ -538,7 +538,13 @@
         </div>
         <div class="row" style="margin-bottom:8px;">
           <div><label class="f">Baltă / Locație</label><input id="ev-location" placeholder="ex: Balta Cateasca"></div>
-          <div class="w-stand" style="flex:0 0 150px;"><label class="f">Data</label><input type="date" id="ev-date"></div>
+        </div>
+        <!-- Datele stau pe rândul lor: înghesuite lângă baltă, îi lăsau numelui de baltă
+             102px, prea puțin pentru „Remus Lake Iași". „Până la" rămâne gol la
+             concursurile de o zi — nu-l atinge nimeni dacă n-are nevoie de el. -->
+        <div class="row" style="margin-bottom:8px;">
+          <div><label class="f">Data</label><input type="date" id="ev-date"></div>
+          <div><label class="f">Până la</label><input type="date" id="ev-date-end"></div>
         </div>
         <div class="row" style="margin-bottom:8px;">
           <div><label class="f">Tip</label><select id="ev-type">
@@ -1383,10 +1389,43 @@
     var t=eventTokens(); delete t[id];
     try{ localStorage.setItem(EVENT_TOKENS_KEY, JSON.stringify(t)); }catch(e){}
   }
+  /* Un concurs de două zile se scrie „2026-09-12/13" — data de început, apoi ce se
+     schimbă la sfârșit. Serverul ține data ca TEXT și o folosește doar în comparații
+     („event_date >= azi−1zi" și „ORDER BY event_date"), iar șirul începe cu data de
+     început — deci se așază la locul lui în calendar și rămâne vizibil în amândouă
+     zilele, fără să se atingă nimic pe server.
+
+     Merge pentru DOUĂ zile. La trei sau mai multe, filtrul serverului (start + o zi) l-ar
+     ascunde înainte de ultima zi — atunci ar trebui umblat la worker. */
+  function despartData(ymd){
+    var s=(ymd||"").split("/");
+    if(s.length!==2) return { start:s[0]||"", sfarsit:"" };
+    var a=s[0].split("-"), b=s[1].split("-");
+    if(b.length===1) return { start:s[0], sfarsit:a[0]+"-"+a[1]+"-"+b[0] };  // altă zi, aceeași lună
+    /* Altă lună. Anul nu încape în cele 20 de caractere ale serverului, deci se deduce:
+       dacă ziua de sfârșit cade înaintea celei de început în calendarul anului, atunci
+       concursul trece dintr-un an în altul (31 decembrie → 1 ianuarie). */
+    var an = (b[0]+"-"+b[1] <= a[1]+"-"+a[2]) ? (parseInt(a[0],10)+1) : parseInt(a[0],10);
+    return { start:s[0], sfarsit:an+"-"+b[0]+"-"+b[1] };
+  }
+  function legData(start, sfarsit){
+    if(!sfarsit || sfarsit===start) return start;
+    var a=start.split("-"), b=sfarsit.split("-");
+    if(a.length!==3 || b.length!==3) return start;
+    if(a[0]===b[0] && a[1]===b[1]) return start+"/"+b[2];   // aceeași lună
+    return start+"/"+b[1]+"-"+b[2];                          // lună diferită
+  }
   function dateLabelCal(ymd){
     if(!ymd) return "fără dată";
-    var p=ymd.split("-"); if(p.length!==3) return ymd;
-    return p[2]+"."+p[1]+"."+p[0];
+    var d=despartData(ymd);
+    var p=d.start.split("-"); if(p.length!==3) return ymd;
+    var cap=p[2]+"."+p[1]+"."+p[0];
+    if(!d.sfarsit) return cap;
+    var q=d.sfarsit.split("-"); if(q.length!==3) return cap;
+    // liniuță de dialog, nu cratimă: cratima se confundă cu separatorul din dată
+    return (p[1]===q[1] && p[0]===q[0])
+      ? p[2]+"–"+q[2]+"."+p[1]+"."+p[0]
+      : p[2]+"."+p[1]+" – "+q[2]+"."+q[1]+"."+q[0];
   }
   var eventsCache = [];
   function toggleEventForm(){
@@ -1395,7 +1434,7 @@
     if(isOpen){
       f.style.display="none";
       document.getElementById("ev-edit-id").value="";
-      ["ev-name","ev-location","ev-date","ev-type","ev-fee","ev-slots","ev-taken","ev-organizer","ev-contact"].forEach(function(id){ document.getElementById(id).value=""; });
+      ["ev-name","ev-location","ev-date","ev-date-end","ev-type","ev-fee","ev-slots","ev-taken","ev-organizer","ev-contact"].forEach(function(id){ document.getElementById(id).value=""; });
     } else {
       f.style.display="block";
     }
@@ -1407,7 +1446,11 @@
     document.getElementById("ev-edit-id").value=id;
     document.getElementById("ev-name").value=ev.name||"";
     document.getElementById("ev-location").value=ev.location||"";
-    document.getElementById("ev-date").value=ev.event_date||"";
+    // fără despărțire, „2026-09-12/13" ar goli câmpul: input type=date refuză orice
+    // nu e AAAA-LL-ZZ, iar concursul și-ar pierde data la prima editare
+    var dd=despartData(ev.event_date||"");
+    document.getElementById("ev-date").value=dd.start;
+    document.getElementById("ev-date-end").value=dd.sfarsit;
     document.getElementById("ev-type").value=ev.type||"";
     document.getElementById("ev-fee").value=ev.fee||"";
     document.getElementById("ev-slots").value=ev.slots_total||"";
@@ -1419,8 +1462,11 @@
   function submitEvent(){
     var name=document.getElementById("ev-name").value.trim();
     var location=document.getElementById("ev-location").value.trim();
-    var eventDate=document.getElementById("ev-date").value;
-    if(!name || !location || !eventDate){ toast("Completează nume, baltă și dată"); return; }
+    var dataStart=document.getElementById("ev-date").value;
+    var dataSfarsit=document.getElementById("ev-date-end").value;
+    if(!name || !location || !dataStart){ toast("Completează nume, baltă și dată"); return; }
+    if(dataSfarsit && dataSfarsit<dataStart){ toast("„Până la\" e înaintea datei de început"); return; }
+    var eventDate=legData(dataStart, dataSfarsit);
     var payload = {
       name: name, location: location, eventDate: eventDate,
       type: document.getElementById("ev-type").value,
