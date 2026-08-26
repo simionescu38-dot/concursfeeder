@@ -342,23 +342,28 @@
   #warn-sector, #warn-stand{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   /* tastatură de PIN – taste mari, se apasă cu degetul ud, în picioare, la baltă */
-  #pinPad{position:fixed; inset:0; z-index:220; display:none; align-items:center; justify-content:center; background:rgba(8,26,46,.96); padding:16px;}
-  #pinPad.on{display:flex;}
-  .pin-box{width:100%; max-width:340px;}
-  .pin-title{color:#fff; font-size:19px; font-weight:800; text-align:center; margin-bottom:12px;}
-  .pin-dots{display:flex; justify-content:center; gap:10px; height:20px; margin-bottom:18px;}
-  .pin-dots i{width:14px; height:14px; border-radius:50%; background:#fff; display:block;}
-  .pin-dots.err i{background:#ff8b7d;}
+  #pinPad{position:fixed; inset:0; z-index:220; display:none; align-items:center; justify-content:center; background:rgba(3,8,13,.88); padding:16px; backdrop-filter:blur(12px);}
+  #pinPad.on{display:flex; animation:overlayFade .16s ease-out;}
+  .pin-box{position:relative; width:100%; max-width:350px; padding:20px 18px 18px; border:1px solid #294656; border-radius:24px; background:linear-gradient(145deg,#101d29,#09121b); box-shadow:0 30px 80px -35px rgba(0,0,0,.95),0 0 42px rgba(25,211,209,.07);}
+  .pin-mark{width:48px; height:48px; margin:0 auto 10px; display:grid; place-items:center; border-radius:15px; color:var(--teal); background:#12303a; border:1px solid #28515a;}
+  .pin-mark .ui-ico{width:24px; height:24px; margin:0; vertical-align:0;}
+  .pin-title{color:#f4f8ff; font-size:20px; font-weight:850; text-align:center; margin-bottom:12px;}
+  .pin-dots{display:flex; justify-content:center; align-items:center; gap:10px; height:22px; margin-bottom:18px;}
+  .pin-dots i{width:13px; height:13px; border-radius:50%; background:var(--teal); display:block; box-shadow:0 0 0 4px rgba(25,211,209,.10),0 0 12px rgba(25,211,209,.38);}
+  .pin-dots.err{animation:pinShake .34s ease;}
+  .pin-dots.err i{background:#ff7168; box-shadow:0 0 0 4px rgba(255,113,104,.11),0 0 12px rgba(255,113,104,.34);}
   .pin-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
-  .pin-grid button{height:62px; font-size:26px; font-weight:800; color:#fff; background:rgba(255,255,255,.14);
-    border:1px solid rgba(255,255,255,.28); border-radius:14px; cursor:pointer; font-family:inherit;}
-  .pin-grid button:active{background:rgba(255,255,255,.32);}
+  .pin-grid button{height:62px; font-size:25px; font-weight:850; color:#f4f8ff; background:#0d1a25;
+    border:1px solid #2a4052; border-radius:16px; cursor:pointer; font-family:inherit; box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
+  .pin-grid button:active{background:#153541; color:var(--teal); border-color:#2b6570; transform:scale(.97);}
   .pin-grid button.pin-empty{visibility:hidden;}
   .pin-actions{display:flex; gap:10px; margin-top:14px;}
-  .pin-actions button{flex:1; height:50px; font-size:16px; font-weight:800; border-radius:12px; cursor:pointer; font-family:inherit; border:0;}
-  .pin-cancel{background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3) !important;}
-  .pin-ok{background:#12703c; color:#fff;}
+  .pin-actions button{flex:1; height:50px; font-size:15px; font-weight:850; border-radius:14px; cursor:pointer; font-family:inherit; border:0;}
+  .pin-cancel{background:#172430; color:#a7b7c5; border:1px solid #2a4052 !important;}
+  .pin-ok{background:linear-gradient(135deg,#20e1d8,#19bfc8); color:#031011; box-shadow:0 12px 28px -18px rgba(25,211,209,.75);}
   .pin-ok:disabled{opacity:.45; cursor:default;}
+  @keyframes overlayFade{from{opacity:0}to{opacity:1}}
+  @keyframes pinShake{25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
 
   /* Banda urcării: răspunde la o singură întrebare — pleacă datele de pe telefon? */
   #uploadBar{margin-top:8px; border-radius:10px; padding:7px 12px; font-weight:800; font-size:12.5px; line-height:1.35; display:none;}
@@ -423,12 +428,14 @@
 
   /* NOU LIDER + confetti */
   #leader{position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
-    flex-direction:column; background:rgba(8,26,46,.92); color:#fff; text-align:center; padding:20px; cursor:pointer;}
-  #leader.on{display:flex;}
-  #leader .lh{font-size:30px; font-weight:800; color:var(--gold); letter-spacing:.06em;}
-  #leader .lh .ui-ico{width:28px; height:28px; margin-right:8px; vertical-align:-5px;}
-  #leader .ln{font-size:38px; font-weight:800; margin:12px 0 6px;}
-  #leader .lk{font-size:20px; font-weight:700; color:#7fb2f0;}
+    background:rgba(3,8,13,.88); color:#fff; text-align:center; padding:20px; cursor:pointer; backdrop-filter:blur(12px);}
+  #leader.on{display:flex; animation:overlayFade .18s ease-out;}
+  .leader-card{width:100%; max-width:390px; padding:26px 20px 24px; border:1px solid #5d4b20; border-radius:24px; background:linear-gradient(145deg,#2a2417,#10151a); box-shadow:0 32px 90px -38px #000,0 0 45px rgba(242,193,78,.09);}
+  .leader-mark{width:62px; height:62px; margin:0 auto 14px; display:grid; place-items:center; border-radius:20px; background:linear-gradient(145deg,#ffe58d,#d99a2d); color:#281b03; box-shadow:0 0 24px rgba(242,193,78,.22);}
+  .leader-mark .ui-ico{width:32px; height:32px; margin:0; vertical-align:0;}
+  #leader .lh{font-size:13px; font-weight:900; color:#f2c96b; letter-spacing:.14em; text-transform:uppercase;}
+  #leader .ln{font-size:34px; line-height:1.12; font-weight:900; margin:12px 0 7px; letter-spacing:-.02em;}
+  #leader .lk{font-size:18px; font-weight:750; color:#9debe7;}
   .cf{position:fixed; top:-16px; width:9px; height:15px; z-index:201; border-radius:2px; animation:cffall linear forwards; pointer-events:none;}
   @keyframes cffall{ to{ transform:translateY(112vh) rotate(720deg); } }
 
@@ -478,10 +485,19 @@
   .pr-t td.r{text-align:right; font-weight:bold;}
 
   /* vizualizare poze mai vechi la captură */
-  #photoView{position:fixed; inset:0; z-index:210; display:none; align-items:center; justify-content:center; flex-direction:column; background:rgba(8,26,46,.94); cursor:pointer; padding:16px;}
-  #photoView.on{display:flex;}
-  #photoView img{max-width:94vw; max-height:72vh; border-radius:14px; box-shadow:0 8px 30px rgba(0,0,0,.5);}
-  #photoCap{color:#fff; font-weight:800; font-size:17px; margin-top:14px; text-align:center;}
+  #photoView{position:fixed; inset:0; z-index:210; display:none; align-items:center; justify-content:center; background:rgba(3,8,13,.9); cursor:pointer; padding:16px; backdrop-filter:blur(12px);}
+  #photoView.on{display:flex; animation:overlayFade .16s ease-out;}
+  .photo-frame{position:relative; width:min(94vw,680px); padding:10px 10px 15px; border:1px solid #294656; border-radius:22px; background:linear-gradient(145deg,#101d29,#09121b); box-shadow:0 30px 80px -35px #000;}
+  #photoView img{display:block; width:100%; max-height:72vh; object-fit:contain; border-radius:15px; background:#05090d;}
+  .photo-close{position:absolute; top:18px; right:18px; width:38px; height:38px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:12px; background:rgba(5,12,18,.78); color:#fff; cursor:pointer; backdrop-filter:blur(8px);}
+  .photo-close .ui-ico{width:20px; height:20px; margin:0; vertical-align:0;}
+  #photoCap{color:#f4f8ff; font-weight:850; font-size:16px; margin-top:12px; padding:0 8px; text-align:center;}
+
+  /* Mesajele scurte rămân deasupra navigației și se citesc și peste ferestre. */
+  .app-toast{position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:260; width:max-content; max-width:calc(100vw - 28px); padding:11px 16px; border:1px solid #2b4656; border-radius:14px; background:rgba(13,29,41,.96); color:#eef7fb; font-size:13px; line-height:1.3; font-weight:800; text-align:center; box-shadow:0 18px 44px -24px #000; backdrop-filter:blur(10px); transform:translate(-50%,10px); opacity:0; transition:opacity .16s ease,transform .16s ease;}
+  .app-toast.on{opacity:1; transform:translate(-50%,0);}
+  .app-toast.bad{background:rgba(44,22,26,.97); border-color:#63323b; color:#ffaaa4;}
+  .app-toast.good{background:rgba(13,43,38,.97); border-color:#286052; color:#8cf2df;}
 
   /* cronometru */
   #timerBar{margin-top:8px; background:rgba(255,255,255,.16); border-radius:10px; padding:6px 12px; font-weight:800; font-size:14px; display:none; font-variant-numeric:tabular-nums;}
@@ -702,6 +718,7 @@
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.2A11 11 0 0 1 12 6c6.5 0 10 6 10 6a16 16 0 0 1-3.1 3.7M6.2 6.2C3.5 8 2 12 2 12s3.5 6 10 6c1 0 2-.2 2.8-.5M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="m9 15 6-6M7.5 17.5l-1 1a3.5 3.5 0 0 1-5-5l3-3a3.5 3.5 0 0 1 5 0M16.5 6.5l1-1a3.5 3.5 0 0 1 5 5l-3 3a3.5 3.5 0 0 1-5 0"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5 5 19"/></symbol>
 </svg>
 
 <header>
@@ -1190,20 +1207,27 @@
 </main>
 
 <div id="leader" onclick="hideLeader()">
-  <div class="lh"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>NOU LIDER!</div>
-  <div class="ln" id="leader-name"></div>
-  <div class="lk" id="leader-kg"></div>
+  <div class="leader-card">
+    <div class="leader-mark"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg></div>
+    <div class="lh">NOU LIDER!</div>
+    <div class="ln" id="leader-name"></div>
+    <div class="lk" id="leader-kg"></div>
+  </div>
 </div>
 
 <div id="printArea"></div>
 
 <div id="photoView" onclick="this.classList.remove('on')">
-  <img id="photoImg" alt="Poza capturii">
-  <div id="photoCap"></div>
+  <div class="photo-frame">
+    <button type="button" class="photo-close" aria-label="Închide fotografia"><svg class="ui-ico" aria-hidden="true"><use href="#i-close"></use></svg></button>
+    <img id="photoImg" alt="Poza capturii">
+    <div id="photoCap"></div>
+  </div>
 </div>
 
 <div id="pinPad" role="dialog" aria-modal="true" aria-labelledby="pin-title">
   <div class="pin-box">
+    <div class="pin-mark"><svg class="ui-ico" aria-hidden="true"><use href="#i-lock"></use></svg></div>
     <div class="pin-title" id="pin-title">PIN</div>
     <div class="pin-dots" id="pin-dots" aria-live="polite"></div>
     <div class="pin-grid" id="pin-grid"></div>
@@ -3765,7 +3789,15 @@
     catch(e){ fallbackCopy(txt); }
   }
   function fallbackCopy(txt){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); toast("Clasament copiat");}catch(e){toast("Nu am putut copia");} document.body.removeChild(ta); }
-  function toast(m){ var t=document.createElement("div"); t.textContent=m; t.style.cssText="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#10263c;color:#fff;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;box-shadow:0 4px 14px rgba(0,0,0,.25);"; document.body.appendChild(t); setTimeout(function(){t.remove();},1600); }
+  function toast(m){
+    var t=document.createElement("div"), s=(m||"").toLowerCase();
+    t.className="app-toast";
+    if(/eroare|greșit|nu am|nu poți|nereuș|lipsește|oprit/.test(s)) t.className+=" bad";
+    else if(/gata|salvat|setat|copiat|actualizat|deblocat|adăugat|publicat/.test(s)) t.className+=" good";
+    t.textContent=m; document.body.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add("on"); });
+    setTimeout(function(){ t.classList.remove("on"); setTimeout(function(){t.remove();},180); },1900);
+  }
 
   // ---------- sectors ----------
   // Standurile se împart pe sectoare în ordine: cu 28 de standuri și 6 sectoare ies
