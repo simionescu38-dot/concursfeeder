@@ -1698,10 +1698,16 @@
     var editId = document.getElementById("ev-edit-id").value;
     var tokens = eventTokens();
     if(editId){
+      // Jetonul concursului rămâne primul: e telefonul care l-a publicat. Dacă nu-l are
+      // (l-a pus de pe alt telefon, sau s-au șters datele salvate), merge și cu cheia de
+      // scriere — serverul o primea demult, doar butonul lipsea.
       var tok = tokens[editId];
-      if(!tok){ toast("Nu poți edita acest concurs de pe telefonul ăsta"); return; }
+      var head = {"Content-Type":"application/json"};
+      if(tok) head["x-manage-token"]=tok;
+      else if(syncKey) head["x-write-key"]=syncKey;
+      else { toast("Nu poți edita acest concurs de pe telefonul ăsta"); return; }
       fetch(API_BASE+"/api/events/edit?id="+encodeURIComponent(editId), {
-        method:"PUT", headers:{"Content-Type":"application/json","x-manage-token":tok}, body: JSON.stringify(payload)
+        method:"PUT", headers:head, body: JSON.stringify(payload)
       }).then(function(r){ return r.json(); }).then(function(j){
         if(!j || !j.ok){ toast("Eroare: "+((j&&j.error)||"necunoscută")); return; }
         toast("Concurs actualizat"); toggleEventForm(); loadEvents();
@@ -1718,9 +1724,14 @@
   }
   function deleteEvent(id){
     var tok = eventTokens()[id];
-    if(!tok){ toast("Nu poți șterge acest concurs de pe telefonul ăsta"); return; }
-    if(!confirm("Ștergi acest concurs din calendar?")) return;
-    fetch(API_BASE+"/api/events/edit?id="+encodeURIComponent(id), { method:"DELETE", headers:{"x-manage-token":tok} })
+    var head = {};
+    if(tok) head["x-manage-token"]=tok;
+    else if(syncKey) head["x-write-key"]=syncKey;
+    else { toast("Nu poți șterge acest concurs de pe telefonul ăsta"); return; }
+    // cu cheia se poate șterge și anunțul altuia: acolo întrebarea trebuie să se audă
+    if(!confirm(tok ? "Ștergi acest concurs din calendar?"
+                    : "Ștergi acest concurs (postat eventual de altcineva)? Nu se poate reveni.")) return;
+    fetch(API_BASE+"/api/events/edit?id="+encodeURIComponent(id), { method:"DELETE", headers:head })
       .then(function(r){ return r.json(); }).then(function(j){
         if(!j || !j.ok){ toast("Eroare la ștergere"); return; }
         removeEventToken(id); toast("Concurs șters"); loadEvents();
@@ -1756,7 +1767,8 @@
         tags += '<span class="'+cls+'">'+txt+'</span>';
       }
       var contactBtn = e.contact ? '<a class="go" href="tel:'+esc(e.contact.replace(/\s+/g,""))+'">📞 '+esc(e.contact)+'</a>' : '';
-      var ownBtns = mine[e.id] ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')">Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">Șterge</button>' : '';
+      // butoanele apar și cu cheia de scriere, nu doar pe telefonul care a publicat
+      var ownBtns = (mine[e.id] || syncKey) ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')">Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">Șterge</button>' : '';
       return '<div class="sched">'+
         '<div class="sched-h"><span class="nm">'+esc(e.name)+'</span><span class="dt">'+dateLabelCal(e.event_date)+'</span></div>'+
         '<div class="loc">📍 '+esc(e.location)+(e.organizer?' · '+esc(e.organizer):'')+'</div>'+
