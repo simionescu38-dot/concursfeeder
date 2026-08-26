@@ -16,6 +16,7 @@ const TESTE = [
   ["Banda de sincronizare", "test-banda-sync.js"],
   ["Concursuri live acum", "test-live-acum.js"],
   ["Calendar: concursuri de două zile", "test-calendar-doua-zile.js"],
+  ["Calendar: editare cu cheia de scriere", "test-calendar-cheie.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],
   ["Soare / lună (solunar)", "test-astro.js"],
