@@ -153,10 +153,10 @@
   .p-total .val{font-size:20px; font-weight:800;}
   .p-total .val small{font-size:12px; font-weight:700; color:var(--muted);}
 
-  .summary{display:flex; gap:10px; margin-bottom:12px;}
-  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow-sm);}
-  .stat .n{font-size:22px; font-weight:800;}
-  .stat .l{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
+  .summary{display:flex; gap:8px; margin-bottom:10px;}
+  .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:8px 10px; box-shadow:var(--shadow-sm);}
+  .stat .n{font-size:21px; font-weight:800;}
+  .stat .l{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
 
   .empty{text-align:center; color:var(--muted); padding:30px 16px; font-size:14px;}
   .empty .big{font-size:30px; margin-bottom:6px;}
@@ -165,13 +165,13 @@
   /* Padding-ul era 12vh sus, adică aproape o sută de pixeli de gol. Cu grila de 9
      în hero, al treilea rând cădea sub marginea ecranului — iar un meniu pe care
      trebuie să-l cauți derulând e exact ce am vrut să evităm. */
-  .hero{text-align:center; padding:16px 8px 14px; display:flex; flex-direction:column; align-items:center;}
+  .hero{text-align:center; padding:12px 8px 10px; display:flex; flex-direction:column; align-items:center;}
   .hero-emoji{font-size:36px; margin-bottom:4px;}
-  .hero-logo{display:block; width:104px; height:104px; margin:0 auto 10px; border-radius:24px;
+  .hero-logo{display:block; width:88px; height:88px; margin:0 auto 8px; border-radius:21px;
     box-shadow:0 16px 34px -22px rgba(25,211,209,.72);}
-  .hero-title{margin:0; font-size:26px; font-weight:800; letter-spacing:-.01em; color:var(--pine);}
-  .hero-tag{margin:4px 0 0; font-size:13px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-d);}
-  .hero-desc{margin:10px 0 14px; font-size:14px; line-height:1.45; color:var(--muted); max-width:340px;}
+  .hero-title{margin:0; font-size:24px; font-weight:800; letter-spacing:-.01em; color:var(--pine);}
+  .hero-tag{margin:2px 0 0; font-size:12.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-d);}
+  .hero-desc{margin:8px 0 11px; font-size:13.5px; line-height:1.4; color:var(--muted); max-width:340px;}
   .hero-cta{max-width:340px;}
   .btn-link{border:0; background:none; margin-top:14px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;}
 
@@ -355,16 +355,16 @@
   .vb-xl{flex:1 1 0; min-width:0; text-align:center; font-size:10px; font-weight:700; color:var(--muted); overflow:hidden;}
 
   /* grila de meniu de pe Acasă — butoane mari, se apasă cu degete ude */
-  .mg{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:0 0 12px;}
+  .mg{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 0 10px;}
   .mg button{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
-    background:var(--card); border:1px solid var(--line); border-radius:16px;
-    padding:12px 6px; min-height:84px; cursor:pointer; box-shadow:var(--shadow-sm);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:9px 5px; min-height:76px; cursor:pointer; box-shadow:var(--shadow-sm);
     font-family:inherit; font-size:13px; font-weight:800; color:var(--pine);
     line-height:1.15; text-align:center;
   }
   .mg button .ic{display:grid; place-items:center; line-height:1; color:var(--teal);}
-  .mg button .app-icon{width:29px; height:29px; stroke-width:1.7;}
+  .mg button .app-icon{width:26px; height:26px; stroke-width:1.7;}
   .mg button:active{background:var(--teal-soft); border-color:var(--teal);}
 
   /* meteo + solunar */
@@ -641,7 +641,7 @@
   <!-- ACASĂ -->
   <section class="view active" id="view-part">
     <div class="hero">
-      <img class="hero-logo" src="icon-192.png" alt="Sigla Feeder Moldova Iași" width="104" height="104">
+      <img class="hero-logo" src="icon-192.png" alt="Sigla Feeder Moldova Iași" width="88" height="88">
       <h2 class="hero-title">Feeder Moldova Iași</h2>
       <p class="hero-tag">Cântar &amp; Clasament live</p>
       <p class="hero-desc">Urmărește în timp real clasamentul concursurilor de pescuit, direct din telefon.</p>
