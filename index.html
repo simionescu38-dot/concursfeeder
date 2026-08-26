@@ -563,7 +563,31 @@
   .sl.live{background:linear-gradient(135deg,#5f1f26,#35171c); border-color:#8f3943;}
   .sl.gata{background:linear-gradient(135deg,#125137,#102d25); border-color:#287956;}
   .sl-act{background:#f4f8ff; color:#0b3440;}
-  #uploadBar.ub-off{background:#132433; color:#d7e4ef; border:1px solid #294052;}
+  /* Indicator compact de sincronizare — starea se citește din punctul colorat, iar
+     verdele masiv nu mai concurează cu restul interfeței Dark Premium. */
+  #uploadBar{
+    position:relative; min-height:40px; margin-top:10px; padding:10px 34px 10px 39px;
+    border:1px solid #264052; border-radius:14px; background:#0d1a25; color:#c9d5df;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.025); font-size:11.5px;
+    font-weight:750; line-height:1.35; letter-spacing:.015em;
+  }
+  #uploadBar::before{
+    content:""; position:absolute; left:15px; top:50%; width:10px; height:10px;
+    border-radius:50%; transform:translateY(-50%); background:#73879a;
+    box-shadow:0 0 0 4px rgba(115,135,154,.12);
+  }
+  #uploadBar::after{
+    content:"›"; position:absolute; right:14px; top:50%; transform:translateY(-54%);
+    color:#667b8d; font-size:22px; font-weight:500;
+  }
+  #uploadBar.ub-on{background:#0d1a25; color:#d8f8f5; border-color:#20515b;}
+  #uploadBar.ub-on::before{background:var(--teal); box-shadow:0 0 0 4px rgba(25,211,209,.12),0 0 13px rgba(25,211,209,.5);}
+  #uploadBar.ub-off{background:#171a1d; color:#e7c779; border-color:#4a4028;}
+  #uploadBar.ub-off::before{background:#e2b95c; box-shadow:0 0 0 4px rgba(226,185,92,.12);}
+  #uploadBar.ub-bad{background:#211619; color:#ffaaa4; border-color:#573036;}
+  #uploadBar.ub-bad::before{background:#ff7168; box-shadow:0 0 0 4px rgba(255,113,104,.12);}
+  #uploadBar.ub-busy::before{animation:syncPulse 1.15s ease-in-out infinite;}
+  @keyframes syncPulse{50%{opacity:.42; transform:translateY(-50%) scale(.72);}}
   #viewerBar,.lockbar{background:#352a16; border-color:#69501d; color:#f4cc77;}
   #warn-sector,#warn-stand{background:#321b20; border-color:#63323b; color:#ffaaa4;}
 
@@ -1778,15 +1802,15 @@
     if(!syncRoom || !syncKey){
       // pe un telefon fără participanți nu e nimic de pierdut: banda ar speria degeaba
       if(!state.participants.length){ b.style.display="none"; return; }
-      cls="ub-off"; txt="📴 DATELE RĂMÂN PE TELEFON — nimeni nu le vede. Atinge ca să pornești.";
+      cls="ub-off"; txt="Doar pe telefon · nimeni nu le vede · atinge pentru sincronizare";
     } else if(syncPaused){
-      cls="ub-bad"; txt="⏸ SINCRONIZARE OPRITĂ — atinge ca să vezi de ce";
+      cls="ub-bad"; txt="Sincronizare oprită · atinge pentru detalii";
     } else if(syncProblem){
-      cls="ub-bad"; txt="⚠ NU S-A TRIMIS — "+syncProblem+(syncLastOk ? " · ultima urcare "+syncLastOk : "");
+      cls="ub-bad"; txt="Trimitere nereușită · "+syncProblem+(syncLastOk ? " · ultima reușită "+syncLastOk : "");
     } else if(syncBusy){
-      cls="ub-on"; txt="⬆ SE TRIMITE… — camera "+syncRoom;
+      cls="ub-on ub-busy"; txt="Camera "+syncRoom+" · se trimite…";
     } else {
-      cls="ub-on"; txt="✅ TRIMIȚI ÎN CAMERA "+syncRoom+(syncLastOk ? " · ultima urcare "+syncLastOk : " · încă n-a plecat nimic");
+      cls="ub-on"; txt="Camera "+syncRoom+(syncLastOk ? " · sincronizat "+syncLastOk : " · încă n-a plecat nimic");
     }
     b.className=cls;
     b.textContent=txt;
