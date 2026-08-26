@@ -42,7 +42,7 @@ jobs:
       - name: Upload final installer
         uses: actions/upload-artifact@v4
         with:
-          name: AutoCut-Fishing-Windows-1.1.0
+          name: AutoCut-Fishing-Windows-1.1.1
           path: autocut-fishing/installer/AutoCut-Fishing-Setup.exe
           if-no-files-found: error
           compression-level: 0
