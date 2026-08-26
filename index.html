@@ -190,16 +190,18 @@
   .evt .go{flex:0 0 auto; background:var(--teal-soft); color:var(--teal-d); font-weight:800; font-size:12px; padding:6px 10px; border-radius:999px; text-decoration:none; white-space:nowrap;}
 
   /* Calendar – concursuri programate */
-  .sched{border-top:1px solid var(--line); padding:10px 0;}
-  .sched:first-child{border-top:0;}
-  .sched-h{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
-  .sched-h .nm{font-weight:800; font-size:14px;}
-  .sched-h .dt{font-size:12px; font-weight:800; color:var(--teal-d); white-space:nowrap;}
-  .sched .loc{font-size:12px; color:var(--muted); margin-top:2px; font-weight:700;}
-  .sched .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
-  .sched .tag{background:var(--teal-soft); color:var(--teal-d); font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px;}
-  .sched .actions{display:flex; gap:8px; margin-top:8px;}
-  .sched .actions a, .sched .actions button{flex:1; text-align:center; font-size:12px; padding:7px; border-radius:8px; font-weight:800; text-decoration:none; border:0; cursor:pointer; font-family:inherit;}
+  .sched{border:1px solid var(--line); border-radius:16px; padding:12px; margin-bottom:10px; background:var(--card); box-shadow:var(--shadow-sm);}
+  .sched-h{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .sched-h .nm{font-weight:850; font-size:15.5px; line-height:1.25;}
+  .sched-h .dt{flex:0 0 auto; font-size:11px; font-weight:850; color:var(--teal-d); white-space:nowrap; padding:4px 8px; border:1px solid var(--line); border-radius:999px; background:var(--teal-soft);}
+  .sched .loc{display:flex; align-items:center; gap:5px; font-size:12px; color:var(--muted); margin-top:6px; font-weight:700;}
+  .sched .loc .ui-ico{width:15px; height:15px; margin:0; vertical-align:0; color:var(--teal-d);}
+  .sched .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .sched .tag{background:var(--teal-soft); color:var(--teal-d); border:1px solid var(--line); font-size:11px; font-weight:800; padding:4px 8px; border-radius:999px;}
+  .sched .tag-locuri{font-size:11.5px;}
+  .sched .actions{display:flex; gap:8px; margin-top:10px;}
+  .sched .actions a, .sched .actions button{flex:1; min-height:38px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:12px; padding:7px; border-radius:10px; font-weight:800; text-decoration:none; border:0; cursor:pointer; font-family:inherit;}
+  .sched .actions .ui-ico{width:15px; height:15px; margin-right:5px; vertical-align:0;}
   .sched .go{background:var(--teal); color:#fff;}
   .sched .edit-btn{background:var(--teal-soft); color:var(--teal-d);}
   .sched .del-btn{background:#f4eae8; color:#b23b2e;}
@@ -560,7 +562,11 @@
   .p.has-catch{border-color:#28515a; box-shadow:0 12px 34px -24px rgba(25,211,209,.65);}
 
   .sched,.evt,.sol-row{border-color:var(--line);}
+  .sched{background:linear-gradient(145deg,#101d29,#0b141e);}
   .sched .dt,.evt .go,.sched .tag{color:var(--teal);}
+  .sched .dt{background:#12303a; border-color:#24515a;}
+  .sched .tag{background:#102431; border-color:#264052;}
+  .sched .loc .ui-ico{color:var(--teal);}
   .sched .go{background:var(--teal); color:#031011;}
   .sched .edit-btn{background:#122b39; color:#7debe5;}
   .sched .del-btn{background:#2b1b1e; color:#ff9d97;}
@@ -667,6 +673,7 @@
   <symbol id="i-volume" viewBox="0 0 24 24"><path d="M5 9H2v6h3l5 4V5L5 9Z"/><path d="M14 9c1.5 1.5 1.5 4.5 0 6M17 6c3.5 3.5 3.5 8.5 0 12"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m14 7 3 3M4 20h6"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 3h6l1 4H8l1-4ZM7 7l1 14h8l1-14M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 3h3l1.5 5-2 1.5c1.2 2.5 3 4.3 5.5 5.5l1.5-2 5 1.5v3c0 1.4-1.1 2.5-2.5 2.5C10.5 20 4 13.5 4 5.5 4 4.1 5.1 3 6.5 3Z"/></symbol>
 </svg>
 
 <header>
@@ -1785,17 +1792,17 @@
       if(e.slots_total){
         var luate=+(e.slots_taken||0), tot=+e.slots_total, libere=Math.max(0, tot-luate);
         // pescarul care se uită în calendar are o singură întrebare: mai prind loc?
-        var cls = libere===0 ? "tag tag-plin" : (libere<=3 ? "tag tag-putine" : "tag");
+        var cls = libere===0 ? "tag tag-locuri tag-plin" : (libere<=3 ? "tag tag-locuri tag-putine" : "tag tag-locuri");
         var txt = libere===0 ? luate+"/"+tot+" · COMPLET"
                 : (libere<=3 ? luate+"/"+tot+" · ultimele "+libere : luate+"/"+tot+" locuri");
         tags += '<span class="'+cls+'">'+txt+'</span>';
       }
-      var contactBtn = e.contact ? '<a class="go" href="tel:'+esc(e.contact.replace(/\s+/g,""))+'">📞 '+esc(e.contact)+'</a>' : '';
+      var contactBtn = e.contact ? '<a class="go" href="tel:'+esc(e.contact.replace(/\s+/g,""))+'"><svg class="ui-ico" aria-hidden="true"><use href="#i-phone"></use></svg>'+esc(e.contact)+'</a>' : '';
       // butoanele apar și cu cheia de scriere, nu doar pe telefonul care a publicat
-      var ownBtns = (mine[e.id] || syncKey) ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')">Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')">Șterge</button>' : '';
+      var ownBtns = (mine[e.id] || syncKey) ? '<button class="edit-btn" onclick="editEvent(\''+e.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-edit"></use></svg>Editează</button><button class="del-btn" onclick="deleteEvent(\''+e.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg>Șterge</button>' : '';
       return '<div class="sched">'+
         '<div class="sched-h"><span class="nm">'+esc(e.name)+'</span><span class="dt">'+dateLabelCal(e.event_date)+'</span></div>'+
-        '<div class="loc">📍 '+esc(e.location)+(e.organizer?' · '+esc(e.organizer):'')+'</div>'+
+        '<div class="loc"><svg class="ui-ico" aria-hidden="true"><use href="#i-location"></use></svg><span>'+esc(e.location)+(e.organizer?' · '+esc(e.organizer):'')+'</span></div>'+
         (tags?'<div class="tags">'+tags+'</div>':'')+
         (contactBtn||ownBtns?'<div class="actions">'+contactBtn+ownBtns+'</div>':'')+
       '</div>';
