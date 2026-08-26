@@ -211,17 +211,21 @@
 
   .cmmc{background:linear-gradient(120deg,#fff5e4,#fbe9cf); border:1.5px solid #f0d29a; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; align-items:center; gap:12px;}
   .cmmc .medal{font-size:26px;}
+  .cmmc .cmmc-icon{width:27px; height:27px; margin:0; color:#d99a2d;}
   .cmmc .t{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:#8a5a12;}
   .cmmc .who{font-weight:800; font-size:16px;}
   .cmmc .kg{margin-left:auto; font-size:20px; font-weight:800; color:#8a5a12;}
 
-  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
-  th,td{padding:9px 8px; text-align:left; font-size:14px;}
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  th,td{padding:10px 8px; text-align:left; font-size:14px;}
   th{background:#eef4fa; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800;}
   td{border-top:1px solid var(--line);}
-  td.pos{width:34px; font-weight:800; text-align:center;}
+  td.pos{width:42px; font-weight:800; text-align:center;}
   td.kg{text-align:right; font-weight:800; width:78px;}
   td.small{color:var(--muted); font-size:12px;}
+  .place-badge{display:inline-grid; place-items:center; width:28px; height:28px; border-radius:50%;
+    background:var(--teal-soft); color:var(--muted); border:1px solid var(--line);
+    font-size:12px; font-weight:900; font-variant-numeric:tabular-nums;}
   tr.p1 td.pos{color:#a67c12;} tr.p1{background:#fdf6e6;}
   tr.p2 td.pos{color:#7d8686;} 
   tr.p3 td.pos{color:#a5673c;}
@@ -561,9 +565,17 @@
   table{background:var(--card); border-color:var(--line);}
   th{background:#101f2c; color:#91a6b8;}
   td{border-color:var(--line);}
-  tr.p1{background:#2c2516;}
-  tr.p2{background:#161f28;}
-  tr.p3{background:#261d19;}
+  tbody tr:nth-child(even):not(.p1):not(.p2):not(.p3) td{background:#0f1a25;}
+  tr.p1 td{background:linear-gradient(90deg,rgba(242,193,78,.16),rgba(44,37,22,.72));}
+  tr.p2 td{background:linear-gradient(90deg,rgba(174,189,202,.12),rgba(22,31,40,.72));}
+  tr.p3 td{background:linear-gradient(90deg,rgba(216,137,88,.14),rgba(38,29,25,.72));}
+  tr.p1 td:first-child{box-shadow:inset 3px 0 #f2c14e;}
+  tr.p2 td:first-child{box-shadow:inset 3px 0 #aebdca;}
+  tr.p3 td:first-child{box-shadow:inset 3px 0 #d88958;}
+  tr.p1 .place-badge{background:linear-gradient(145deg,#ffe58d,#d99a2d); color:#281b03; border-color:#f5cc64; box-shadow:0 0 16px rgba(242,193,78,.24);}
+  tr.p2 .place-badge{background:linear-gradient(145deg,#eef5fa,#91a3b2); color:#17212a; border-color:#c5d1db;}
+  tr.p3 .place-badge{background:linear-gradient(145deg,#efb188,#b7653f); color:#29140b; border-color:#dc946d;}
+  td.kg{color:#e9f1f7; font-size:14.5px;}
   .tcol{background:#10202d;}
   .tcol .pp,.sector-h .tag{color:var(--teal);}
   .sector-h .tag{background:#13303b;}
@@ -3589,7 +3601,7 @@
     opts=opts||{}; var mi=opts.mi!==undefined?opts.mi:rankScope; var out="";
     sorted.forEach(function(p,i){
       var cls=i===0?"p1":i===1?"p2":i===2?"p3":"";
-      var medal=i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1);
+      var medal='<span class="place-badge">'+(i+1)+'</span>';
       var pts = opts.pmap ? '<td class="kg num" style="width:52px;color:var(--teal-d);">'+fmtPts(opts.pmap[p.id])+'</td>' : '';
       var sub='Stand '+(esc(standOfM(p,mi))||"–")+((opts.showSector&&sectorOfM(p,mi))?' · Sec '+esc(sectorOfM(p,mi)):'');
       out+='<tr class="'+cls+'">'+
@@ -3621,7 +3633,7 @@
       '<th class="tcol">TOTAL</th></tr></thead><tbody>';
     sorted.forEach(function(p,idx){
       var cls=idx===0?"p1":idx===1?"p2":idx===2?"p3":"";
-      var medal=idx===0?"🥇":idx===1?"🥈":idx===2?"🥉":(idx+1);
+      var medal='<span class="place-badge">'+(idx+1)+'</span>';
       h+='<tr class="'+cls+'"><td class="pos">'+medal+'</td>'+
          '<td>'+esc(nameOf(p))+'<div class="small">Stand '+(esc(standOfM(p,'total'))||"–")+
          (sectorOfM(p,'total')?' · Sec '+esc(sectorOfM(p,'total')):'')+'</div></td>';
@@ -3644,7 +3656,7 @@
     var withFish=state.participants.filter(function(p){return cmmcAward(p,rankScope)>0;});
     if(withFish.length){
       var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;});
-      cbox.innerHTML='<div class="cmmc"><div class="medal">🐟</div><div><div class="t">CMMC — cel mai mare pește · '+esc(scopeLabel(rankScope))+'</div><div class="who">'+esc(nameOf(best))+' <span style="font-weight:600;color:#8a5a12;">· Stand '+(esc(best.stand)||"–")+'</span></div></div><div class="kg num">'+fmt(cmmcAward(best,rankScope))+' kg</div></div>';
+      cbox.innerHTML='<div class="cmmc"><div class="medal"><svg class="ui-ico cmmc-icon" aria-hidden="true"><use href="#i-fish"></use></svg></div><div><div class="t">CMMC — cel mai mare pește · '+esc(scopeLabel(rankScope))+'</div><div class="who">'+esc(nameOf(best))+' <span style="font-weight:600;color:#8a5a12;">· Stand '+(esc(best.stand)||"–")+'</span></div></div><div class="kg num">'+fmt(cmmcAward(best,rankScope))+' kg</div></div>';
     } else { cbox.innerHTML=""; }
 
     var body=document.getElementById("rankBody");
