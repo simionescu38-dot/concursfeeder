@@ -1,0 +1,49 @@
+name: Build AutoCut Fishing for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - autocut-windows-build
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract AutoCut Fishing source
+        shell: pwsh
+        run: Expand-Archive -LiteralPath autocut-fishing-source.zip -DestinationPath autocut-fishing -Force
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: autocut-fishing/requirements.txt
+
+      - name: Install build dependencies
+        shell: pwsh
+        working-directory: autocut-fishing
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+          choco install ffmpeg innosetup -y --no-progress
+          refreshenv
+
+      - name: Build and self-test installer
+        shell: pwsh
+        working-directory: autocut-fishing
+        run: .\build_release_windows.ps1
+
+      - name: Upload final installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoCut-Fishing-Windows-1.1.0
+          path: autocut-fishing/installer/AutoCut-Fishing-Setup.exe
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
