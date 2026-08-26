@@ -34,6 +34,18 @@ jobs:
           choco install ffmpeg innosetup -y --no-progress
           refreshenv
 
+      - name: Install Romanian language for Inno Setup
+        shell: pwsh
+        run: |
+          $languagesDir = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\Languages"
+          $romanianFile = Join-Path $languagesDir "Romanian.isl"
+          $romanianUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/04328b96e3ff879fd3c8fcbc31c1031bb4fed8fa/Files/Languages/Unofficial/Romanian.isl"
+          New-Item -ItemType Directory -Force -Path $languagesDir | Out-Null
+          Invoke-WebRequest -Uri $romanianUrl -OutFile $romanianFile
+          if (-not (Test-Path -LiteralPath $romanianFile)) {
+            throw "Romanian.isl could not be installed."
+          }
+
       - name: Build and self-test installer
         shell: pwsh
         working-directory: autocut-fishing
