@@ -106,15 +106,18 @@
   .btn-danger{background:#fff; color:#b23b2e; border:1.5px solid #ecccc6;}
 
   /* participant card */
-  .p{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; margin-bottom:10px; box-shadow:var(--shadow-sm);}
-  .p-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
-  .avatar{width:48px; height:48px; border-radius:12px;
+  .p{position:relative; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:12px; box-shadow:var(--shadow-sm);}
+  .p::before{content:""; position:absolute; left:-1px; top:18px; bottom:18px; width:3px; border-radius:0 3px 3px 0; background:transparent;}
+  .p.has-catch::before{background:var(--teal); box-shadow:0 0 12px rgba(25,211,209,.5);}
+  .p-head{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .avatar{width:50px; height:50px; border-radius:14px;
     background-image:linear-gradient(90deg,#002B7F 0 33.3%,#FCD116 33.3% 66.6%,#CE1126 66.6% 100%);
     background-position:center; background-size:cover; background-repeat:no-repeat;
     color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 1px 3px rgba(0,0,0,.25);}
   .av-x{position:absolute; z-index:2; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:#b23b2e; color:#fff; font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; font-weight:800; box-shadow:0 1px 3px rgba(0,0,0,.3);}
-  .p-sub{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px;}
-  .av-wrap{position:relative; flex:0 0 auto; width:48px; height:48px;}
+  .p-sub{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;}
+  .p-sub span{font-size:10.5px; color:var(--muted); font-weight:800; padding:2px 7px; border:1px solid var(--line); border-radius:999px; background:var(--teal-soft);}
+  .av-wrap{position:relative; flex:0 0 auto; width:50px; height:50px;}
   .av-file{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:1;}
   .stand{
     flex:0 0 auto; min-width:40px; height:40px; padding:0 8px; border-radius:10px;
@@ -122,11 +125,13 @@
     display:flex; align-items:center; justify-content:center;
   }
   .p-name{flex:1; min-width:0;}
-  .p-name .nm{font-weight:800; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .p-name .nm{font-weight:850; font-size:17px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:-.01em;}
   .chip{display:inline-block; margin-top:2px; font-size:11px; font-weight:800; letter-spacing:.03em;
     background:var(--amber-soft); color:#8a5a12; padding:2px 8px; border-radius:999px;}
-  .del{flex:0 0 auto; border:0; background:#f4eae8; color:#b23b2e; width:34px; height:34px; border-radius:9px; font-size:18px; font-weight:800; cursor:pointer;}
-  .edit{flex:0 0 auto; border:0; background:#e4eef9; color:var(--teal-d); width:34px; height:34px; border-radius:9px; font-size:15px; font-weight:800; cursor:pointer; margin-right:2px;}
+  .del,.edit{flex:0 0 auto; border:0; width:38px; height:38px; border-radius:11px; cursor:pointer; display:grid; place-items:center;}
+  .del{background:#f4eae8; color:#b23b2e;}
+  .edit{background:#e4eef9; color:var(--teal-d); margin-right:1px;}
+  .del .ui-ico,.edit .ui-ico{width:17px; height:17px; margin:0; vertical-align:0;}
   .p-edit{margin-bottom:10px;}
   .erow{display:flex; gap:8px;}
   .erow>*{flex:1; min-width:0;}
@@ -136,10 +141,10 @@
   .metric{flex:1;}
   .metric label{display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:3px; text-align:center;}
   .metric input{text-align:center; padding:9px 4px; font-weight:700;}
-  .catchbox{margin-bottom:8px;}
-  .mlabel{display:block; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-bottom:5px;}
+  .catchbox{margin-bottom:10px; padding:10px; border:1px solid var(--line); border-radius:14px; background:var(--bg);}
+  .mlabel{display:block; font-size:10.5px; font-weight:850; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:7px;}
   .catch-row{display:flex; gap:8px;}
-  .catch-in{flex:1; text-align:center; font-weight:700; padding:10px 8px;}
+  .catch-in{flex:1; min-height:52px; text-align:center; font-size:18px; font-weight:800; padding:10px 8px;}
   /* Cel mai apăsat buton al zilei: se apasă cu degetul, în picioare, cu cântarul în
      cealaltă mână. Rândul fiind flex, crește odată cu el și câmpul de scris greutatea. */
   .catch-add{flex:0 0 58px; min-height:52px; border:0; border-radius:999px; background:var(--teal); color:#fff; font-size:26px; font-weight:800; line-height:1; cursor:pointer;}
@@ -149,10 +154,10 @@
   .chip-c{display:inline-flex; align-items:center; gap:6px; background:#ebf3fb; border:1px solid var(--line); border-radius:999px; padding:4px 6px 4px 11px; font-weight:800; font-size:14px; font-variant-numeric:tabular-nums;}
   .chip-c b{background:#cfe0f2; color:var(--teal-d); width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer;}
   .chip-sum{margin-left:auto; font-weight:800; color:var(--teal-d); font-variant-numeric:tabular-nums;}
-  .p-total{margin-top:10px; display:flex; align-items:baseline; justify-content:space-between;
-    background:#ebf3fb; border-radius:10px; padding:8px 12px;}
+  .p-total{margin-top:4px; display:flex; align-items:baseline; justify-content:space-between;
+    background:#ebf3fb; border:1px solid var(--line); border-radius:14px; padding:10px 13px;}
   .p-total .lbl{font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--teal-d);}
-  .p-total .val{font-size:20px; font-weight:800;}
+  .p-total .val{font-size:24px; font-weight:900; letter-spacing:-.02em;}
   .p-total .val small{font-size:12px; font-weight:700; color:var(--muted);}
 
   .summary{display:flex; gap:8px; margin-bottom:10px;}
@@ -545,9 +550,14 @@
   .edit{background:#142c3b; color:#79e7e1;}
   .del{background:#2b1b1e; color:#ff9d97;}
   .chip,.cmmc{background:var(--amber-soft); color:#f4cc77; border-color:#69501d;}
-  .chip-c,.p-total,.metric .ro,.wx-cell,.sec-chip{background:#102431; border-color:#264052;}
+  .chip-c,.metric .ro,.wx-cell,.sec-chip{background:#102431; border-color:#264052;}
   .chip-c b,.sec-chip button{background:#1b3b49; color:var(--teal);}
+  .p-sub span{background:#102431; border-color:#264052; color:#9fb0bf;}
+  .catchbox{background:#09131d; border-color:#1c3040;}
+  .p-total{background:linear-gradient(135deg,#103039,#102431); border-color:#28515a;}
   .p-total .lbl,.chip-sum,.wx-k{color:var(--teal);}
+  .p-total .val{color:#f3fbff;}
+  .p.has-catch{border-color:#28515a; box-shadow:0 12px 34px -24px rgba(25,211,209,.65);}
 
   .sched,.evt,.sol-row{border-color:var(--line);}
   .sched .dt,.evt .go,.sched .tag{color:var(--teal);}
@@ -655,6 +665,8 @@
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 5h12l-2 4 2 4H5"/></symbol>
   <symbol id="i-volume" viewBox="0 0 24 24"><path d="M5 9H2v6h3l5 4V5L5 9Z"/><path d="M14 9c1.5 1.5 1.5 4.5 0 6M17 6c3.5 3.5 3.5 8.5 0 12"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="m4 20 4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m14 7 3 3M4 20h6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 3h6l1 4H8l1-4ZM7 7l1 14h8l1-14M10 11v6M14 11v6"/></symbol>
 </svg>
 
 <header>
@@ -3393,13 +3405,13 @@
             (p.photo&&!L?'<button class="av-x" onclick="removePhoto(\''+p.id+'\')">×</button>':'')+
           '</div>'+
           '<div class="p-name"><div class="nm">'+full+'</div>'+
-            '<div class="p-sub">'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'fără stand')+(sectorOfM(p,state.manche||1)?' · Sector '+esc(sectorOfM(p,state.manche||1)):'')+'</div></div>'+
-          (L?'':'<button class="edit" onclick="editParticipant(\''+p.id+'\')">✎</button>'+
-          '<button class="del" onclick="delParticipant(\''+p.id+'\')">×</button>')+
+            '<div class="p-sub"><span>'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'Fără stand')+'</span>'+(sectorOfM(p,state.manche||1)?'<span>Sector '+esc(sectorOfM(p,state.manche||1))+'</span>':'')+'</div></div>'+
+          (L?'':'<button class="edit" aria-label="Editează participantul" onclick="editParticipant(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-edit"></use></svg></button>'+
+          '<button class="del" aria-label="Șterge participantul" onclick="delParticipant(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg></button>')+
         '</div>';
       }
       var metrics='';
-      html+='<div class="p">'+
+      html+='<div class="p'+(totalOf(p)>0?' has-catch':'')+'">'+
         head+
         '<div class="catchbox">'+
           '<label class="mlabel">'+(L?'Capturi (kg)':'Cantitate — adaugă fiecare captură (kg)')+'</label>'+
