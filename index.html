@@ -60,15 +60,15 @@
     display:flex; padding:6px 6px calc(6px + env(safe-area-inset-bottom));
   }
   nav.tabs button{
-    flex:1; border:0; background:none; padding:8px 4px; border-radius:12px;
-    color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; gap:3px;
+    flex:1; min-width:0; min-height:52px; border:0; background:none; padding:5px 2px; border-radius:12px;
+    color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
     transition:background .15s ease, color .15s ease;
   }
   nav.tabs button .ic{display:grid; place-items:center; line-height:1;}
   .app-icon{display:block; width:24px; height:24px; fill:none; stroke:currentColor;
     stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
-  nav.tabs button .app-icon{width:22px; height:22px;}
+  nav.tabs button .app-icon{width:20px; height:20px;}
   nav.tabs button.on{color:var(--teal); background:var(--teal-soft);}
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px; box-shadow:var(--shadow-sm);}
@@ -472,7 +472,7 @@
     background:
       radial-gradient(circle at 50% -180px,rgba(25,211,209,.12),transparent 430px),
       var(--bg);
-    padding-bottom:104px;
+    padding-bottom:88px;
   }
   header{
     background:rgba(6,11,18,.94);
@@ -489,13 +489,13 @@
     left:12px; right:12px; bottom:8px;
     background:rgba(13,23,34,.96);
     border:1px solid #26394a;
-    border-radius:22px;
-    padding:7px 7px calc(7px + env(safe-area-inset-bottom));
+    border-radius:19px;
+    padding:4px 5px calc(4px + env(safe-area-inset-bottom));
     box-shadow:0 18px 50px rgba(0,0,0,.55);
     backdrop-filter:blur(18px);
     -webkit-backdrop-filter:blur(18px);
   }
-  nav.tabs button{color:#8093a5; border-radius:15px;}
+  nav.tabs button{color:#8093a5; border-radius:13px;}
   nav.tabs button.on{color:var(--teal); background:#12303a;}
 
   .card,.p,.stat,.pliant-cap,.mg button{
