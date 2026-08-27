@@ -1559,6 +1559,15 @@
       var d = Math.floor(h/24); return "acum "+d+" "+(d===1?"zi":"zile");
     }catch(e){ return ""; }
   }
+  /* „LIVE ACUM" se socotea numai după cât de proaspătă e camera: un concurs terminat la
+     ora 16 rămânea anunțat ca live încă două ore, deși ceasul din aplicație scria deja
+     „Concurs încheiat". Ora de final e chiar în datele camerei, care oricum se citesc ca
+     să se numere pescarii — deci adevărul se poate spune din prima secundă.
+     Camerele fără oră de final rămân pe regula celor două ore: la ele n-avem de unde ști. */
+  function concursTerminat(d){
+    var t = d && +d.endAt;
+    return !!t && Date.now() > t;
+  }
   function loadCalendarLive(){
     var el=document.getElementById("cal-live-list"); if(!el) return;
     fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); }).then(function(j){
@@ -1581,7 +1590,7 @@
       })).then(function(states){
         var rooms=proaspete.filter(function(r,i){
           var st=states[i];
-          return st && st.ok && st.data && (st.data.participants||[]).length>0;
+          return st && st.ok && st.data && (st.data.participants||[]).length>0 && !concursTerminat(st.data);
         });
         if(!rooms.length){ el.innerHTML='<p class="hint">Niciun concurs live momentan.</p>'; return; }
         el.innerHTML = rooms.map(function(r){
@@ -1617,10 +1626,10 @@
          toate goale. Numărăm acum doar camerele în care chiar e cineva înscris. */
       var live=0;
       states.forEach(function(res){
-        if(res && res.ok && res.data && (res.data.participants||[]).length) live++;
+        if(res && res.ok && res.data && (res.data.participants||[]).length && !concursTerminat(res.data)) live++;
       });
       renderHeroStats({upcoming:events.length, live:live, organizers:Object.keys(orgSet).length});
-      var best=null; states.forEach(function(res, i){ if(!res || !res.ok || !res.data) return; var compName = res.data.name || activeRooms[i].name || activeRooms[i].code; (res.data.participants||[]).forEach(function(p){ [1,2].forEach(function(mi){ var m = p.m && p.m[mi]; if(!m) return; (m.extras||[]).forEach(function(v){ var kg = +v||0; if(kg>0 && (!best || kg>best.kg)){ best = {kg:kg, name: ((p.prenume||"")+" "+(p.nume||"")).trim()||"—", comp: compName}; } }); }); }); }); heroFish=best; renderHeroSpotlight(best); }); }); }
+      var best=null; states.forEach(function(res, i){ if(!res || !res.ok || !res.data || concursTerminat(res.data)) return; var compName = res.data.name || activeRooms[i].name || activeRooms[i].code; (res.data.participants||[]).forEach(function(p){ [1,2].forEach(function(mi){ var m = p.m && p.m[mi]; if(!m) return; (m.extras||[]).forEach(function(v){ var kg = +v||0; if(kg>0 && (!best || kg>best.kg)){ best = {kg:kg, name: ((p.prenume||"")+" "+(p.nume||"")).trim()||"—", comp: compName}; } }); }); }); }); heroFish=best; renderHeroSpotlight(best); }); }); }
   function downloadFishSpotlight(){
     if(!heroFish){ toast("Niciun pește de partajat momentan"); return; }
     var logo=new Image();
