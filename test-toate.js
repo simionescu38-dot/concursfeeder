@@ -19,6 +19,7 @@ const TESTE = [
   ["Calendar: editare cu cheia de scriere", "test-calendar-cheie.js"],
   ["Butonul Statistici din meniu", "test-statistici-meniu.js"],
   ["Instalarea de pe linkul primit", "test-instalare-link.js"],
+  ["Poza și ora la peștele extra", "test-peste-extra-poza.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],
   ["Soare / lună (solunar)", "test-astro.js"],
