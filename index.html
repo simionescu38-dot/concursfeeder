@@ -2048,7 +2048,7 @@
     var org=[
       ["scale","Cântărire","meniuGo('cantar')"],
       ["trophy","Clasament","meniuGo('rank')"],
-      ["chart","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
+      ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
       ["timer","Cronometru","meniuGo('set','card-cronometru')"],
       ["calendar","Calendar","meniuGo('cal')"],
       ["notebook","Strategie","meniuGo('strat')"],
@@ -2058,7 +2058,7 @@
     ];
     var pescar=[
       ["trophy","Clasament","meniuGo('rank')"],
-      ["chart","Statistici","meniuGo('rank',null,function(){setRankMode('stat');})"],
+      ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
       ["notebook","Strategie","meniuGo('strat')"],
       ["weather","Vremea","meniuGo('part','card-meteo')"],
       ["rules","Regulament","meniuGo('reg')"],
@@ -3560,6 +3560,15 @@
      rost să treacă prin toate capturile la fiecare cântărire, dacă pliantul e strâns. */
   function deschideStatistici(){
     plianteaza("pliant-stat");
+    improspateazaStatistici();
+  }
+  /* Butonul „Statistici" din meniu cerea setRankMode('stat') — un mod care nu mai
+     există de când statisticile și-au luat pliantul lor. Te lăsa în Clasament, pe lista
+     de sectoare, cu niciun buton aprins și nicio statistică. Acum deschide pliantul
+     acolo unde stă el. DESCHIDE, nu comută: apăsat de două ori nu se închide în nas. */
+  function statisticiDinMeniu(){
+    var cuprins=document.querySelector("#pliant-stat .pliant-in");
+    if(cuprins && cuprins.hidden) plianteaza("pliant-stat");
     improspateazaStatistici();
   }
   function improspateazaStatistici(){
