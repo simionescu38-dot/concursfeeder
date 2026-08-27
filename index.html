@@ -148,6 +148,11 @@
   /* Cel mai apăsat buton al zilei: se apasă cu degetul, în picioare, cu cântarul în
      cealaltă mână. Rândul fiind flex, crește odată cu el și câmpul de scris greutatea. */
   .catch-add{flex:0 0 58px; min-height:52px; border:0; border-radius:999px; background:var(--teal); color:#fff; font-size:26px; font-weight:800; line-height:1; cursor:pointer;}
+  /* Aparatul foto stă lângă „+", nu peste el: „+" rămâne butonul zilei, ăsta e pentru
+     peștele extra pe care vrei să-l dovedești. */
+  .catch-cam{flex:0 0 52px; min-height:52px; display:grid; place-items:center; border-radius:999px;
+    background:var(--teal-soft); color:var(--teal-d); border:1px solid var(--line); cursor:pointer;}
+  .catch-cam .ui-ico{width:23px; height:23px;}
   .catch-add:active{background:var(--teal-d);}
   .chips-c{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center;}
   .chips-empty{font-size:12px; color:var(--muted);}
@@ -717,6 +722,7 @@
   <symbol id="i-fish" viewBox="0 0 24 24"><path d="M4 12c3-5 8-7 13-4l4-3v14l-4-3c-5 3-10 1-13-4Z"/><circle cx="14.5" cy="11" r=".7" fill="currentColor" stroke="none"/><path d="M4 12H2"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></symbol>
   <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h2.5l2-3h7l2 3H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m4 18 5-5 4 3 3-4 5 6"/></symbol>
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 5h12l-2 4 2 4H5"/></symbol>
@@ -1285,7 +1291,7 @@
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
   // ---------- manșe (concurs pe 2 sau 3 zile) ----------
-  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], stand:"", sector:""}; }
+  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], extraTimes:[], extraPhotos:[], stand:"", sector:""}; }
   function numManse(){ return state.numManse||2; }
   // Implicit: locurile din sector, curat. „Locul 3 ia 3 puncte" e ce scrie în
   // regulamentele de aici, iar punctele fracționare la premiere nu se pot explica.
@@ -3137,6 +3143,15 @@
         while(m.catchPhotos.length<m.catches.length) m.catchPhotos.push(null);
         if(m.catchPhotos.length>m.catches.length) m.catchPhotos.length=m.catches.length;
         if(!Array.isArray(m.extras)) m.extras=[];
+        /* Ora și poza peștelui extra au venit mai târziu decât peștii extra înșiși:
+           concursurile vechi au doar greutățile. Se completează cu goluri, ca un
+           concurs din iulie să se deschidă fără să crape. */
+        if(!Array.isArray(m.extraTimes)) m.extraTimes=[];
+        while(m.extraTimes.length<m.extras.length) m.extraTimes.push(null);
+        if(m.extraTimes.length>m.extras.length) m.extraTimes.length=m.extras.length;
+        if(!Array.isArray(m.extraPhotos)) m.extraPhotos=[];
+        while(m.extraPhotos.length<m.extras.length) m.extraPhotos.push(null);
+        if(m.extraPhotos.length>m.extras.length) m.extraPhotos.length=m.extras.length;
         if(m.sector===undefined || m.sector===null) m.sector="";
         if(m.stand===undefined || m.stand===null) m.stand="";
         delete m.cmmc; // câmp vechi: CMMC se calculează acum din extras
@@ -3335,7 +3350,7 @@
     scrieInJurnal(p, mi, "captura", "sters", v, inainte, totalOfM(p, mi));
     queueSave(); refreshCard(id);
   }
-  function addExtra(id){
+  function addExtraCore(id, photo){
     if(guard()) return;
     var el=document.getElementById("extra-"+id); if(!el) return;
     var v=num(el.value);
@@ -3346,6 +3361,11 @@
       var vr=Math.round(v*1000)/1000;
       var mi=state.manche||1, inainte=totalOfM(p, mi);
       m.extras.push(vr);
+      /* Peștele extra e singurul care se cântărește ÎN TIMPUL concursului: juvelnicele
+         se cântăresc toate la final, deci ora lor spune doar când a stat omul la cântar.
+         Aici ora chiar înseamnă când a venit peștele. */
+      m.extraTimes.push(Date.now());
+      m.extraPhotos.push(photo||null);
       scrieInJurnal(p, mi, "extra", "adaugat", vr, inainte, totalOfM(p, mi));
       queueSave(); refreshCard(id);
       var newLeader=leaderId();
@@ -3353,6 +3373,46 @@
       speak(nameOf(p)+", pește extra de "+kgSpeech(vr)+".");
     }
     el.value=""; el.focus();
+  }
+  function addExtra(id){ if(guard()) return; addExtraCore(id, null); }
+  /* Fotografia afișajului de cântar, făcută DIN aplicație: rămâne pe cardul pescarului,
+     nu în galeria telefonului printre alte două sute. Dacă cineva contestă CMMC-ul la
+     premiere, se scoate de acolo. Se cere întâi greutatea, ca să nu rămână în listă un
+     pește fără număr, care ar arăta ca o cântărire uitată. */
+  function onExtraPhoto(id, input){
+    var f=input.files && input.files[0];
+    input.value="";
+    if(!f) return;
+    if(guard()) return;
+    var el=document.getElementById("extra-"+id);
+    if(!el || !(num(el.value)>0)){ toast("Scrie întâi greutatea, apoi fă poza"); if(el) el.focus(); return; }
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        // mai mare decât pozele pescarilor (360): pe un afișaj de cântar trebuie să se
+        // citească cifrele, altfel poza nu e dovadă, e doar o pată
+        var max=480, w=img.width, h=img.height;
+        if(w>=h && w>max){ h=Math.round(h*max/w); w=max; } else if(h>w && h>max){ w=Math.round(w*max/h); h=max; }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        var data=null; try{ data=c.toDataURL("image/jpeg",0.6); }catch(err){}
+        addExtraCore(id, data||null);
+      };
+      img.onerror=function(){ addExtraCore(id, null); };
+      img.src=e.target.result;
+    };
+    reader.onerror=function(){ toast("N-am putut citi poza"); };
+    reader.readAsDataURL(f);
+  }
+  function showExtraPhoto(id, idx){
+    var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
+    var m=mOf(p, state.manche||1);
+    var ph=(m.extraPhotos||[])[idx]; if(!ph) return;
+    document.getElementById("photoImg").src=ph;
+    var tm=(m.extraTimes||[])[idx];
+    document.getElementById("photoCap").textContent=fmt(m.extras[idx])+" kg · pește extra"+(tm?" · "+hhmm(tm):"")+" · "+nameOf(p);
+    document.getElementById("photoView").classList.add("on");
   }
   function removeExtra(id,idx){
     if(guard()) return;
@@ -3362,6 +3422,8 @@
     if(!confirm("Ștergi peștele extra de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
     var mi=state.manche||1, inainte=totalOfM(p, mi);
     m.extras.splice(idx,1);
+    if(Array.isArray(m.extraTimes)) m.extraTimes.splice(idx,1);
+    if(Array.isArray(m.extraPhotos)) m.extraPhotos.splice(idx,1);
     scrieInJurnal(p, mi, "extra", "sters", v, inainte, totalOfM(p, mi));
     queueSave(); refreshCard(id);
   }
@@ -3371,7 +3433,12 @@
     if(!cs.length){ return '<span class="chips-empty">niciun pește extra</span>'; }
     var h="";
     cs.forEach(function(v,idx){
-      h+='<span class="chip-c">'+fmt(v)+(L?'':'<b onclick="removeExtra(\''+p.id+'\','+idx+')">×</b>')+'</span>';
+      var tm=(m.extraTimes||[])[idx];
+      var tt=tm?('<i class="cht">'+hhmm(tm)+'</i>'):'';
+      var ph=(m.extraPhotos||[])[idx];
+      var pm=ph?'<i class="cht">📷</i>':'';
+      var click=ph?(' onclick="showExtraPhoto(\''+p.id+'\','+idx+')"'):'';
+      h+='<span class="chip-c"'+click+'>'+fmt(v)+tt+pm+(L?'':'<b onclick="event.stopPropagation();removeExtra(\''+p.id+'\','+idx+')">×</b>')+'</span>';
     });
     h+='<span class="chip-sum">= '+fmt(extraOf(p))+' kg</span>';
     return h;
@@ -3550,6 +3617,8 @@
           (L?'':'<div class="catch-row">'+
             '<input id="extra-'+p.id+'" class="catch-in" inputmode="decimal" placeholder="ex: 1,2" onkeydown="if(event.key===\'Enter\'){event.preventDefault();addExtra(\''+p.id+'\');}">'+
             '<button class="catch-add" onclick="addExtra(\''+p.id+'\')">+</button>'+
+            '<label class="catch-cam" title="Poză la cântar"><svg class="ui-ico" aria-hidden="true"><use href="#i-camera"></use></svg>'+
+              '<input type="file" accept="image/*" capture="environment" hidden onchange="onExtraPhoto(\''+p.id+'\',this)"></label>'+
           '</div>')+
           '<div class="chips-c" id="exchips-'+p.id+'">'+extrasChipsHtml(p)+'</div>'+
         '</div>'+
@@ -4286,7 +4355,7 @@
       scopes.forEach(function(mi){
         var m=mOf(p,mi);
         (m.catches||[]).forEach(function(v,i){ all.push({v:+v||0, t:(m.catchTimes||[])[i]||null, p:p}); });
-        (m.extras||[]).forEach(function(v){ allEx.push({v:+v||0, p:p}); });
+        (m.extras||[]).forEach(function(v,i){ allEx.push({v:+v||0, t:(m.extraTimes||[])[i]||null, p:p}); });
       });
     });
     if(!all.length) return '<div class="empty"><div class="big">📊</div>Nicio captură cântărită încă.</div>';
@@ -4332,8 +4401,12 @@
     }
 
     // Când a mușcat peștele — ora e salvată la fiecare cântărire (m.catchTimes)
-    var timed=all.filter(function(c){ return c.t; });
-    var faraOra=all.length-timed.length;
+    /* Juvelnicele se cântăresc toate la final, deci cad într-o singură oră: singurul
+       lucru care spune CÂND a venit peștele e peștele extra, cântărit pe loc. De când
+       și el are oră, graficul îl numără — altfel arăta o coloană și atât. */
+    var cuOra=all.concat(allEx);
+    var timed=cuOra.filter(function(c){ return c.t; });
+    var faraOra=cuOra.length-timed.length;
     if(timed.length>=3){
       var byH={}, minH=null, maxH=null;
       timed.forEach(function(c){
@@ -4348,7 +4421,7 @@
         colChart(hv,hl)+
         '<p class="hint" style="margin:8px 0 0;">Câte cântăriri s-au făcut în fiecare oră'+
         (faraOra?' (din '+timed.length+' cu oră salvată, '+faraOra+' fără)':'')+
-        '. <b>Peștii extra nu apar aici</b> — la ei aplicația nu salvează ora.</p></div>';
+        '. <b>Juvelnicele se cântăresc la final</b>, deci cad toate în aceeași oră; peștii extra arată când au venit.</p></div>';
     }
 
     // Distribuția cântăririlor
