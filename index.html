@@ -373,6 +373,16 @@
   /* bara de vizualizare din antet: și semn că telefonul doar privește, și ieșirea */
   #viewerBar{background:#fdf6e6; border:1.5px solid #f0d29a; color:#8a5a12; border-radius:12px;
     padding:8px 10px; margin-top:8px; font-size:12px; font-weight:700; cursor:pointer;}
+  /* Oferta de instalare, pentru cine intră de pe un link primit. Nu e o alarmă, deci nu
+     poartă culoarea de avertisment a barei de vizualizare. */
+  #instalBar{background:#e8f0fd; border:1.5px solid #cfe0f7; color:#0f4fa8; border-radius:12px;
+    padding:9px 10px; margin-top:8px; font-size:12px; font-weight:700; display:flex;
+    align-items:center; gap:8px;}
+  #instalBar .ib-txt{flex:1; min-width:0; font-weight:700;}
+  #instalBar .ib-do{flex:0 0 auto; border:0; border-radius:9px; padding:7px 11px; font-size:12px;
+    font-weight:800; font-family:inherit; cursor:pointer; background:#1c6fd9; color:#fff;}
+  #instalBar .ib-nu{flex:0 0 auto; border:0; background:none; color:inherit; opacity:.6;
+    font-size:17px; line-height:1; padding:4px 6px; cursor:pointer; font-family:inherit;}
   .metric .ro{ text-align:center; font-weight:700; padding:11px 4px; border:1.5px dashed var(--line); border-radius:10px; background:#f5f8fc;}
 
 
@@ -664,6 +674,8 @@
   #uploadBar.ub-busy::before{animation:syncPulse 1.15s ease-in-out infinite;}
   @keyframes syncPulse{50%{opacity:.42; transform:translateY(-50%) scale(.72);}}
   #viewerBar,.lockbar{background:#352a16; border-color:#69501d; color:#f4cc77;}
+  #instalBar{background:#102d37; border-color:#1d4a5a; color:#8fe6e2;}
+  #instalBar .ib-do{background:#19d3d1; color:#04222a;}
   #warn-sector,#warn-stand{background:#321b20; border-color:#63323b; color:#ffaaa4;}
 
   .jrand{background:#0c1b27;}
@@ -728,6 +740,7 @@
   <div class="comp" id="syncBadge" style="display:none;"></div>
   <div id="uploadBar"></div>
   <div id="viewerBar" style="display:none;" onclick="exitViewerMode()"></div>
+  <div id="instalBar" style="display:none;"></div>
   <div id="timerBar"></div>
   <button id="lockBtn" onclick="toggleLock()" aria-label="Blocare editare"><svg class="ui-ico" aria-hidden="true"><use href="#i-unlock"></use></svg></button>
 </header>
@@ -2612,6 +2625,45 @@
       ? "Pe iPhone se pune de mână, și <b>numai din Safari</b> (din Chrome nu apare): butonul de partajare de jos <b>⬆️</b> → derulezi → <b>Adaugă pe ecranul principal</b>."
       : "Dacă butonul nu apare: meniul browserului (⋮, dreapta-sus) → <b>Instalează aplicația</b> sau <b>Adaugă la ecranul principal</b>. Pe unele telefoane apare abia după câteva secunde pe pagină.";
   }
+  /* Cine deschide linkul de clasament primit pe WhatsApp aterizează direct pe clasament.
+     Butonul de instalare stă însă în „Contul meu", unde omul ăsta nu ajunge niciodată —
+     deci aplicația nu ajungea pe ecranul nimănui, deși știe să se instaleze.
+     Un link NU poate instala singur nimic, nicăieri: omul apasă o dată. Ce putem face e
+     să-i punem în față exact apăsarea care merge la el, fiindcă nu e aceeași peste tot:
+     în browserul din WhatsApp instalarea nici nu se oferă — trebuie deschis întâi în
+     browserul adevărat. */
+  var INSTAL_NU_KEY = "concurs-instal-nu";
+  function instalRefuzat(){
+    try{ return localStorage.getItem(INSTAL_NU_KEY)==="1"; }catch(e){ return false; }
+  }
+  function nuVreauIconita(){
+    try{ localStorage.setItem(INSTAL_NU_KEY,"1"); }catch(e){}
+    updateInstalBar();
+  }
+  /* Browserul din WhatsApp / Facebook / Instagram: acolo nu există nici prompt de
+     instalare, nici „Adaugă pe ecranul principal" în meniu. */
+  function browserInAplicatie(){
+    return /\bWhatsApp\b|\bFBAN\b|\bFBAV\b|\bInstagram\b/i.test(navigator.userAgent||"");
+  }
+  function updateInstalBar(){
+    var b=document.getElementById("instalBar");
+    if(!b) return;
+    if(!viewerMode || esteInstalata() || instalRefuzat()){ b.style.display="none"; return; }
+    var txt, buton="";
+    if(promptInstalare){
+      txt="Pune clasamentul pe ecranul telefonului, ca să-l deschizi direct data viitoare.";
+      buton='<button type="button" class="ib-do" onclick="cereInstalarea()">Pune-o pe ecran</button>';
+    } else if(browserInAplicatie()){
+      txt="Ca s-o pui pe ecran, deschide-o întâi în browser: apasă <b>⋮</b> sus-dreapta → <b>Deschide în Chrome</b>.";
+    } else if(esteIOS()){
+      txt="Ca s-o pui pe ecran: <b>⬆️</b> jos → <b>Adaugă pe ecranul principal</b>. Merge numai din Safari.";
+    } else {
+      txt="Ca s-o pui pe ecran: meniul browserului <b>⋮</b> → <b>Instalează aplicația</b>.";
+    }
+    b.innerHTML='<span class="ib-txt">'+txt+'</span>'+buton+
+      '<button type="button" class="ib-nu" onclick="nuVreauIconita()" aria-label="Nu, mulțumesc">×</button>';
+    b.style.display="flex";
+  }
   function cereInstalarea(){
     if(!promptInstalare){ updateInstallUI(); return; }
     promptInstalare.prompt();
@@ -2623,10 +2675,10 @@
   window.addEventListener("beforeinstallprompt", function(e){
     e.preventDefault();          // altfel Chrome arată bara lui și pierdem evenimentul
     promptInstalare=e;
-    updateInstallUI();
+    updateInstallUI(); updateInstalBar();
   });
   window.addEventListener("appinstalled", function(){
-    promptInstalare=null; updateInstallUI(); toast("Gata – iconița e pe ecran");
+    promptInstalare=null; updateInstallUI(); updateInstalBar(); toast("Gata – iconița e pe ecran");
   });
   // Versiunea nu se ține de mână nicăieri: se citește din numele memoriei pe care o
   // folosește chiar acum telefonul. Așa nu poate să mintă și nu poate rămâne în urmă
@@ -2953,7 +3005,7 @@
   function startViewerMode(room){
     viewerMode=true; viewerRoom=room;
     saveViewerRoom(room); // ca iconița instalată să reintre singură în cameră
-    updateLockUI(); updateViewerBar(); updateUploadBar();
+    updateLockUI(); updateViewerBar(); updateUploadBar(); updateInstalBar();
     var lb=document.querySelector(".lockbar");
     if(lb) lb.textContent="🔴 Vizualizare live – camera "+room+". Se actualizează automat.";
     showView("rank");
