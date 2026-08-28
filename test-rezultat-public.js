@@ -29,4 +29,18 @@ t("primul de pe podium este primul oficial",ctx.dateCampioni().general[0].id,"b"
 t("sunt găsiți câștigătorii sectoarelor",ctx.dateCampioni().sectoare.length,2);
 t("câștigătorii sunt grupați pe sector și manșă",/sectoare\.push\(\{mi:mi,sector:s/.test(html),true);
 t("imaginea campionilor este PNG",html.includes("campionii-concursului.png"),true);
+
+/* Adresa nu se face aici, ci în sezon.html — și tocmai de-aia se strica fără să bage nimeni
+   de seamă: pagina asta era verificată, butonul care duce la ea nu. Se ia funcția
+   ADEVĂRATĂ din fișierul livrat și i se cere să scoată o adresă pe care chiar o primește
+   pagina. (S-a livrat o dată cu o literă mâncată: „rhiva/2026-…json".) */
+const {grabFunction:ia,citeste:cit}=require("./test-helpers.js");
+const sezonCtx={};vm.createContext(sezonCtx);vm.runInContext(ia(cit("sezon.html"),"rezultatHref"),sezonCtx);
+const cere=(cod)=>decodeURIComponent((sezonCtx.rezultatHref(cod).split("=")[1]||""));
+const CALE="arhiva/2026-08-27-braila-rediu-galian-27-08-2026.json", ID="327269e3-ebde-4800-9f11-1234567890ab";
+t("linkul duce calea arhivei întreagă",cere("arhiva:"+CALE),CALE);
+t("…iar pagina o primește",/^arhiva\/[a-z0-9._-]+\.json$/i.test(cere("arhiva:"+CALE)),true);
+t("linkul duce codul întreg al arhivei de pe server",cere("arhiva-api:"+ID),ID);
+t("un cod necunoscut nu face niciun link",sezonCtx.rezultatHref("altceva:"+CALE),"");
+
 if(failed)process.exit(1);console.log("Pagina publică este verificată.");
