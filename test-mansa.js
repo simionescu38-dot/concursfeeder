@@ -245,11 +245,12 @@ function concurs(oameni, o) {
     grabFunction(src, "cantOfM"), grabFunction(src, "extraOfM"), grabFunction(src, "totalOfM"),
     grabFunction(src, "cmmcOfM"), grabFunction(src, "cmmcAward"),
     grabFunction(src, "nameOf"), grabFunction(src, "nameKey"),
-    grabFunction(src, "standKey"), grabFunction(src, "byStand"), grabFunction(src, "sortRankS"),
+    grabFunction(src, "standKey"), grabFunction(src, "byStand"),
+    grabFunction(src, "standKeyM"), grabFunction(src, "byStandM"), grabFunction(src, "sortRankS"),
     grabFunction(src, "absentLaMansa"), grabFunction(src, "totalOf"),
     grabFunction(src, "cateCapturi"), grabFunction(src, "stareaMansei"), grabFunction(src, "leaderId"),
     grabFunction(src, "castigatoriPeSectoare"), grabFunction(src, "celMaiMarePeste"),
-    grabFunction(src, "rezumatMansei"), grabFunction(src, "semnaturaStatus")
+    grabFunction(src, "situatiaCantaririi"), grabFunction(src, "rezumatMansei"), grabFunction(src, "semnaturaStatus")
   ].join("\n"), ctx);
   // [nume, sector, stand, kg, pesteExtra?]
   ctx.state.participants = oameni.map(function (om, i) {
@@ -320,6 +321,24 @@ console.log("\n=== 14. Ce scrie în panou ===");
   t("sectorul netrecut spune că mai e de cântărit", /Sector C: încă nimeni cântărit/.test(h), true);
   t("scrie cel mai mare pește", /Cel mai mare pește: <b>Micu<\/b> — 2,100 kg/.test(h), true);
   t("duce la clasamentul manșei", /veziClasamentulMansei\(1\)/.test(h), true);
+}
+
+console.log("\n=== 14b. Controlul cântăririi ===");
+{
+  const b = concurs([["Ana", "A", "12", 5.0], ["Bogdan", "A", "3", null],
+                     ["Cristi", "B", "8", null], ["Absent", "", null, null]]);
+  const sit = b.ruleaza("situatiaCantaririi(1)");
+  t("numără doar concurenții cu stand în manșă", [sit.cantariti, sit.total], [1, 3]);
+  t("standurile lipsă sunt în ordine", sit.lipsa.map(p => p.stand), ["3", "8"]);
+  const h = b.ruleaza("rezumatMansei(1)");
+  t("panoul spune câți sunt cântăriți", /1 din 3<\/b> cântăriți/.test(h), true);
+  t("panoul numește standurile lipsă", /lipsesc standurile 3, 8/.test(h), true);
+  t("absentul fără stand nu este cerut la cântar", /Absent/.test(h), false);
+}
+{
+  const b = concurs([["Ana", "A", "1", 5.0], ["Bogdan", "A", "2", 3.0]]);
+  const h = b.ruleaza("rezumatMansei(1)");
+  t("când nu lipsește nimeni, confirmă verificarea", /toate standurile sunt verificate/.test(h), true);
 }
 {
   const b = concurs([["Unu", "A", "1", null], ["Doi", "B", "2", null]]);

@@ -283,7 +283,7 @@ const LOT = [
        ecran gol fără să înțeleagă de ce. */
     t("actualizarea aplicației nu șterge pozele primite",
       /k !== CACHE && k !== POZE/.test(swSrc), true);
-    t("versiunea din service worker a fost urcată", /concurs-pescuit-v134/.test(swSrc), true);
+    t("versiunea din service worker a fost urcată", /concurs-pescuit-v135/.test(swSrc), true);
   }
   {
     t("ecranul de import există", /<section class="view" id="view-poze">/.test(src), true);

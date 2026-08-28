@@ -4661,8 +4661,23 @@
     var best=cu.reduce(function(a,b){ return cmmcAward(b,mi)>cmmcAward(a,mi)?b:a; });
     return { p:best, kg:cmmcAward(best,mi) };
   }
+  /** controlul de final: cine are stand în manșa asta trebuie să aibă și un cântar.
+      Cine n-a extras stand este absent și nu apare ca „lipsă". */
+  function situatiaCantaririi(mi){
+    var asteptati=state.participants.filter(function(p){ return !absentLaMansa(p,mi); });
+    var lipsa=asteptati.filter(function(p){ return totalOfM(p,mi)<=1e-9; });
+    lipsa.sort(byStandM(mi));
+    return { total:asteptati.length, cantariti:asteptati.length-lipsa.length, lipsa:lipsa };
+  }
   function rezumatMansei(mi){
     var h='<div class="sl-rez">';
+    var sit=situatiaCantaririi(mi);
+    if(sit.total){
+      h+='<div class="'+(sit.lipsa.length?'gol':'')+'">⚖️ <b>'+sit.cantariti+' din '+sit.total+'</b> cântăriți';
+      if(sit.lipsa.length) h+=' — lipsesc standurile '+sit.lipsa.map(function(p){ return esc(standOfM(p,mi)); }).join(', ');
+      else h+=' — toate standurile sunt verificate';
+      h+='</div>';
+    }
     if(!mancheDisputata(mi)){
       h+='<div class="gol">Nu s-a trecut încă niciun cântar.</div>';
     } else {
