@@ -512,6 +512,25 @@
   .photo-jos{display:block; margin:12px auto 0; border:1px solid #4a2a2a; border-radius:12px;
     background:#2a1516; color:#ff9d95; font-family:inherit; font-weight:800; font-size:14px;
     padding:10px 18px; cursor:pointer;}
+  /* Foaia de pe poză: un rând pe pescar, în ordinea standurilor — cum e foaia de hârtie.
+     Cardul obișnuit de pescar are 405px și încap 2,3 pe ecran; rândul ăsta are ~52px, deci
+     intră vreo 12 sub poză. Ăsta e tot rostul ecranului: te uiți în poză și scrii în jos,
+     fără să cauți pe nimeni și fără să ieși din aplicație. */
+  #poza-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px;}
+  #poza-strip img{height:170px; width:auto; border-radius:12px; border:1px solid #24384a;
+    flex:0 0 auto; cursor:zoom-in;}
+  .foaie-r{display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid #17232e;}
+  .foaie-r:last-child{border-bottom:none;}
+  .foaie-st{flex:0 0 46px; font-weight:850; font-size:13px; color:#7fd6c8; text-align:center;
+    background:#12202a; border-radius:8px; padding:7px 0;}
+  .foaie-n{flex:1 1 auto; font-weight:700; font-size:14px; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;}
+  .foaie-r input{flex:0 0 98px; margin:0 !important; text-align:right; font-weight:800;}
+  .foaie-are{flex:0 0 98px; text-align:right; font-size:13px; color:#7d93a6; font-weight:700;}
+  /* Greutatea neobișnuit de mare nu se oprește — se face roșie. Un juvelnic de 60 kg
+     există; unul de 600 e o virgulă pusă greșit. Omul trebuie s-o vadă, nu să fie oprit. */
+  .foaie-r.mare input{border-color:#7a3b3b !important; background:#2a1516; color:#ff9d95;}
+  .foaie-rez{margin-top:10px; font-weight:800; font-size:14px; color:#7fd6c8;}
 
   /* Mesajele scurte rămân deasupra navigației și se citesc și peste ferestre. */
   .app-toast{position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:260; width:max-content; max-width:calc(100vw - 28px); padding:11px 16px; border:1px solid #2b4656; border-radius:14px; background:rgba(13,29,41,.96); color:#eef7fb; font-size:13px; line-height:1.3; font-weight:800; text-align:center; box-shadow:0 18px 44px -24px #000; backdrop-filter:blur(10px); transform:translate(-50%,10px); opacity:0; transition:opacity .16s ease,transform .16s ease;}
@@ -827,11 +846,40 @@
           <button class="btn btn-ghost" onclick="treceCantare()">Trece cântarele</button>
         </div>
         <p class="hint" id="cnt-preview"></p>
+        <p class="hint" style="margin-top:14px;">Sau, dacă ți-a venit o <b>poză</b> a foii: o deschizi aici și scrii de pe ea, fără să mai ieși din aplicație. (Din meniul „Distribuie" al telefonului ajunge singură.)</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="document.getElementById('poza-fis').click()">Alege o poză</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('poza-cam').click()">Fotografiază foaia</button>
+        </div>
+        <input type="file" id="poza-fis" accept="image/*" multiple style="display:none;" onchange="pozeDinTelefon(this)">
+        <input type="file" id="poza-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozeDinTelefon(this)">
       </div>
     </div>
     <div class="pliant mt" id="pliant-jurnal">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideJurnal()"><svg class="ui-ico" aria-hidden="true"><use href="#i-notebook"></use></svg>Jurnalul cântăririlor <span class="rar">nu se șterge</span></button>
       <div class="pliant-in" hidden><div id="jurnalBody"></div></div>
+    </div>
+  </section>
+
+  <!-- CÂNTARE DE PE POZĂ — nu are tab: se ajunge din „Distribuie" al telefonului sau din
+       pliantul de pe Cântar. Un ecran, un lucru: poza sus, foaia dedesubt, un buton jos. -->
+  <section class="view" id="view-poze">
+    <div class="card">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-camera"></use></svg>Cântare de pe poză</div>
+      <div id="poza-strip"></div>
+      <p class="hint" id="poza-info"></p>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Foaia — <span id="poza-mansa">manșa 1</span></div>
+      <p class="hint">Te uiți în poză și scrii în dreptul fiecăruia, în jos. Cine are deja cântar e trecut cu ce are. Ce iese roșu e neobișnuit de mare — uită-te încă o dată. <b>Nu se salvează nimic până nu apeși jos.</b></p>
+      <div id="poza-foaie"></div>
+      <p class="foaie-rez" id="poza-rezumat"></p>
+    </div>
+
+    <div class="row">
+      <button class="btn btn-ghost" onclick="renuntaLaPoze()">Renunț</button>
+      <button class="btn btn-primary" onclick="treceDeFoaie()">Trece cântarele</button>
     </div>
   </section>
 
@@ -3147,6 +3195,8 @@
     if(state.numStanduri===undefined || state.numStanduri===null) state.numStanduri="";
     if(!Array.isArray(state.sponsors)) state.sponsors=[];
     if(!Array.isArray(state.jurnal)) state.jurnal=[];
+    // amprentele foilor deja trecute, ca aceeași poză să nu dubleze cântarele
+    if(!Array.isArray(state.pozeTrecute)) state.pozeTrecute=[];
     (state.participants||[]).forEach(function(p){
       if(!p.m){
         if(!Array.isArray(p.catches)){ var v=num(p.cant); p.catches = v>0 ? [v] : []; }
@@ -3215,7 +3265,7 @@
   // ---------- views ----------
   // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
   // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
-  var TAB_PARINTE={strat:"part", reg:"part", spons:"part"};
+  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar"};
   /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
      în browserul de probă, iar ce nu se poate proba nu se livrează. */
   function plianteaza(id){
@@ -3470,7 +3520,9 @@
      din scoatePoza l-ar opri oricum. Mai bine nu-l vede. */
   function arataScoatePoza(){
     var b=document.querySelector(".photo-jos");
-    if(b) b.style.display = isLocked() ? "none" : "block";
+    /* Fereastra e folosită și pentru foaia de import, unde nu există „poza unei capturi"
+       de scos. Un buton care nu face nimic e mai rău decât unul lipsă. */
+    if(b) b.style.display = (isLocked() || !pozaDeschisa) ? "none" : "block";
   }
   function scoatePoza(){
     if(guard()) return;
@@ -3523,6 +3575,171 @@
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
     improspateazaCantariti();
     improspateazaJurnal();
+  }
+
+  /* ---------- cântare de pe poza foii ---------- */
+  /* „Fac poze la cântarele cu pești extra… apoi la final cântărim juvelnicele" — iar foaia
+     scrisă la baltă ajunge pe grup ca poză. Până acum, poza stătea în WhatsApp și numerele
+     se băteau în aplicație, sărind între două aplicații la fiecare rând.
+     Aici poza intră ÎN aplicație — din meniul „Distribuie" al telefonului, sau aleasă de
+     mână — și stă deasupra foii: un rând pe pescar, în ordinea standurilor. Te uiți sus și
+     scrii în jos.
+     Poza nu intră în starea concursului: stă în magazia service worker-ului cât ține
+     importul, ca să nu umfle nici memoria telefonului, nici ce urcă la sincronizare. */
+  var POZE_CACHE="concurs-poze-primite";
+  var PRAG_KG=50;            // peste atât, greutatea se face roșie — nu se oprește
+  var pozePrimite=[];        // [{url, hash}] — poze deschise acum
+  var cantarePoza={};        // pid -> kg scris de mână, încă nescris în concurs
+
+  function iaPozelePrimite(){
+    if(!("caches" in window)) return Promise.resolve([]);
+    return caches.open(POZE_CACHE).then(function(c){
+      return c.keys().then(function(ks){
+        return Promise.all(ks.map(function(k){
+          return c.match(k).then(function(r){ return r ? r.blob() : null; });
+        }));
+      });
+    }).then(function(l){ return l.filter(Boolean); }).catch(function(){ return []; });
+  }
+  function stergePozelePrimite(){
+    if(!("caches" in window)) return Promise.resolve();
+    return caches.delete(POZE_CACHE).catch(function(){});
+  }
+  /* Aceeași foaie trimisă de două ori ar dubla toate cântarele, iar dublura nu se mai vede
+     în clasament. Se ține minte o amprentă scurtă: mărimea plus o sumă peste primii și
+     ultimii 64 KB — destul cât să deosebească două foi, destul de ieftin cât să nu
+     înțepenească telefonul pe o poză de 12 MB. */
+  function amprentaPozei(blob){
+    var cap=blob.slice(0, 65536), coada=blob.slice(Math.max(0, blob.size-65536));
+    return cap.arrayBuffer().then(function(a){
+      return coada.arrayBuffer().then(function(b){
+        var h=5381;
+        [new Uint8Array(a), new Uint8Array(b)].forEach(function(u){
+          for(var i=0;i<u.length;i++) h=((h*33)^u[i])>>>0;
+        });
+        return blob.size+"-"+h.toString(36);
+      });
+    });
+  }
+  function deschidePoze(bloburi){
+    pozePrimite.forEach(function(p){ try{ URL.revokeObjectURL(p.url); }catch(e){} });
+    pozePrimite=[]; cantarePoza={};
+    return Promise.all((bloburi||[]).map(function(b){
+      return amprentaPozei(b).then(function(h){ return {url:URL.createObjectURL(b), hash:h}; })
+                             .catch(function(){ return {url:URL.createObjectURL(b), hash:""}; });
+    })).then(function(list){
+      pozePrimite=list;
+      showView("poze");
+      randeazaPoze();
+    });
+  }
+  function randeazaPoze(){
+    var strip=document.getElementById("poza-strip"); if(!strip) return;
+    strip.innerHTML=pozePrimite.map(function(p,i){
+      return '<img src="'+p.url+'" alt="Foaia '+(i+1)+'" onclick="maresteFoaia('+i+')">';
+    }).join("");
+    var n=pozePrimite.length;
+    var vechi=pozePrimite.filter(function(p){ return p.hash && (state.pozeTrecute||[]).indexOf(p.hash)>=0; }).length;
+    var inf=document.getElementById("poza-info");
+    if(inf) inf.innerHTML = (n ? (n+" "+(n===1?"foaie":"foi")+" · atinge poza ca s-o mărești") : "Nicio poză deschisă.")+
+      (vechi ? '<br><b style="color:#ff9d95;">'+vechi+' '+(vechi===1?"poză a mai fost trecută o dată":"poze au mai fost trecute o dată")+'. Dacă le treci iar, cântarele se dublează.</b>' : "");
+    var mn=document.getElementById("poza-mansa"); if(mn) mn.textContent="manșa "+(state.manche||1);
+    randeazaFoaia();
+  }
+  function maresteFoaia(i){
+    var p=pozePrimite[i]; if(!p) return;
+    document.getElementById("photoImg").src=p.url;
+    document.getElementById("photoCap").textContent="Foaia "+(i+1)+" din "+pozePrimite.length;
+    pozaDeschisa=null; arataScoatePoza();
+    document.getElementById("photoView").classList.add("on");
+  }
+  function randeazaFoaia(){
+    var box=document.getElementById("poza-foaie"); if(!box) return;
+    var mi=state.manche||1;
+    var lista=(state.participants||[]).slice().sort(byStandM(mi));
+    if(!lista.length){
+      box.innerHTML='<p class="hint" style="margin:0;">Nu e niciun pescar în listă. Adaugă-i întâi în Cântar.</p>';
+      improspateazaFoaieRezumat(); return;
+    }
+    box.innerHTML=lista.map(function(p){
+      var st=standOfM(p, mi), are=totalOfM(p, mi), v=cantarePoza[p.id];
+      var cap='<span class="foaie-st">'+(st?esc(st):"–")+'</span><span class="foaie-n">'+esc(nameOf(p))+'</span>';
+      /* Cine are deja cântar nu primește căsuță: altfel a doua trecere de pe aceeași foaie
+         i-ar aduna încă o dată juvelnicul, iar în clasament nu s-ar vedea nimic ciudat. */
+      if(are>0) return '<div class="foaie-r">'+cap+'<span class="foaie-are">are '+fmt(are)+'</span></div>';
+      return '<div class="foaie-r'+(v>PRAG_KG?' mare':'')+'" id="fr-'+p.id+'">'+cap+
+        '<input inputmode="decimal" placeholder="kg" value="'+(v!==undefined?esc(fmt(v)):"")+
+        '" oninput="scrieInFoaie(\''+p.id+'\',this.value)"></div>';
+    }).join("");
+    improspateazaFoaieRezumat();
+  }
+  /* Nu redesenează foaia: la fiecare cifră bătută, redesenarea ar fura degetul din căsuță. */
+  function scrieInFoaie(id, v){
+    var kg=num(v);
+    if(kg>0) cantarePoza[id]=Math.round(kg*1000)/1000; else delete cantarePoza[id];
+    var r=document.getElementById("fr-"+id);
+    if(r) r.classList.toggle("mare", kg>PRAG_KG);
+    improspateazaFoaieRezumat();
+  }
+  function improspateazaFoaieRezumat(){
+    var el=document.getElementById("poza-rezumat"); if(!el) return;
+    var ids=Object.keys(cantarePoza), s=0;
+    ids.forEach(function(id){ s+=cantarePoza[id]; });
+    var mari=ids.filter(function(id){ return cantarePoza[id]>PRAG_KG; }).length;
+    el.innerHTML = ids.length
+      ? (ids.length+" "+(ids.length===1?"cântar scris":"cântare scrise")+" · "+fmt(s)+" kg"+
+         (mari ? ' <b style="color:#ff9d95;">· '+mari+" peste "+PRAG_KG+" kg</b>" : ""))
+      : "Încă n-ai scris niciun cântar.";
+  }
+  function treceDeFoaie(){
+    if(guard()) return;
+    var mi=state.manche||1, ids=Object.keys(cantarePoza);
+    if(!ids.length){ toast("N-ai scris niciun cântar"); return; }
+    var mari=ids.filter(function(id){ return cantarePoza[id]>PRAG_KG; }).length;
+    var repetate=pozePrimite.filter(function(p){ return p.hash && (state.pozeTrecute||[]).indexOf(p.hash)>=0; }).length;
+    var q="Treci "+ids.length+" "+(ids.length===1?"cântar":"cântare")+" în manșa "+mi+"?";
+    if(mari) q+="\n"+mari+" "+(mari===1?"are":"au")+" peste "+PRAG_KG+" kg — uită-te încă o dată.";
+    if(repetate) q+="\n"+repetate+" "+(repetate===1?"poză a mai fost trecută":"poze au mai fost trecute")+" — cântarele s-ar dubla.";
+    if(!confirm(q)) return;
+    puneDeoParte("înainte de cântarele de pe poză");
+    ids.forEach(function(id){
+      var p=(state.participants||[]).find(function(x){ return x.id===id; }); if(!p) return;
+      var m=mOf(p, mi), inainte=totalOfM(p, mi);
+      m.catches.push(cantarePoza[id]);
+      m.catchTimes.push(Date.now());
+      m.catchPhotos.push(null);
+      scrieInJurnal(p, mi, "captura", "adaugat", cantarePoza[id], inainte, totalOfM(p, mi), "de pe poză");
+    });
+    if(!Array.isArray(state.pozeTrecute)) state.pozeTrecute=[];
+    pozePrimite.forEach(function(p){ if(p.hash && state.pozeTrecute.indexOf(p.hash)<0) state.pozeTrecute.push(p.hash); });
+    // amprentele n-au de ce să crească la nesfârșit; ultimele patruzeci ajung
+    if(state.pozeTrecute.length>40) state.pozeTrecute=state.pozeTrecute.slice(-40);
+    var cate=ids.length;
+    cantarePoza={};
+    inchidePozele();
+    queueSave(); renderList();
+    var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
+    improspateazaCantariti();
+    toast(cate+" "+(cate===1?"cântar trecut":"cântare trecute")+" de pe foaie");
+    showView("cantar");
+  }
+  function renuntaLaPoze(){
+    if(Object.keys(cantarePoza).length && !confirm("Renunți? Ce ai scris pe foaie se pierde.")) return;
+    cantarePoza={};
+    inchidePozele();
+    showView("cantar");
+  }
+  function inchidePozele(){
+    pozePrimite.forEach(function(p){ try{ URL.revokeObjectURL(p.url); }catch(e){} });
+    pozePrimite=[];
+    stergePozelePrimite();
+  }
+  function pozeDinTelefon(input){
+    var f=Array.prototype.slice.call(input.files||[]);
+    input.value="";
+    if(guard()) return;
+    if(!f.length) return;
+    deschidePoze(f);
   }
 
   /* ---------- cântarele lipite de pe WhatsApp ---------- */
@@ -5391,6 +5608,13 @@
     resetWarnings();
     startTimerLoop();
     var qp=new URLSearchParams(location.search);
+    /* Poza trimisă din „Distribuie" a fost prinsă de service worker și pusă în magazie;
+       adresa se întoarce cu „?poze=1". Se citește ultima, ca să nu intre peste ea modul
+       de vizualizare. */
+    if(qp.has("poze")){
+      iaPozelePrimite().then(function(b){ if(b.length) deschidePoze(b); });
+      if(history.replaceState) history.replaceState({}, "", location.pathname);
+    }
     var roomParam=qp.get("room");
     if(roomParam) startViewerMode(roomParam.trim().toLowerCase());
     else if(shouldResumeViewer()) startViewerMode(loadViewerRoom());
