@@ -1,7 +1,11 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v133";
+var CACHE = "concurs-pescuit-v134";
+/* Magazia pozelor venite din meniul „Distribuie" al telefonului. Separată de cache-ul
+   aplicației fiindcă are altă viață: se golește la fiecare trimitere nouă și după ce
+   cântarele au fost trecute — nu la fiecare versiune nouă a aplicației. */
+var POZE = "concurs-poze-primite";
 var ASSETS = ["./", "./index.html", "./qr.js", "./manifest.json", "./icon-192.png", "./icon-512.png", "./sezon.html", "./concursuri.html"];
 
 self.addEventListener("install", function (e) {
@@ -20,7 +24,10 @@ self.addEventListener("install", function (e) {
 self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.filter(function (k) { return k !== CACHE; })
+      /* POZE nu se șterge aici: o poză trimisă din „Distribuie" poate porni chiar
+         actualizarea aplicației, iar dacă s-ar șterge la activare, omul ar ateriza pe un
+         ecran de import gol, fără să înțeleagă unde i-a dispărut foaia. */
+      return Promise.all(keys.filter(function (k) { return k !== CACHE && k !== POZE; })
         .map(function (k) { return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
   );
@@ -56,9 +63,33 @@ self.addEventListener("notificationclick", function (e) {
 });
 
 self.addEventListener("fetch", function (e) {
-  if (e.request.method !== "GET") return;
   var url;
   try { url = new URL(e.request.url); } catch (err) { return; }
+  /* Poza aleasă din meniul „Distribuie" al telefonului vine ca POST cu fișier, către
+     adresa scrisă în manifest (share_target). Aplicația stă pe GitHub Pages, care nu
+     poate primi un POST — fără rândurile astea Androidul ar lua 405 și omul ar vedea o
+     pagină de eroare în loc de foaia lui. Deci îl oprim aici: punem pozele în magazie și
+     trimitem aplicația, cu GET, la ecranul ei de import. */
+  if (e.request.method === "POST" && url.searchParams.has("poze")) {
+    e.respondWith((async function () {
+      try {
+        var form = await e.request.formData();
+        var poze = form.getAll("poze").filter(function (f) { return f && f.size; });
+        var c = await caches.open(POZE);
+        // magazia ține DOAR trimiterea curentă: altfel foile de duminica trecută ar
+        // apărea lângă cele de azi, iar amândouă ar arăta la fel de proaspete
+        var vechi = await c.keys();
+        await Promise.all(vechi.map(function (k) { return c.delete(k); }));
+        for (var i = 0; i < poze.length; i++) {
+          await c.put(new Request("./poza-primita-" + i),
+            new Response(poze[i], { headers: { "Content-Type": poze[i].type || "image/jpeg" } }));
+        }
+      } catch (err) {}
+      return Response.redirect(new URL("./index.html?poze=1", self.location).href, 303);
+    })());
+    return;
+  }
+  if (e.request.method !== "GET") return;
   /* În cache intră DOAR fișierele aplicației. Apelurile către API-uri nu au ce căuta
      aici: cu strategia de mai jos (cached || fetched) o interogare a camerei live ar
      întoarce răspunsul de la interogarea ANTERIOARĂ, iar vremea ar apărea veche dar

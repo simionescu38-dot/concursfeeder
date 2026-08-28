@@ -148,7 +148,10 @@ console.log("\n=== 5. „Scoate poza\" ===");
   t("salvează după", /queueSave\(\)/.test(cod), true);
 
   const arata = H.grabFunction(src, "arataScoatePoza");
-  t("butonul se ascunde în vizualizare", /isLocked\(\) \? "none"/.test(arata), true);
+  t("butonul se ascunde în vizualizare", /isLocked\(\)[\s\S]{0,30}\? "none"/.test(arata), true);
+  /* Aceeași fereastră mărește și foaia de import, unde nu există „poza unei capturi" de
+     scos. Un buton care nu face nimic e mai rău decât unul lipsă. */
+  t("…și când nu e deschisă poza unei capturi", /!pozaDeschisa[\s\S]{0,20}\? "none"/.test(arata), true);
 
   t("butonul e în fereastra pozei", /class="photo-jos"[^>]*scoatePoza\(\)/.test(src), true);
   // fereastra se închide la clic pe fundal: fără oprirea propagării, butonul s-ar închide

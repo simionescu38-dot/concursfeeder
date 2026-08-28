@@ -353,7 +353,10 @@ console.log("\n=== 10. Locul pe ecranul de Cântar ===");
   t("…și pe cel de trecut", /onclick="treceCantare\(\)"/.test(src), true);
   /* Un singur buton albastru pe ecran: „+ Adaugă la listă" e deja btn-primary pe Cântar.
      Dacă ar mai fi unul, niciunul n-ar mai fi cel important. */
-  const cantar = src.slice(src.indexOf('id="view-cantar"'), src.indexOf('id="view-cal"'));
+  // tăiat până la ecranul URMĂTOR, oricare ar fi el: altfel proba se strică de fiecare
+  // dată când se adaugă un ecran între Cântar și Calendar
+  const start = src.indexOf('id="view-cantar"');
+  const cantar = src.slice(start, src.indexOf('<section class="view"', start + 10));
   t("rămâne un singur buton albastru pe ecran", (cantar.match(/btn-primary/g) || []).length, 1);
   t("e pe ecranul de Cântar, nu prin Setări",
     cantar.indexOf('id="pliant-cantare"') > 0, true);
