@@ -47,6 +47,47 @@ function computeLeader(data) {
   return best ? { id: best.id, name: nameOfP(best), kg: bt } : null;
 }
 
+// ---------- citirea afișajului de cântar ----------
+/* Modelele nu întorc toate la fel: unele dau {response}, altele forma OpenAI cu
+   {choices:[{message:{content}}]}. Se caută textul oriunde ar sta, ca schimbarea modelului
+   să nu ceară cod nou. */
+function textDinRaspuns(r) {
+  if (!r) return "";
+  if (typeof r === "string") return r;
+  if (typeof r.response === "string") return r.response;
+  if (r.choices && r.choices[0] && r.choices[0].message) {
+    const c = r.choices[0].message.content;
+    if (typeof c === "string") return c;
+    if (Array.isArray(c)) return c.map((x) => (x && x.text) || "").join(" ");
+  }
+  if (r.result) {
+    if (typeof r.result === "string") return r.result;
+    if (typeof r.result.response === "string") return r.result.response;
+  }
+  return "";
+}
+/* Modelul mai pune vorbe în jurul JSON-ului, oricât l-ai ruga. Se caută acolada; dacă nici
+   aia nu e, primul număr cu zecimale de pe rând. Ce nu se poate citi curat se întoarce ca
+   NESIGUR — mai bine o căsuță goală decât o cifră inventată intrată în clasament. */
+function kgDinText(text) {
+  let kg = null, sigur = false;
+  const acolada = text.match(/\{[\s\S]*\}/);
+  if (acolada) {
+    try {
+      const o = JSON.parse(acolada[0]);
+      kg = numOf(o.kg);
+      sigur = o.sigur === true;
+    } catch (e) {}
+  }
+  if (!(kg > 0)) {
+    const n = text.match(/\d{1,3}[.,]\d{1,3}/);
+    if (n) { kg = numOf(n[0]); sigur = false; }
+  }
+  // un juvelnic nu are 0 kg, iar cântarul lui nu trece de 50 — ce iese în afară nu e citire
+  if (!(kg > 0) || kg > 50) return { kg: null, sigur: false };
+  return { kg: Math.round(kg * 1000) / 1000, sigur };
+}
+
 // ---------- utilitare binare / base64url ----------
 function b64urlToBytes(s) {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
@@ -244,6 +285,58 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+
+    /* Poza afișajului de cântar → cifra.
+       Cifrele de pe cântar sunt singurul lucru din tot lanțul care nu se scoate cu cod
+       scris de mână: bat reflexii, e apă pe geam, unghiul e strâmb. Se întreabă un model
+       care se uită la imagine.
+       Stă AICI, nu în telefon, din două motive: cheia n-are ce căuta pe un telefon care mai
+       ajunge în mâna altcuiva, iar aplicația trebuie să rămână un singur fișier care merge
+       fără internet. Când drumul ăsta nu răspunde — semnal prost, model căzut, binding
+       nepus — telefonul lasă căsuța goală și omul scrie de mână, exact ca până acum. */
+    if (url.pathname === "/api/citeste-cantar" && req.method === "POST") {
+      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+        return json({ ok: false, error: "forbidden" }, 403);
+      if (!env.AI) return json({ ok: false, error: "fara-ai" }, 501);
+
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+      const poza = (body && body.poza) || "";
+      if (!/^data:image\/(jpeg|jpg|png|webp);base64,/.test(poza))
+        return json({ ok: false, error: "fara poza" }, 400);
+      // telefonul micșorează poza înainte s-o trimită; peste atât e o greșeală, nu o foaie
+      if (poza.length > 1400000) return json({ ok: false, error: "poza prea mare" }, 413);
+
+      const INTREBARE =
+        "În poză e afișajul unui cântar de mână (Eastshark, maxim 50 kg), cu cifre din " +
+        "bețișoare, negre pe fond gri. Spune-mi NUMAI numărul afișat pe ecran, în kilograme, " +
+        "cu zecimale, folosind punct ca separator. Ignoră scrisul tipărit de pe carcasă: " +
+        "\"50kg/110lb\", \"HOLD\", \"Kg\", \"UNIT\", \"TARE\", \"ON/OFF\", \"eastshark\". " +
+        "Răspunde doar cu JSON, fără nimic în jurul lui: {\"kg\": 11.29, \"sigur\": true}. " +
+        "Dacă nu poți citi cifrele cu siguranță, pune \"sigur\": false.";
+
+      let raspuns;
+      try {
+        raspuns = await env.AI.run("@cf/qwen/qwen3.8-27b", {
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: poza } },
+              { type: "text", text: INTREBARE },
+            ],
+          }],
+          max_tokens: 120,
+        });
+      } catch (e) {
+        return json({ ok: false, error: "citirea n-a mers" }, 502);
+      }
+
+      const text = textDinRaspuns(raspuns);
+      const citit = kgDinText(text);
+      // „brut" rămâne în răspuns ca să se poată vedea, la o citire greșită, ce a spus
+      // modelul de fapt — altfel n-ai cum să deosebești un model prost de un cod prost
+      return json({ ok: true, kg: citit.kg, sigur: citit.sigur, brut: text.slice(0, 200) });
+    }
 
     if (url.pathname === "/api/state") {
       const room = (url.searchParams.get("room") || "").trim().toLowerCase();

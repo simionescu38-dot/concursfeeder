@@ -516,21 +516,26 @@
      Cardul obișnuit de pescar are 405px și încap 2,3 pe ecran; rândul ăsta are ~52px, deci
      intră vreo 12 sub poză. Ăsta e tot rostul ecranului: te uiți în poză și scrii în jos,
      fără să cauți pe nimeni și fără să ieși din aplicație. */
-  #poza-strip{display:flex; gap:8px; overflow-x:auto; padding-bottom:6px;}
-  #poza-strip img{height:170px; width:auto; border-radius:12px; border:1px solid #24384a;
-    flex:0 0 auto; cursor:zoom-in;}
-  .foaie-r{display:flex; align-items:center; gap:10px; padding:5px 0; border-bottom:1px solid #17232e;}
-  .foaie-r:last-child{border-bottom:none;}
-  .foaie-st{flex:0 0 46px; font-weight:850; font-size:13px; color:#7fd6c8; text-align:center;
-    background:#12202a; border-radius:8px; padding:7px 0;}
-  .foaie-n{flex:1 1 auto; font-weight:700; font-size:14px; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap;}
-  .foaie-r input{flex:0 0 98px; margin:0 !important; text-align:right; font-weight:800;}
-  .foaie-are{flex:0 0 98px; text-align:right; font-size:13px; color:#7d93a6; font-weight:700;}
-  /* Greutatea neobișnuit de mare nu se oprește — se face roșie. Un juvelnic de 60 kg
-     există; unul de 600 e o virgulă pusă greșit. Omul trebuie s-o vadă, nu să fie oprit. */
-  .foaie-r.mare input{border-color:#7a3b3b !important; background:#2a1516; color:#ff9d95;}
+  /* Un rând pe poză: miniatura, cine e pe standul ăla, standul, cifra. Cardul obișnuit de
+     pescar are 405px și încap 2,3 pe ecran; rândul ăsta are ~74px. */
+  .poza-r{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #17232e;}
+  .poza-r:last-child{border-bottom:none;}
+  .poza-r img{flex:0 0 62px; width:62px; height:62px; object-fit:cover; border-radius:10px;
+    border:1px solid #24384a; cursor:zoom-in;}
+  .poza-mij{flex:1 1 auto; min-width:0;}
+  .poza-nume{font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .poza-nume i{color:#7d93a6; font-weight:600;}
+  .foaie-deja{color:#7d93a6; font-weight:700;}
+  .poza-stare{font-size:11px; color:#7d93a6; font-weight:700; margin-top:2px;}
+  .poza-r input{margin:0 !important; text-align:right; font-weight:800;}
+  .poza-st{flex:0 0 52px;}
+  .poza-kg{flex:0 0 84px;}
+  /* Citirea nesigură și greutatea neobișnuit de mare se VĂD, nu se opresc. Un juvelnic de
+     60 kg există; unul de 600 e o virgulă pusă greșit. Omul hotărăște, nu aplicația. */
+  .poza-r.nesigur .poza-kg{border-color:#69501d !important; background:#352a16; color:#f4cc77;}
+  .poza-r.mare .poza-kg{border-color:#7a3b3b !important; background:#2a1516; color:#ff9d95;}
   .foaie-rez{margin-top:10px; font-weight:800; font-size:14px; color:#7fd6c8;}
+  .foaie-rez .rau{color:#ff9d95;}
 
   /* Mesajele scurte rămân deasupra navigației și se citesc și peste ferestre. */
   .app-toast{position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:260; width:max-content; max-width:calc(100vw - 28px); padding:11px 16px; border:1px solid #2b4656; border-radius:14px; background:rgba(13,29,41,.96); color:#eef7fb; font-size:13px; line-height:1.3; font-weight:800; text-align:center; box-shadow:0 18px 44px -24px #000; backdrop-filter:blur(10px); transform:translate(-50%,10px); opacity:0; transition:opacity .16s ease,transform .16s ease;}
@@ -866,13 +871,7 @@
   <section class="view" id="view-poze">
     <div class="card">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-camera"></use></svg>Cântare de pe poză</div>
-      <div id="poza-strip"></div>
-      <p class="hint" id="poza-info"></p>
-    </div>
-
-    <div class="card">
-      <div class="sec-title">Foaia — <span id="poza-mansa">manșa 1</span></div>
-      <p class="hint">Te uiți în poză și scrii în dreptul fiecăruia, în jos. Cine are deja cântar e trecut cu ce are. Ce iese roșu e neobișnuit de mare — uită-te încă o dată. <b>Nu se salvează nimic până nu apeși jos.</b></p>
+      <p class="hint">Un rând pe poză. Standul vine din „St 13" scris sub poză pe grup; cifra e citită de pe afișaj. <b>Atinge poza ca s-o mărești</b> și verifică. Ce a citit nesigur e însemnat. <b>Nu se salvează nimic până nu apeși jos.</b></p>
       <div id="poza-foaie"></div>
       <p class="foaie-rez" id="poza-rezumat"></p>
     </div>
@@ -3577,38 +3576,102 @@
     improspateazaJurnal();
   }
 
-  /* ---------- cântare de pe poza foii ---------- */
-  /* „Fac poze la cântarele cu pești extra… apoi la final cântărim juvelnicele" — iar foaia
-     scrisă la baltă ajunge pe grup ca poză. Până acum, poza stătea în WhatsApp și numerele
-     se băteau în aplicație, sărind între două aplicații la fiecare rând.
-     Aici poza intră ÎN aplicație — din meniul „Distribuie" al telefonului, sau aleasă de
-     mână — și stă deasupra foii: un rând pe pescar, în ordinea standurilor. Te uiți sus și
-     scrii în jos.
-     Poza nu intră în starea concursului: stă în magazia service worker-ului cât ține
-     importul, ca să nu umfle nici memoria telefonului, nici ce urcă la sincronizare. */
+  /* ---------- cântare citite de pe poza cântarului ---------- */
+  /* Cum se cântăresc juvelnicele la Rediu Galian: cine cântărește pune pe grup poza
+     afișajului, iar dedesubt scrie standul — „St 13", „St 5". Greutatea e DOAR în imagine;
+     standul e DOAR în text. Și nu se merge în ordinea standurilor: pe grup, „St 13" vine
+     înaintea lui „St 5". Deci nimic nu se poate ghici din ordine.
+     Aici: pozele intră din meniul „Distribuie", se așază după ora din fișier (nu după
+     ordinea în care le dă telefonul — alea două n-au nicio legătură), standul se ia din
+     legendă, iar cifra de pe afișaj e citită pe worker. Un rând pe poză. Omul se uită și
+     confirmă; nimic nu se scrie singur în concurs. */
   var POZE_CACHE="concurs-poze-primite";
   var PRAG_KG=50;            // peste atât, greutatea se face roșie — nu se oprește
-  var pozePrimite=[];        // [{url, hash}] — poze deschise acum
-  var cantarePoza={};        // pid -> kg scris de mână, încă nescris în concurs
+  var pozePrimite=[];        // [{url, blob, hash, ora, stand, kg, stare}]
 
   function iaPozelePrimite(){
-    if(!("caches" in window)) return Promise.resolve([]);
+    if(!("caches" in window)) return Promise.resolve({poze:[], text:""});
     return caches.open(POZE_CACHE).then(function(c){
       return c.keys().then(function(ks){
-        return Promise.all(ks.map(function(k){
+        var text="";
+        var cereri=ks.filter(function(k){ return k.url.indexOf("legenda")<0; });
+        var legenda=ks.filter(function(k){ return k.url.indexOf("legenda")>=0; })[0];
+        return Promise.all(cereri.map(function(k){
           return c.match(k).then(function(r){ return r ? r.blob() : null; });
-        }));
+        })).then(function(list){
+          if(!legenda) return {poze:list.filter(Boolean), text:""};
+          return c.match(legenda).then(function(r){ return r ? r.text() : ""; })
+                  .then(function(t){ return {poze:list.filter(Boolean), text:t||""}; });
+        });
       });
-    }).then(function(l){ return l.filter(Boolean); }).catch(function(){ return []; });
+    }).catch(function(){ return {poze:[], text:""}; });
   }
   function stergePozelePrimite(){
     if(!("caches" in window)) return Promise.resolve();
     return caches.delete(POZE_CACHE).catch(function(){});
   }
-  /* Aceeași foaie trimisă de două ori ar dubla toate cântarele, iar dublura nu se mai vede
-     în clasament. Se ține minte o amprentă scurtă: mărimea plus o sumă peste primii și
-     ultimii 64 KB — destul cât să deosebească două foi, destul de ieftin cât să nu
-     înțepenească telefonul pe o poză de 12 MB. */
+
+  /* Ora din poză, citită de mână din EXIF — fără bibliotecă adusă de pe net.
+     Trebuie fiindcă ordinea în care ajung pozele nu înseamnă nimic: mi-au venit amestecate
+     față de cum au fost făcute. Se citește doar începutul fișierului; pe cele patru poze
+     adevărate a scos ora din 4 din 4. */
+  function oraPozei(blob){
+    return blob.slice(0, 131072).arrayBuffer().then(function(buf){
+      try{
+        var dv=new DataView(buf);
+        if(dv.byteLength<4 || dv.getUint16(0)!==0xFFD8) return 0;
+        var o=2;
+        while(o+4<dv.byteLength){
+          if(dv.getUint8(o)!==0xFF) return 0;
+          var marcaj=dv.getUint8(o+1), lung=dv.getUint16(o+2);
+          if(marcaj===0xE1){
+            var t=o+4;
+            if(dv.getUint32(t)!==0x45786966) return 0;      // „Exif"
+            var tiff=t+6, le=dv.getUint16(tiff)===0x4949;   // ordinea octeților
+            var u16=function(p){ return dv.getUint16(p, le); };
+            var u32=function(p){ return dv.getUint32(p, le); };
+            var ifd=tiff+u32(tiff+4);
+            for(var pas=0; pas<2; pas++){
+              var n=u16(ifd);
+              for(var i=0;i<n;i++){
+                var e=ifd+2+i*12, et=u16(e);
+                if(et===0x8769 && pas===0){ ifd=tiff+u32(e+8); i=n; }        // spre Exif IFD
+                else if(et===0x9003 || et===0x0132){                          // data pozei
+                  var p=tiff+u32(e+8), txt="";
+                  for(var k=0;k<19;k++) txt+=String.fromCharCode(dv.getUint8(p+k));
+                  var m=txt.match(/^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)$/);
+                  if(m) return Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +m[6]);
+                }
+              }
+              if(pas===1) break;
+            }
+            return 0;
+          }
+          if(marcaj===0xDA) return 0;                        // a început imaginea
+          o+=2+lung;
+        }
+      }catch(err){}
+      return 0;
+    }).catch(function(){ return 0; });
+  }
+
+  /* Standul din legenda de sub poză: „St 13", „St. 5", „st5", „Stand 7".
+     Se cere cuvântul întreg — altfel „Constanta 12" ar da standul 12. */
+  function standDinLegenda(text){
+    var m=(text||"").match(/\b(?:st|stand|standul)\.?\s*(\d{1,3})\b/i);
+    return m ? m[1] : "";
+  }
+  /* Când vin mai multe poze deodată, legenda ajunge ca un singur text. Standurile se scot
+     în ordinea în care apar și se împart pe poze — cu grijă: dacă numărul lor nu se
+     potrivește cu al pozelor, nu se ghicește deloc, se lasă goale. */
+  function standuriDinLegenda(text, cate){
+    var g=(text||"").match(/\b(?:st|stand|standul)\.?\s*\d{1,3}\b/ig)||[];
+    if(g.length!==cate) return [];
+    return g.map(standDinLegenda);
+  }
+
+  /* Aceeași foaie trimisă de două ori ar dubla cântarele, iar dublura nu se mai vede în
+     clasament. Amprentă scurtă: mărimea plus o sumă peste primii și ultimii 64 KB. */
   function amprentaPozei(blob){
     var cap=blob.slice(0, 65536), coada=blob.slice(Math.max(0, blob.size-65536));
     return cap.arrayBuffer().then(function(a){
@@ -3621,111 +3684,215 @@
       });
     });
   }
-  function deschidePoze(bloburi){
-    pozePrimite.forEach(function(p){ try{ URL.revokeObjectURL(p.url); }catch(e){} });
-    pozePrimite=[]; cantarePoza={};
-    return Promise.all((bloburi||[]).map(function(b){
-      return amprentaPozei(b).then(function(h){ return {url:URL.createObjectURL(b), hash:h}; })
-                             .catch(function(){ return {url:URL.createObjectURL(b), hash:""}; });
-    })).then(function(list){
-      pozePrimite=list;
-      showView("poze");
-      randeazaPoze();
+
+  /* Poza de telefon are 3-12 MB. Pe 4G, la baltă, nu se urcă așa ceva de 17 ori: se
+     micșorează la 1000px, cât să rămână cifrele citibile, și pleacă vreo 150 KB. */
+  function pozaMicsorata(blob){
+    return new Promise(function(res){
+      var url=URL.createObjectURL(blob), img=new Image();
+      img.onload=function(){
+        var max=1000, w=img.naturalWidth, h=img.naturalHeight;
+        if(w>=h && w>max){ h=Math.round(h*max/w); w=max; }
+        else if(h>w && h>max){ w=Math.round(w*max/h); h=max; }
+        var c=document.createElement("canvas"); c.width=w; c.height=h;
+        c.getContext("2d").drawImage(img,0,0,w,h);
+        var d=null; try{ d=c.toDataURL("image/jpeg",0.75); }catch(e){}
+        try{ URL.revokeObjectURL(url); }catch(e){}
+        res(d);
+      };
+      img.onerror=function(){ try{ URL.revokeObjectURL(url); }catch(e){} res(null); };
+      img.src=url;
     });
   }
-  function randeazaPoze(){
-    var strip=document.getElementById("poza-strip"); if(!strip) return;
-    strip.innerHTML=pozePrimite.map(function(p,i){
-      return '<img src="'+p.url+'" alt="Foaia '+(i+1)+'" onclick="maresteFoaia('+i+')">';
-    }).join("");
-    var n=pozePrimite.length;
-    var vechi=pozePrimite.filter(function(p){ return p.hash && (state.pozeTrecute||[]).indexOf(p.hash)>=0; }).length;
-    var inf=document.getElementById("poza-info");
-    if(inf) inf.innerHTML = (n ? (n+" "+(n===1?"foaie":"foi")+" · atinge poza ca s-o mărești") : "Nicio poză deschisă.")+
-      (vechi ? '<br><b style="color:#ff9d95;">'+vechi+' '+(vechi===1?"poză a mai fost trecută o dată":"poze au mai fost trecute o dată")+'. Dacă le treci iar, cântarele se dublează.</b>' : "");
-    var mn=document.getElementById("poza-mansa"); if(mn) mn.textContent="manșa "+(state.manche||1);
-    randeazaFoaia();
+  /* Cheia de scriere NU pleacă din telefon spre model: se trimite worker-ului lui, care o
+     verifică și ține el cheia modelului. Fără cheie, fără semnal sau fără răspuns bun,
+     căsuța rămâne goală și omul scrie de mână — aplicația nu se blochează niciodată pe
+     citire. */
+  function citesteCantarul(blob){
+    if(!syncKey) return Promise.resolve({kg:null, sigur:false, stare:"fara-cheie"});
+    return pozaMicsorata(blob).then(function(d){
+      if(!d) return {kg:null, sigur:false, stare:"nemicsorata"};
+      return fetch(API_BASE+"/api/citeste-cantar", {
+        method:"POST",
+        headers:{"Content-Type":"application/json", "x-write-key":syncKey},
+        body: JSON.stringify({poza:d})
+      }).then(function(r){ return r.json(); }).then(function(j){
+        if(!j || !j.ok || !(j.kg>0)) return {kg:null, sigur:false, stare:"necitit"};
+        return {kg:j.kg, sigur:!!j.sigur, stare:j.sigur?"citit":"nesigur"};
+      });
+    }).catch(function(){ return {kg:null, sigur:false, stare:"necitit"}; });
   }
+
+  function deschidePoze(bloburi, legenda){
+    inchidePozele();
+    var lista=(bloburi||[]);
+    return Promise.all(lista.map(function(b){
+      return Promise.all([amprentaPozei(b).catch(function(){return "";}), oraPozei(b)])
+        .then(function(x){ return {url:URL.createObjectURL(b), blob:b, hash:x[0], ora:x[1],
+                                   stand:"", kg:null, stare:"asteapta"}; });
+    })).then(function(list){
+      // ora din fișier, nu ordinea sosirii: alea două n-au nicio legătură
+      list.sort(function(a,b){ return (a.ora||0)-(b.ora||0); });
+      var st=standuriDinLegenda(legenda, list.length);
+      if(st.length===list.length) list.forEach(function(p,i){ p.stand=st[i]; });
+      else if(list.length===1) list[0].stand=standDinLegenda(legenda);
+      pozePrimite=list;
+      showView("poze");
+      randeazaFoaia();
+      citesteToatePozele();
+    });
+  }
+  /* Una câte una, nu toate deodată: la baltă, 17 cereri în paralel pe 4G se calcă în
+     picioare, iar rândurile se completează oricum pe măsură ce vin răspunsurile. */
+  function citesteToatePozele(){
+    var i=0;
+    (function urmatoarea(){
+      if(i>=pozePrimite.length){ improspateazaFoaieRezumat(); return; }
+      var p=pozePrimite[i];
+      p.stare="citeste"; randeazaFoaia();
+      citesteCantarul(p.blob).then(function(r){
+        // omul poate să fi scris deja cifra cât se citea; ce a scris el nu se calcă
+        if(p.kg===null){ p.kg=r.kg; }
+        p.stare=r.stare;
+        randeazaFoaia();
+        i++; urmatoarea();
+      });
+    })();
+  }
+
   function maresteFoaia(i){
     var p=pozePrimite[i]; if(!p) return;
     document.getElementById("photoImg").src=p.url;
-    document.getElementById("photoCap").textContent="Foaia "+(i+1)+" din "+pozePrimite.length;
+    document.getElementById("photoCap").textContent="Poza "+(i+1)+" din "+pozePrimite.length+
+      (p.stand?" · standul "+p.stand:"")+(p.kg>0?" · "+fmt(p.kg)+" kg":"");
     pozaDeschisa=null; arataScoatePoza();
     document.getElementById("photoView").classList.add("on");
   }
+  function pescarulStandului(stand){
+    if(!stand) return null;
+    var mi=state.manche||1, nr=parseInt(stand,10);
+    if(isNaN(nr)) return null;
+    var pe=(state.participants||[]).filter(function(p){
+      var q=parseInt(standOfM(p,mi),10); return !isNaN(q) && q===nr;
+    });
+    return pe.length===1 ? pe[0] : null;
+  }
+  var STARI={asteapta:"", citeste:"se citește…", citit:"citit de pe poză",
+             nesigur:"citit nesigur — uită-te", necitit:"n-am putut citi — scrie tu",
+             "fara-cheie":"fără cheie de scriere — scrie tu", nemicsorata:"n-am putut citi — scrie tu"};
   function randeazaFoaia(){
     var box=document.getElementById("poza-foaie"); if(!box) return;
     var mi=state.manche||1;
-    var lista=(state.participants||[]).slice().sort(byStandM(mi));
-    if(!lista.length){
-      box.innerHTML='<p class="hint" style="margin:0;">Nu e niciun pescar în listă. Adaugă-i întâi în Cântar.</p>';
+    if(!pozePrimite.length){
+      box.innerHTML='<p class="hint" style="margin:0;">Nicio poză deschisă.</p>';
       improspateazaFoaieRezumat(); return;
     }
-    box.innerHTML=lista.map(function(p){
-      var st=standOfM(p, mi), are=totalOfM(p, mi), v=cantarePoza[p.id];
-      var cap='<span class="foaie-st">'+(st?esc(st):"–")+'</span><span class="foaie-n">'+esc(nameOf(p))+'</span>';
-      /* Cine are deja cântar nu primește căsuță: altfel a doua trecere de pe aceeași foaie
-         i-ar aduna încă o dată juvelnicul, iar în clasament nu s-ar vedea nimic ciudat. */
-      if(are>0) return '<div class="foaie-r">'+cap+'<span class="foaie-are">are '+fmt(are)+'</span></div>';
-      return '<div class="foaie-r'+(v>PRAG_KG?' mare':'')+'" id="fr-'+p.id+'">'+cap+
-        '<input inputmode="decimal" placeholder="kg" value="'+(v!==undefined?esc(fmt(v)):"")+
-        '" oninput="scrieInFoaie(\''+p.id+'\',this.value)"></div>';
+    box.innerHTML=pozePrimite.map(function(p,i){
+      var pes=pescarulStandului(p.stand);
+      var are=pes?totalOfM(pes, mi):0;
+      var nume = pes ? esc(nameOf(pes))+(are>0?' <b class="foaie-deja">are '+fmt(are)+'</b>':"")
+                     : (p.stand?'<i>nimeni pe standul '+esc(p.stand)+'</i>':'<i>scrie standul</i>');
+      return '<div class="poza-r'+(p.kg>PRAG_KG?" mare":"")+(p.stare==="nesigur"?" nesigur":"")+'" id="pr-'+i+'">'+
+        '<img src="'+p.url+'" alt="Poza '+(i+1)+'" onclick="maresteFoaia('+i+')">'+
+        '<div class="poza-mij">'+
+          '<div class="poza-nume">'+nume+'</div>'+
+          '<div class="poza-stare">'+esc(STARI[p.stare]||"")+'</div>'+
+        '</div>'+
+        '<input class="poza-st" inputmode="numeric" placeholder="St" value="'+esc(p.stand||"")+
+          '" oninput="scrieStandul('+i+',this.value)">'+
+        '<input class="poza-kg" inputmode="decimal" placeholder="kg" value="'+(p.kg>0?esc(fmt(p.kg)):"")+
+          '" oninput="scrieKg('+i+',this.value)">'+
+      '</div>';
     }).join("");
     improspateazaFoaieRezumat();
   }
-  /* Nu redesenează foaia: la fiecare cifră bătută, redesenarea ar fura degetul din căsuță. */
-  function scrieInFoaie(id, v){
+  /* Nu se redesenează foaia la fiecare cifră bătută: redesenarea ar fura degetul din
+     căsuță. Se schimbă doar ce se vede pe rândul acela. */
+  function scrieKg(i, v){
+    var p=pozePrimite[i]; if(!p) return;
     var kg=num(v);
-    if(kg>0) cantarePoza[id]=Math.round(kg*1000)/1000; else delete cantarePoza[id];
-    var r=document.getElementById("fr-"+id);
-    if(r) r.classList.toggle("mare", kg>PRAG_KG);
+    p.kg = kg>0 ? Math.round(kg*1000)/1000 : null;
+    if(p.stare==="nesigur" || p.stare==="necitit" || p.stare==="fara-cheie") p.stare="asteapta";
+    var r=document.getElementById("pr-"+i);
+    if(r){ r.classList.toggle("mare", kg>PRAG_KG); r.classList.remove("nesigur"); }
     improspateazaFoaieRezumat();
+  }
+  function scrieStandul(i, v){
+    var p=pozePrimite[i]; if(!p) return;
+    p.stand=(v||"").replace(/\D/g,"").slice(0,3);
+    var r=document.getElementById("pr-"+i);
+    if(r){
+      var pes=pescarulStandului(p.stand), mi=state.manche||1;
+      var are=pes?totalOfM(pes, mi):0;
+      var el=r.querySelector(".poza-nume");
+      if(el) el.innerHTML = pes ? esc(nameOf(pes))+(are>0?' <b class="foaie-deja">are '+fmt(are)+'</b>':"")
+                                : (p.stand?'<i>nimeni pe standul '+esc(p.stand)+'</i>':'<i>scrie standul</i>');
+    }
+    improspateazaFoaieRezumat();
+  }
+  /* Un rând intră în concurs doar dacă are ȘI cifră, ȘI un pescar găsit pe standul scris,
+     ȘI pescarul ăla n-are deja cântar în manșa asta. */
+  function randuriBune(){
+    var mi=state.manche||1;
+    return pozePrimite.filter(function(p){
+      if(!(p.kg>0)) return false;
+      var pes=pescarulStandului(p.stand);
+      return !!pes && totalOfM(pes, mi)<=0;
+    });
   }
   function improspateazaFoaieRezumat(){
     var el=document.getElementById("poza-rezumat"); if(!el) return;
-    var ids=Object.keys(cantarePoza), s=0;
-    ids.forEach(function(id){ s+=cantarePoza[id]; });
-    var mari=ids.filter(function(id){ return cantarePoza[id]>PRAG_KG; }).length;
-    el.innerHTML = ids.length
-      ? (ids.length+" "+(ids.length===1?"cântar scris":"cântare scrise")+" · "+fmt(s)+" kg"+
-         (mari ? ' <b style="color:#ff9d95;">· '+mari+" peste "+PRAG_KG+" kg</b>" : ""))
-      : "Încă n-ai scris niciun cântar.";
+    var bune=randuriBune(), s=0;
+    bune.forEach(function(p){ s+=p.kg; });
+    var mari=bune.filter(function(p){ return p.kg>PRAG_KG; }).length;
+    var nesigure=pozePrimite.filter(function(p){ return p.stare==="nesigur"; }).length;
+    var rest=pozePrimite.length-bune.length;
+    el.innerHTML = pozePrimite.length
+      ? (bune.length+" din "+pozePrimite.length+" gata · "+fmt(s)+" kg"+
+         (nesigure?' <b class="rau">· '+nesigure+" de verificat</b>":"")+
+         (mari?' <b class="rau">· '+mari+" peste "+PRAG_KG+" kg</b>":"")+
+         (rest&&!nesigure?' · '+rest+" fără stand sau fără cifră":""))
+      : "";
   }
+
   function treceDeFoaie(){
     if(guard()) return;
-    var mi=state.manche||1, ids=Object.keys(cantarePoza);
-    if(!ids.length){ toast("N-ai scris niciun cântar"); return; }
-    var mari=ids.filter(function(id){ return cantarePoza[id]>PRAG_KG; }).length;
+    var mi=state.manche||1, bune=randuriBune();
+    if(!bune.length){ toast("Niciun cântar gata de trecut"); return; }
+    var mari=bune.filter(function(p){ return p.kg>PRAG_KG; }).length;
+    var nesigure=bune.filter(function(p){ return p.stare==="nesigur"; }).length;
     var repetate=pozePrimite.filter(function(p){ return p.hash && (state.pozeTrecute||[]).indexOf(p.hash)>=0; }).length;
-    var q="Treci "+ids.length+" "+(ids.length===1?"cântar":"cântare")+" în manșa "+mi+"?";
+    var q="Treci "+bune.length+" "+(bune.length===1?"cântar":"cântare")+" în manșa "+mi+"?";
+    if(nesigure) q+="\n"+nesigure+" "+(nesigure===1?"a fost citit nesigur":"au fost citite nesigur")+" — uită-te încă o dată.";
     if(mari) q+="\n"+mari+" "+(mari===1?"are":"au")+" peste "+PRAG_KG+" kg — uită-te încă o dată.";
     if(repetate) q+="\n"+repetate+" "+(repetate===1?"poză a mai fost trecută":"poze au mai fost trecute")+" — cântarele s-ar dubla.";
     if(!confirm(q)) return;
     puneDeoParte("înainte de cântarele de pe poză");
-    ids.forEach(function(id){
-      var p=(state.participants||[]).find(function(x){ return x.id===id; }); if(!p) return;
+    bune.forEach(function(x){
+      var p=pescarulStandului(x.stand); if(!p) return;
       var m=mOf(p, mi), inainte=totalOfM(p, mi);
-      m.catches.push(cantarePoza[id]);
-      m.catchTimes.push(Date.now());
+      m.catches.push(x.kg);
+      m.catchTimes.push(x.ora||Date.now());
       m.catchPhotos.push(null);
-      scrieInJurnal(p, mi, "captura", "adaugat", cantarePoza[id], inainte, totalOfM(p, mi), "de pe poză");
+      /* Jurnalul spune de unde a venit ȘI dacă a citit mașina sau omul: peste o lună, la o
+         contestație, aia e diferența dintre „a greșit modelul" și „a greșit cineva". */
+      scrieInJurnal(p, mi, "captura", "adaugat", x.kg, inainte, totalOfM(p, mi),
+        (x.stare==="citit"||x.stare==="nesigur") ? "citit de pe poză" : "de pe poză");
     });
     if(!Array.isArray(state.pozeTrecute)) state.pozeTrecute=[];
     pozePrimite.forEach(function(p){ if(p.hash && state.pozeTrecute.indexOf(p.hash)<0) state.pozeTrecute.push(p.hash); });
-    // amprentele n-au de ce să crească la nesfârșit; ultimele patruzeci ajung
     if(state.pozeTrecute.length>40) state.pozeTrecute=state.pozeTrecute.slice(-40);
-    var cate=ids.length;
-    cantarePoza={};
+    var cate=bune.length;
     inchidePozele();
     queueSave(); renderList();
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
     improspateazaCantariti();
-    toast(cate+" "+(cate===1?"cântar trecut":"cântare trecute")+" de pe foaie");
+    toast(cate+" "+(cate===1?"cântar trecut":"cântare trecute")+" de pe poză");
     showView("cantar");
   }
   function renuntaLaPoze(){
-    if(Object.keys(cantarePoza).length && !confirm("Renunți? Ce ai scris pe foaie se pierde.")) return;
-    cantarePoza={};
+    var scrise=pozePrimite.filter(function(p){ return p.kg>0 || p.stand; }).length;
+    if(scrise && !confirm("Renunți? Ce ai scris pe foaie se pierde.")) return;
     inchidePozele();
     showView("cantar");
   }
@@ -3739,7 +3906,7 @@
     input.value="";
     if(guard()) return;
     if(!f.length) return;
-    deschidePoze(f);
+    deschidePoze(f, "");
   }
 
   /* ---------- cântarele lipite de pe WhatsApp ---------- */
@@ -5612,7 +5779,7 @@
        adresa se întoarce cu „?poze=1". Se citește ultima, ca să nu intre peste ea modul
        de vizualizare. */
     if(qp.has("poze")){
-      iaPozelePrimite().then(function(b){ if(b.length) deschidePoze(b); });
+      iaPozelePrimite().then(function(r){ if(r.poze.length) deschidePoze(r.poze, r.text); });
       if(history.replaceState) history.replaceState({}, "", location.pathname);
     }
     var roomParam=qp.get("room");
