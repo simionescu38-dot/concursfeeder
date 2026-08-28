@@ -507,6 +507,11 @@
   .photo-close{position:absolute; top:18px; right:18px; width:38px; height:38px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.2); border-radius:12px; background:rgba(5,12,18,.78); color:#fff; cursor:pointer; backdrop-filter:blur(8px);}
   .photo-close .ui-ico{width:20px; height:20px; margin:0; vertical-align:0;}
   #photoCap{color:#f4f8ff; font-weight:850; font-size:16px; margin-top:12px; padding:0 8px; text-align:center;}
+  /* „Stocare plină" îi spunea omului să șteargă poze, dar poza nu se putea scoate decât
+     ștergând peștele cu tot cu greutate. Aici se scoate doar poza. */
+  .photo-jos{display:block; margin:12px auto 0; border:1px solid #4a2a2a; border-radius:12px;
+    background:#2a1516; color:#ff9d95; font-family:inherit; font-weight:800; font-size:14px;
+    padding:10px 18px; cursor:pointer;}
 
   /* Mesajele scurte rămân deasupra navigației și se citesc și peste ferestre. */
   .app-toast{position:fixed; left:50%; bottom:calc(92px + env(safe-area-inset-bottom)); z-index:260; width:max-content; max-width:calc(100vw - 28px); padding:11px 16px; border:1px solid #2b4656; border-radius:14px; background:rgba(13,29,41,.96); color:#eef7fb; font-size:13px; line-height:1.3; font-weight:800; text-align:center; box-shadow:0 18px 44px -24px #000; backdrop-filter:blur(10px); transform:translate(-50%,10px); opacity:0; transition:opacity .16s ease,transform .16s ease;}
@@ -1241,6 +1246,7 @@
     <button type="button" class="photo-close" aria-label="Închide fotografia"><svg class="ui-ico" aria-hidden="true"><use href="#i-close"></use></svg></button>
     <img id="photoImg" alt="Poza capturii">
     <div id="photoCap"></div>
+    <button type="button" class="photo-jos" onclick="event.stopPropagation();scoatePoza()">Scoate poza</button>
   </div>
 </div>
 
@@ -2929,6 +2935,31 @@
         });
       }).catch(function(){ toast("Eroare de rețea la restaurare"); });
   }
+  /* Starea pleacă ÎNTREAGĂ la fiecare cântărire. Cu poze la peștii extra, asta ar
+     însemna un megabyte urcat la fiecare pește: la 34 de poze starea ajunge 1 MB, la 90
+     trece de 2,5 MB — pe 4G, la baltă, banda ar sta pe „Se sincronizează…" la fiecare
+     apăsare, iar camera ar ține 40 de asemenea copii în istoricul ei.
+     Pozele n-au ce căuta acolo: sunt dovada organizatorului pentru ziua aceea, iar
+     pescarii care se uită la clasamentul live n-au ce face cu poza cântarului. Rămân în
+     telefon și pleacă o singură dată, cu arhiva, la final.
+     Lungimile tablourilor se păstrează, ca normalizarea de pe telefonul care citește să
+     nu decaleze orele față de greutăți. */
+  function stareFaraPoze(s){
+    var c={}; for(var k in s) c[k]=s[k];
+    c.participants=(s.participants||[]).map(function(p){
+      var q={}; for(var k in p) q[k]=p[k];
+      q.m={};
+      for(var mi in (p.m||{})){
+        var m=p.m[mi]||{}, n={};
+        for(var k2 in m) n[k2]=m[k2];
+        n.catchPhotos=(m.catchPhotos||[]).map(function(){ return null; });
+        n.extraPhotos=(m.extraPhotos||[]).map(function(){ return null; });
+        q.m[mi]=n;
+      }
+      return q;
+    });
+    return c;
+  }
   function pushState(){
     if(!syncRoom || !syncKey) return;
     clearTimeout(syncRetryT);
@@ -2938,7 +2969,7 @@
     fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
       method:"PUT",
       headers:{"Content-Type":"application/json","x-write-key":syncKey},
-      body: JSON.stringify({data: state})
+      body: JSON.stringify({data: stareFaraPoze(state)})
     }).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       syncBusy=false;
       if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM();
@@ -3328,6 +3359,7 @@
     el.value=""; el.focus();
   }
   function addCatch(id){ if(guard()) return; addCatchCore(id, null); }
+  var pozaDeschisa=null; // {id, idx, fel} — ca „Scoate poza" să știe pe cine lucrează
   function showCatchPhoto(id, idx){
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var m=mOf(p, state.manche||1);
@@ -3335,6 +3367,7 @@
     document.getElementById("photoImg").src=ph;
     var tm=(m.catchTimes||[])[idx];
     document.getElementById("photoCap").textContent=fmt(m.catches[idx])+" kg · "+(tm?hhmm(tm)+" · ":"")+nameOf(p);
+    pozaDeschisa={id:id, idx:idx, fel:"captura"}; arataScoatePoza();
     document.getElementById("photoView").classList.add("on");
   }
   function removeCatch(id,idx){
@@ -3412,7 +3445,28 @@
     document.getElementById("photoImg").src=ph;
     var tm=(m.extraTimes||[])[idx];
     document.getElementById("photoCap").textContent=fmt(m.extras[idx])+" kg · pește extra"+(tm?" · "+hhmm(tm):"")+" · "+nameOf(p);
+    pozaDeschisa={id:id, idx:idx, fel:"extra"}; arataScoatePoza();
     document.getElementById("photoView").classList.add("on");
+  }
+  /* Pe telefonul blocat (vizualizare) butonul ar sta acolo fără să facă nimic: paza
+     din scoatePoza l-ar opri oricum. Mai bine nu-l vede. */
+  function arataScoatePoza(){
+    var b=document.querySelector(".photo-jos");
+    if(b) b.style.display = isLocked() ? "none" : "block";
+  }
+  function scoatePoza(){
+    if(guard()) return;
+    if(!pozaDeschisa) return;
+    var p=state.participants.find(function(x){return x.id===pozaDeschisa.id;}); if(!p) return;
+    var m=mOf(p, state.manche||1);
+    var tab = pozaDeschisa.fel==="extra" ? m.extraPhotos : m.catchPhotos;
+    if(!tab || !tab[pozaDeschisa.idx]) return;
+    if(!confirm("Scoți poza? Peștele și greutatea rămân.")) return;
+    tab[pozaDeschisa.idx]=null;
+    pozaDeschisa=null;
+    document.getElementById("photoView").classList.remove("on");
+    queueSave(); refreshCard(p.id);
+    toast("Poza scoasă — peștele a rămas");
   }
   function removeExtra(id,idx){
     if(guard()) return;
