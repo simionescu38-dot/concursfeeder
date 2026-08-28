@@ -3597,7 +3597,13 @@
         var cereri=ks.filter(function(k){ return k.url.indexOf("legenda")<0; });
         var legenda=ks.filter(function(k){ return k.url.indexOf("legenda")>=0; })[0];
         return Promise.all(cereri.map(function(k){
-          return c.match(k).then(function(r){ return r ? r.blob() : null; });
+          return c.match(k).then(function(r){
+            if(!r) return null;
+            // numele și ora fișierului, puse de service worker la primire
+            var ora=parseInt(r.headers.get("X-Poza-Ora")||"0", 10)||0, nume="";
+            try{ nume=decodeURIComponent(r.headers.get("X-Poza-Nume")||""); }catch(e){}
+            return r.blob().then(function(b){ return {blob:b, ora:ora, nume:nume}; });
+          });
         })).then(function(list){
           if(!legenda) return {poze:list.filter(Boolean), text:""};
           return c.match(legenda).then(function(r){ return r ? r.text() : ""; })
@@ -3653,6 +3659,22 @@
       }catch(err){}
       return 0;
     }).catch(function(){ return 0; });
+  }
+
+  /* Ora din NUMELE fișierului.
+     Măsurat pe drumul adevărat: prin „Distribuie" nu vine nici ora din poză (WhatsApp o
+     taie când trimite mai departe), nici ora fișierului (un POST multipart nu duce așa
+     ceva). Numele însă trece: telefoanele scriu data în el — „IMG-20260827-WA0012.jpg"
+     de la WhatsApp (doar ziua), „IMG_20260827_165511.jpg" sau „PXL_20260827_135511123.jpg"
+     de la cameră (ziua și ora).
+     Ziua e ce contează: un concurs de duminică, trecut luni, primea data de luni. Fără oră
+     se ia mijlocul zilei, ca fusul orar să nu mute ziua înainte sau înapoi. */
+  function oraDinNume(nume){
+    var m=(nume||"").match(/(20\d\d)[-_]?(\d\d)[-_]?(\d\d)(?:[-_](\d\d)(\d\d)(\d\d))?/);
+    if(!m) return 0;
+    var luna=+m[2], zi=+m[3];
+    if(luna<1 || luna>12 || zi<1 || zi>31) return 0;
+    return Date.UTC(+m[1], luna-1, zi, m[4]===undefined?12:+m[4], +(m[5]||0), +(m[6]||0));
   }
 
   /* Standul din legenda de sub poză: „St 13", „St. 5", „st5", „Stand 7".
@@ -3729,12 +3751,22 @@
     }).catch(function(){ return {kg:null, sigur:false, stare:"necitit"}; });
   }
 
-  function deschidePoze(bloburi, legenda){
+  /* Ora capturii, în patru trepte, în ordinea în care sunt de încredere:
+       1. ora din poză (EXIF) — când s-a apăsat pe declanșator;
+       2. data din numele fișierului — singura care trece prin „Distribuie";
+       3. ora fișierului — merge doar când poza e aleasă din galerie;
+       4. acum.
+     Treptele astea n-au ieșit din cap, ci din măsurători: pe eticheta capturii scria ora
+     importului în loc de 16:55 când se cântărise. Prima lipsește fiindcă WhatsApp taie ora
+     din poză; a treia lipsește pe drumul din „Distribuie" fiindcă un POST multipart nu duce
+     ora fișierului mai departe. Rămâne numele — el trece. */
+  function deschidePoze(intrari, legenda){
     inchidePozele();
-    var lista=(bloburi||[]);
-    return Promise.all(lista.map(function(b){
-      return Promise.all([amprentaPozei(b).catch(function(){return "";}), oraPozei(b)])
-        .then(function(x){ return {url:URL.createObjectURL(b), blob:b, hash:x[0], ora:x[1],
+    var lista=(intrari||[]).map(function(x){ return (x && x.blob) ? x : {blob:x, ora:0, nume:""}; });
+    return Promise.all(lista.map(function(it){
+      return Promise.all([amprentaPozei(it.blob).catch(function(){return "";}), oraPozei(it.blob)])
+        .then(function(x){ return {url:URL.createObjectURL(it.blob), blob:it.blob, hash:x[0],
+                                   ora: x[1] || oraDinNume(it.nume) || it.ora || Date.now(),
                                    stand:"", kg:null, stare:"asteapta"}; });
     })).then(function(list){
       // ora din fișier, nu ordinea sosirii: alea două n-au nicio legătură
@@ -3926,7 +3958,7 @@
     input.value="";
     if(guard()) return;
     if(!f.length) return;
-    deschidePoze(f, "");
+    deschidePoze(f.map(function(x){ return {blob:x, ora:x.lastModified||0, nume:x.name||""}; }), "");
   }
 
   /* ---------- cântarele lipite de pe WhatsApp ---------- */

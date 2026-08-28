@@ -1,7 +1,7 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v137";
+var CACHE = "concurs-pescuit-v138";
 /* Magazia pozelor venite din meniul „Distribuie" al telefonului. Separată de cache-ul
    aplicației fiindcă are altă viață: se golește la fiecare trimitere nouă și după ce
    cântarele au fost trecute — nu la fiecare versiune nouă a aplicației. */
@@ -88,8 +88,17 @@ self.addEventListener("fetch", function (e) {
         var vechi = await c.keys();
         await Promise.all(vechi.map(function (k) { return c.delete(k); }));
         for (var i = 0; i < poze.length; i++) {
+          /* Numele fișierului se duce mai departe, pe răspuns: în magazie intră doar
+             conținutul, iar numele s-ar pierde. Contează fiindcă e SINGURUL loc de unde se
+             mai poate afla când s-a făcut poza — „IMG-20260827-WA0012.jpg". Ora din poză o
+             taie WhatsApp, iar ora fișierului nu trece printr-un POST multipart (măsurat:
+             ajunge tot „acum"). Se duce și ea, că e bună când poza vine din galerie. */
           await c.put(new Request("./poza-primita-" + i),
-            new Response(poze[i], { headers: { "Content-Type": poze[i].type || "image/jpeg" } }));
+            new Response(poze[i], { headers: {
+              "Content-Type": poze[i].type || "image/jpeg",
+              "X-Poza-Nume": encodeURIComponent(poze[i].name || ""),
+              "X-Poza-Ora": String(poze[i].lastModified || 0)
+            } }));
         }
         /* Greutatea e în imagine, dar STANDUL e în textul de sub poză: pe grup se scrie
            „St 13", „St 5". Manifestul cere deja câmpurile astea la share_target; până acum
