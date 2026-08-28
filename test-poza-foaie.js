@@ -25,7 +25,8 @@ const t = H.creeazaVerificator();
 const FUNCTII = ["num", "fmt", "esc", "uid", "numManse", "manseRange", "emptyManche", "ensureManche",
   "mOf", "sectorOfM", "standOfM", "nameOf", "cantOfM", "extraOfM", "totalOfM", "nameKey",
   "standKeyM", "byStandM", "scrieInJurnal", "amprentaPozei", "randeazaFoaia", "scrieInFoaie",
-  "improspateazaFoaieRezumat", "treceDeFoaie", "renuntaLaPoze", "inchidePozele"];
+  "improspateazaFoaieRezumat", "treceDeFoaie", "renuntaLaPoze", "inchidePozele",
+  "potrivesteCantareAI"];
 
 /** un DOM cât îi trebuie foii: elementele cerute pe nume, cu innerHTML și classList */
 function elem() {
@@ -283,7 +284,7 @@ const LOT = [
        ecran gol fără să înțeleagă de ce. */
     t("actualizarea aplicației nu șterge pozele primite",
       /k !== CACHE && k !== POZE/.test(swSrc), true);
-    t("versiunea din service worker a fost urcată", /concurs-pescuit-v134/.test(swSrc), true);
+    t("versiunea din service worker a fost urcată", /concurs-pescuit-v135/.test(swSrc), true);
   }
   {
     t("ecranul de import există", /<section class="view" id="view-poze">/.test(src), true);
@@ -311,6 +312,54 @@ const LOT = [
     const tr = H.grabFunction(src, "treceDeFoaie");
     t("poza nu se scrie în starea concursului", /catchPhotos\.push\(null\)/.test(tr), true);
     t("…și nu se agață de participant", /p\.photo\s*=/.test(tr), false);
+  }
+
+  /* ================================================================
+     8. AI-ul propune, omul hotărăște
+     ================================================================ */
+  console.log("\n=== 8. Citirea AI a pozelor WhatsApp ===");
+  {
+    const c = pornire(LOT);
+    const rez = vm.runInContext("potrivesteCantareAI([{stand:'2',kg:9.48,confidence:0.93}])", c);
+    t("standul clar se potrivește cu pescarul", rez.gasite.map(x => [x.stand, x.kg]), [["2", 9.48]]);
+    t("propunerea nu scrie singură în concurs", vm.runInContext("state.participants[2].m[1].catches", c), []);
+  }
+  {
+    const c = pornire(LOT);
+    const rez = vm.runInContext("potrivesteCantareAI([{stand:'2',kg:9.48,confidence:0.51}])", c);
+    t("o citire nesigură nu umple căsuța", rez.gasite.length, 0);
+    t("…și spune că trebuie scrisă de om", /neclar/.test(rez.probleme.join(" ")), true);
+  }
+  {
+    const c = pornire(LOT);
+    const rez = vm.runInContext("potrivesteCantareAI([{stand:'2',kg:9.48,confidence:0.89}])", c);
+    t("sub 90% nu se completează automat", rez.gasite.length, 0);
+    const clar = vm.runInContext("potrivesteCantareAI([{stand:'2',kg:9.48,confidence:0.90}])", c);
+    t("de la 90% se propune pentru verificare", clar.gasite.length, 1);
+  }
+  {
+    const c = pornire(LOT);
+    const rez = vm.runInContext("potrivesteCantareAI([{stand:'2',kg:9.48,confidence:0.95},{stand:'2',kg:8.12,confidence:0.95}])", c);
+    t("același stand nu intră de două ori", rez.gasite.length, 1);
+    t("dublura este semnalată", /de două ori/.test(rez.probleme.join(" ")), true);
+  }
+  {
+    const c = pornire([{ stand:"2", prenume:"Mihai", nume:"Ionescu", catches:[10] }]);
+    const rez = vm.runInContext("potrivesteCantareAI([{stand:'2',kg:9.48,confidence:0.95}])", c);
+    t("cine are deja cântar este sărit", rez.gasite.length, 0);
+    t("…și motivul este afișat", /deja cântar/.test(rez.probleme.join(" ")), true);
+  }
+  {
+    const worker = H.citeste("worker/index.js");
+    t("endpointul AI cere cheia de scriere", /readScaleImages[\s\S]*x-write-key[\s\S]*env\.WRITE_KEY/.test(worker), true);
+    t("endpointul primește cel mult 20 de poze", /images\.length > 20/.test(worker), true);
+    t("cheia Anthropic rămâne numai pe server", /env\.ANTHROPIC_API_KEY/.test(worker) && !/ANTHROPIC_API_KEY/.test(src), true);
+    t("pozele sunt trimise doar la apăsarea butonului", /onclick="citestePozeleAI\(\)"/.test(src), true);
+    t("rămâne un singur buton principal pe ecran", (() => {
+      const s0 = src.indexOf('id="view-poze"');
+      const v = src.slice(s0, src.indexOf('<section class="view"', s0 + 10));
+      return (v.match(/btn-primary/g) || []).length;
+    })(), 1);
   }
 
   t.raport();

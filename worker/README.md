@@ -20,6 +20,7 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
 - `POST /api/events` — publică un concurs nou. **Fără cheie** — oricine poate adăuga (calendar regional, nu doar concursurile tale). Body: `{ name, location, eventDate, type, fee, slotsTotal, organizer, contact }` (`name`, `location`, `eventDate` obligatorii). Răspunde `{ ok, id, manageToken }` — `manageToken`-ul se generează o singură dată, la creare, și nu se poate recupera ulterior; aplicația îl salvează local, pe telefonul celui care a publicat anunțul.
 - `PUT /api/events/edit?id=<id>` — editează un concurs programat. Necesită **fie** header-ul `x-manage-token` egal cu token-ul primit la creare (oricine publică, dar doar el poate edita ce a publicat), **fie** `x-write-key: <WRITE_KEY>` (moderare — administratorul poate edita orice eveniment, nu doar pe-ale lui). Body: aceleași câmpuri ca la creare, plus opțional `slotsTaken`.
 - `DELETE /api/events/edit?id=<id>` — șterge un concurs programat. Necesită `x-manage-token` **sau** `x-write-key` (moderare).
+- `POST /api/read-scales` — citește cu AI standul și greutatea din fotografii/capturi WhatsApp. Necesită `x-write-key`; răspunsul este doar o propunere care trebuie verificată în aplicație.
 
 ## Configurare în Cloudflare Dashboard (Worker `concurs-api`)
 
@@ -29,6 +30,8 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
    - Secret `VAPID_PRIVATE_JWK` — cheia privată (JSON).
    - Variable `VAPID_PUBLIC_KEY` — cheia publică (base64url). Aceeași valoare trebuie copiată și în `index.html`, la constanta `VAPID_PUBLIC_KEY`.
 4. **Backup arhive în git (opțional, dar recomandat)** — Settings → Variables and Secrets → Add → tip „Secret", nume `GITHUB_TOKEN`. Valoare: un token GitHub *fine-grained* (Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token), cu acces **doar** la repo-ul `concursfeeder` și permisiunea **Contents: Read and write**. Fără acest secret, arhivarea funcționează normal, doar că sare peste pasul de backup în git (rămâne doar în D1, ca înainte).
+
+5. **Citirea AI a cântarelor** — adaugă secretul `ANTHROPIC_API_KEY`. Opțional, variabila `ANTHROPIC_MODEL` poate schimba modelul; implicit se folosește `claude-haiku-4-5-20251001`. Cheia nu se pune niciodată în `index.html` sau în Git.
 
 ## Notă: proiectul „concursiasi"
 

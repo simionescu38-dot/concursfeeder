@@ -14,6 +14,81 @@ function json(o, s = 200) {
   });
 }
 
+// ---------- citire AI a pozelor de cântar ----------
+function b64ImageValid(x) {
+  return x && ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(x.mediaType)
+    && typeof x.data === "string" && x.data.length > 100 && x.data.length <= 14_000_000;
+}
+async function readScaleImages(req, env) {
+  if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+    return json({ ok: false, error: "forbidden" }, 403);
+  if (!env.ANTHROPIC_API_KEY)
+    return json({ ok: false, error: "AI-ul nu este configurat pe server" }, 503);
+
+  let body;
+  try { body = await req.json(); } catch (e) { return json({ ok: false, error: "date invalide" }, 400); }
+  const images = Array.isArray(body.images) ? body.images : [];
+  if (!images.length || images.length > 20 || images.some((x) => !b64ImageValid(x)))
+    return json({ ok: false, error: "Trimite între 1 și 20 de poze JPG, PNG sau WebP" }, 400);
+
+  const content = [];
+  images.forEach((x, i) => {
+    content.push({ type: "text", text: "Imaginea " + (i + 1) + ":" });
+    content.push({ type: "image", source: { type: "base64", media_type: x.mediaType, data: x.data } });
+  });
+  content.push({ type: "text", text:
+    "Acestea sunt fotografii ori capturi WhatsApp de la un concurs de pescuit. " +
+    "Citește numai numărul standului asociat fotografiei (de ex. St 5 / Stand 5) și greutatea în kg de pe afișajul cântarului. " +
+    "Nu confunda ora mesajului, limita 50kg/110lb, procentul bateriei sau alte numere cu greutatea. " +
+    "Dacă o cifră este acoperită, reflectată ori nesigură, scade confidence. Nu inventa valori. " +
+    "Raportează toate cântarele vizibile; pentru o imagine fără pereche clară folosește null." });
+
+  const ai = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: env.ANTHROPIC_MODEL || "claude-haiku-4-5-20251001",
+      max_tokens: 1200,
+      messages: [{ role: "user", content }],
+      tools: [{
+        name: "report_scales",
+        description: "Returnează standurile și greutățile citite din imagini.",
+        input_schema: {
+          type: "object", additionalProperties: false,
+          properties: {
+            items: { type: "array", items: {
+              type: "object", additionalProperties: false,
+              properties: {
+                imageIndex: { type: "integer", minimum: 1 },
+                stand: { anyOf: [{ type: "string" }, { type: "null" }] },
+                kg: { anyOf: [{ type: "number" }, { type: "null" }] },
+                confidence: { type: "number", minimum: 0, maximum: 1 },
+                note: { type: "string" }
+              },
+              required: ["imageIndex", "stand", "kg", "confidence", "note"]
+            } }
+          }, required: ["items"]
+        }
+      }],
+      tool_choice: { type: "tool", name: "report_scales" }
+    })
+  });
+  if (!ai.ok) {
+    const detail = await ai.text();
+    console.error("anthropic read-scales", ai.status, detail.slice(0, 500));
+    return json({ ok: false, error: "Serviciul AI nu a răspuns" }, 502);
+  }
+  const result = await ai.json();
+  const call = (result.content || []).find((x) => x.type === "tool_use" && x.name === "report_scales");
+  if (!call || !call.input || !Array.isArray(call.input.items))
+    return json({ ok: false, error: "AI-ul nu a întors o listă verificabilă" }, 502);
+  return json({ ok: true, items: call.input.items });
+}
+
 // ---------- calcul lider (oglindește leaderId() din index.html) ----------
 function numOf(v) {
   if (v === null || v === undefined) return 0;
@@ -244,6 +319,9 @@ export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+
+    if (url.pathname === "/api/read-scales" && req.method === "POST")
+      return readScaleImages(req, env);
 
     if (url.pathname === "/api/state") {
       const room = (url.searchParams.get("room") || "").trim().toLowerCase();
