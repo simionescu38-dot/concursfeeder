@@ -817,6 +817,18 @@
     <div class="searchbox"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume sau stand…" oninput="renderList()"></div>
     <div id="list"></div>
 
+    <div class="pliant mt lockhide" id="pliant-cantare">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-cantare')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec cântarele de pe WhatsApp <span class="rar">toate deodată</span></button>
+      <div class="pliant-in" hidden>
+        <textarea id="cnt-text" rows="6" placeholder="Lipește mesajul de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu 12,340&#10;2 Vasile Popescu 8,150&#10;3 6,700"></textarea>
+        <p class="hint">Un pescar pe linie: <b>stand, nume, kg</b>. Merge și numai cu standul, și numai cu numele. Greutatea e ultimul număr de pe rând. Apasă întâi <b>Verifică</b> — nimic nu intră până nu vezi ce am înțeles.</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="verificaCantare()">Verifică</button>
+          <button class="btn btn-ghost" onclick="treceCantare()">Trece cântarele</button>
+        </div>
+        <p class="hint" id="cnt-preview"></p>
+      </div>
+    </div>
     <div class="pliant mt" id="pliant-jurnal">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideJurnal()"><svg class="ui-ico" aria-hidden="true"><use href="#i-notebook"></use></svg>Jurnalul cântăririlor <span class="rar">nu se șterge</span></button>
       <div class="pliant-in" hidden><div id="jurnalBody"></div></div>
@@ -3332,13 +3344,13 @@
      alt stand sau scos din listă mai târziu, rândul din jurnal tot spune cine și de unde.
      „inainte" și „dupa" sunt totalul lui pe manșa aceea, ca rândul să se citească exact
      cum se vede pe cântar: 15,420 kg → 15,920 kg. */
-  function scrieInJurnal(p, mi, fel, act, kg, inainte, dupa){
+  function scrieInJurnal(p, mi, fel, act, kg, inainte, dupa, cine){
     if(!Array.isArray(state.jurnal)) state.jurnal=[];
     state.jurnal.push({
       id: uid(), t: Date.now(), pid: p.id, nume: nameOf(p),
       stand: standOfM(p, mi)||"", sector: sectorOfM(p, mi)||"", m: mi,
       fel: fel, act: act, kg: kg, inainte: inainte, dupa: dupa,
-      cine: "Organizator"
+      cine: cine||"Organizator"
     });
   }
   function addCatchCore(id, photo){
@@ -3511,6 +3523,187 @@
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
     improspateazaCantariti();
     improspateazaJurnal();
+  }
+
+  /* ---------- cântarele lipite de pe WhatsApp ---------- */
+  /* Cântarele nu se nasc în telefon. Se scriu pe hârtie, la baltă, sau vin pe grupul de
+     WhatsApp de la cine a cântărit — și pe urmă se treceau aici unul câte unul. Măsurat pe
+     telefon de 412px, cu 20 de pescari: un card de pescar are 405px, încap 2,3 pe ecran,
+     lista are 10 ecrane. Adică 40 de atingeri și 9 derulări pentru 20 de juvelnice, pe un
+     ecran făcut pentru UN pescar odată. De-aia câștiga hârtia, și de-aia se făcea totul de
+     două ori: o dată pe hârtie, o dată în aplicație.
+     Aici se lipește mesajul întreg și intră toate deodată. Nimic nu se scrie până nu se
+     vede pe ecran ce s-a înțeles din el. */
+  function faraSemne(s){
+    return (s||"").toLowerCase()
+      .replace(/[ăâ]/g,"a").replace(/î/g,"i").replace(/[șş]/g,"s").replace(/[țţ]/g,"t")
+      .replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+  }
+  /* Greutatea e ultimul număr de pe rând — dar dacă vreunul are zecimale, ăla e. Fără
+     regula asta, un rând de clasament („1. Ionescu 12,340 — 15 puncte") ar intra cu 15 kg. */
+  function greutateaRandului(toate){
+    var cu=toate.filter(function(x){ return /[.,]/.test(x.v); });
+    if(cu.length) return cu[cu.length-1];
+    return toate.length ? toate[toate.length-1] : null;
+  }
+  function citesteCantare(text){
+    var out=[], sarite=[];
+    (text||"").split(/\r?\n/).forEach(function(line){
+      var raw=(line||"").trim();
+      if(!raw) return;
+      /* Mesaj copiat întreg din WhatsApp: „[12:45, 28.08.2026] Cristi: 1 Ionescu 12,340".
+         Cine l-a scris se taie DOAR când rândul a venit cu ora în paranteze drepte —
+         altfel „Ionescu: 12,340" și-ar pierde tocmai pescarul. */
+      var dinExport=/^\[[^\]]{3,40}\]/.test(raw);
+      raw=raw.replace(/^\[[^\]]{3,40}\]\s*/,"");
+      if(dinExport) raw=raw.replace(/^[^:]{1,40}:\s*/,"");
+      raw=raw.replace(/^(?:stand|st\.?|nr\.?)\s*(?=\d)/i,"");
+      /* Datele întregi și orele cu două puncte nu sunt greutăți: titlul „Rezultate Rediu
+         Galian 27.08.2026" intra ca un cântar de 27,08 kg, iar „la 14:30" ca 30 kg.
+         Cifrele lor se acoperă înainte de căutare — cu semne de aceeași lungime, ca
+         numele de dinaintea greutății să se taie tot de unde trebuie.
+         Se acoperă DOAR ce nu poate fi greutate: „14.30" rămâne, fiindcă poate fi la fel
+         de bine 14,300 kg. */
+      var cifre=raw.replace(/\d{1,4}[.\/-]\d{1,2}[.\/-]\d{2,4}/g, function(x){ return x.replace(/\d/g,"·"); })
+                   .replace(/\d{1,2}:\d{2}/g, function(x){ return x.replace(/\d/g,"·"); });
+      var toate=[], rx=/\d+(?:[.,]\d+)?/g, m;
+      while((m=rx.exec(cifre))) toate.push({v:m[0], i:m.index, len:m[0].length});
+      if(!toate.length){ sarite.push(line.trim()); return; }
+      var g=greutateaRandului(toate);
+      var stand="";
+      if(toate.length>1 && toate[0]!==g && toate[0].i===0) stand=toate[0].v;
+      /* Un singur număr, fără zecimale, la începutul rândului, cu text după: e standul,
+         nu cântarul. „7 Ionescu" e un pescar necântărit, nu 7 kg — dacă ar intra ca
+         greutate, un rând uitat pe grup ar deveni cântar. */
+      if(toate.length===1 && g.i===0 && !/[.,]/.test(g.v) && raw.length>g.len+1){ sarite.push(line.trim()); return; }
+      var de = stand ? toate[0].i+toate[0].len : 0;
+      var nume = raw.slice(de, g.i).replace(/[-–—,;:|.]/g," ").replace(/\bkg\b/ig," ").replace(/\s+/g," ").trim();
+      var kg = num(g.v);
+      if(kg<=0){ sarite.push(line.trim()); return; }
+      out.push({stand:stand, nume:nume, kg:Math.round(kg*1000)/1000, rand:line.trim()});
+    });
+    out.sarite=sarite;
+    return out;
+  }
+  /* Standul are întâietate: foaia arbitrului e scrisă pe standuri. Dacă standul nu spune
+     nimic, se caută după nume — fără diacritice și în orice ordine, fiindcă pe grup unul
+     scrie „Ionescu Mihai" și altul „mihai ionescu". Când se potrivesc doi, nu se ghicește. */
+  function pescarulCantarului(stand, nume){
+    var mi=state.manche||1, lista=state.participants||[], gasit=null, cum="";
+    if(stand){
+      var nr=parseInt(stand,10);
+      var pe=lista.filter(function(p){ var q=parseInt(standOfM(p,mi),10); return !isNaN(q) && q===nr; });
+      if(pe.length===1){ gasit=pe[0]; cum="stand"; }
+      else if(pe.length>1) return {p:null, cum:"doi"};
+    }
+    if(!gasit){
+      var n=faraSemne(nume);
+      if(!n) return {p:null, cum:"negasit"};
+      var potriviti=lista.filter(function(p){
+        return faraSemne(nameOf(p))===n || faraSemne((p.nume||"")+" "+(p.prenume||""))===n;
+      });
+      var cuv=n.split(" ").filter(function(x){ return x.length>2; });
+      if(!potriviti.length && cuv.length){
+        potriviti=lista.filter(function(p){
+          var bucati=faraSemne(nameOf(p)).split(" ");
+          return cuv.every(function(c){ return bucati.indexOf(c)>=0; });
+        });
+      }
+      if(potriviti.length===1){ gasit=potriviti[0]; cum="nume"; }
+      else if(potriviti.length>1) return {p:null, cum:"doi"};
+      else return {p:null, cum:"negasit"};
+    }
+    /* Găsit după stand, dar pe rând scrie alt nume: se arată, nu se ascunde. Înseamnă că
+       lista lipită e de la altă tragere la sorți, iar cântarele ar intra pe cine nu trebuie. */
+    var nepotrivire=false;
+    if(cum==="stand" && nume){
+      var nn=faraSemne(nume), aa=faraSemne(nameOf(gasit)).split(" ");
+      if(nn) nepotrivire = !nn.split(" ").some(function(c){ return c.length>2 && aa.indexOf(c)>=0; });
+    }
+    return {p:gasit, cum:cum, nepotrivire:nepotrivire};
+  }
+  function randuriCantare(text){
+    var citite=citesteCantare(text), mi=state.manche||1, r=[];
+    citite.forEach(function(x){
+      var g=pescarulCantarului(x.stand, x.nume);
+      var deja=false;
+      if(g.p){ deja=((mOf(g.p, mi).catches||[]).length>0); }
+      r.push({stand:x.stand, nume:x.nume, kg:x.kg, rand:x.rand,
+              p:g.p, cum:g.cum, nepotrivire:!!g.nepotrivire, deja:deja});
+    });
+    r.sarite=citite.sarite||[];
+    return r;
+  }
+  function verificaCantare(){
+    var r=randuriCantare(document.getElementById("cnt-text").value);
+    var box=document.getElementById("cnt-preview");
+    var mi=state.manche||1;
+    if(!r.length){
+      box.innerHTML="N-am găsit niciun cântar în text."+
+        (r.sarite.length?("<br>Am sărit <b>"+r.sarite.length+"</b> "+(r.sarite.length===1?"rând":"rânduri")+" fără greutate."):"");
+      return;
+    }
+    var intra=r.filter(function(x){ return x.p && !x.deja; });
+    var sar=r.filter(function(x){ return x.p && x.deja; });
+    var nu=r.filter(function(x){ return !x.p; });
+    var h="";
+    /* Cele care intră se arată TOATE: ăsta e rostul lui „Verifică" — omul se uită peste
+       ele înainte să apese, cum se uită peste foaia de hârtie. */
+    if(intra.length){
+      h+="<b>"+intra.length+"</b> "+(intra.length===1?"cântar intră":"cântare intră")+" în manșa "+mi+":<br>"+
+        intra.map(function(x){
+          var st=standOfM(x.p, mi);
+          return "• "+(st?"St."+esc(st)+" ":"")+esc(nameOf(x.p))+" — <b>"+fmt(x.kg)+"</b> kg"+
+                 (x.nepotrivire?' <i>(pe rând scrie „'+esc(x.nume)+'")</i>':"");
+        }).join("<br>");
+    }
+    if(sar.length){
+      h+=(h?"<br><br>":"")+"<b>"+sar.length+"</b> au deja cântar — le sar:<br>"+
+        sar.slice(0,6).map(function(x){ return "• "+esc(nameOf(x.p))+" (are "+fmt(totalOfM(x.p,mi))+" kg)"; }).join("<br>")+
+        (sar.length>6?"<br>…":"");
+    }
+    if(nu.length){
+      h+=(h?"<br><br>":"")+"<b>"+nu.length+"</b> nu știu pe cine sunt:<br>"+
+        nu.slice(0,6).map(function(x){ return "• "+esc(x.rand); }).join("<br>")+(nu.length>6?"<br>…":"");
+    }
+    if(r.sarite.length){
+      h+=(h?"<br><br>":"")+"Am sărit <b>"+r.sarite.length+"</b> "+(r.sarite.length===1?"rând":"rânduri")+" fără greutate:<br>"+
+        r.sarite.slice(0,4).map(function(l){ return "• "+esc(l); }).join("<br>")+(r.sarite.length>4?"<br>…":"");
+    }
+    box.innerHTML=h;
+  }
+  function treceCantare(){
+    if(guard()) return;
+    var el=document.getElementById("cnt-text");
+    var r=randuriCantare(el.value);
+    var intra=r.filter(function(x){ return x.p && !x.deja; });
+    verificaCantare();
+    if(!intra.length){ toast("Niciun cântar de trecut"); return; }
+    var mi=state.manche||1;
+    var sar=r.filter(function(x){ return x.p && x.deja; }).length;
+    var nu=r.filter(function(x){ return !x.p; }).length;
+    var q="Treci "+intra.length+" "+(intra.length===1?"cântar":"cântare")+" în manșa "+mi+"?";
+    if(sar) q+="\n"+sar+" au deja cântar — le sar.";
+    if(nu) q+="\n"+nu+" nu știu pe cine sunt — rămân pe dinafară.";
+    if(!confirm(q)) return;
+    puneDeoParte("înainte de cântarele de pe WhatsApp");
+    intra.forEach(function(x){
+      var m=mOf(x.p, mi), inainte=totalOfM(x.p, mi);
+      m.catches.push(x.kg);
+      m.catchTimes.push(Date.now());
+      m.catchPhotos.push(null);
+      /* Jurnalul spune de unde a venit: peste o lună, la o contestație, se vede care cântar
+         a fost trecut la baltă și care lipit de pe grup. */
+      scrieInJurnal(x.p, mi, "captura", "adaugat", x.kg, inainte, totalOfM(x.p, mi), "de pe WhatsApp");
+    });
+    /* Nu se strigă niciunul: la „+" se anunță captura și liderul nou, dar aici ar veni
+       douăzeci de anunțuri unul peste altul. Cine s-a schimbat se vede în clasament. */
+    el.value="";
+    document.getElementById("cnt-preview").innerHTML="";
+    queueSave(); renderList();
+    var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
+    improspateazaCantariti();
+    toast(intra.length+" cântare trecute"+(sar?" · "+sar+" sărite":""));
   }
 
   /* ---------- jurnalul cântăririlor ---------- */
