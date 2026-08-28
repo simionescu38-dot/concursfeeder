@@ -12,4 +12,7 @@ t("egalitatea din sector împarte locurile",m1.a,1.5);t("egalitatea dă aceleaș
 t("generalul adună manșele",g.a,3.5);t("departajarea folosește totalul kg",clas[0].id,"b");
 t("pagina acceptă arhivă API",html.includes('param("id")'),true);t("pagina acceptă fișier permanent",html.includes('param("file")'),true);
 t("PIN-ul nu este afișat",/pinHash[^\n]*innerHTML/.test(html),false);
+t("folosește generatorul QR local",html.includes('<script src="qr.js"></script>'),true);
+t("QR-ul conține linkul concursului",/QR\.svg\(location\.href\)/.test(html),true);
+t("codul QR se salvează PNG",/toBlob[\s\S]*image\/png/.test(html),true);
 if(failed)process.exit(1);console.log("Pagina publică este verificată.");
