@@ -328,6 +328,13 @@
     return d.toLocaleDateString("ro-RO",{day:"2-digit",month:"2-digit",year:"numeric"});
   }
 
+  function rezultatHref(code){
+    code=(code||"")+"";
+    if(code.indexOf("arhiva-api:")===0) return "rezultat.html?id="+encodeURIComponent(code.slice(12));
+    if(code.indexOf("arhiva:")===0) return "rezultat.html?file="+encodeURIComponent(code.slice(8));
+    return "";
+  }
+
   /* Un identificator intern (uuid, cale de fișier) nu e un nume de concurs —
      în clasament apărea „327269e3-ebde-4800-…" ca și cum ar fi o competiție. */
   function numeConcurs(brut, cand){
@@ -609,8 +616,10 @@
       var podium = (c.top3||[]).map(function(t,i){
         return '<div class="comp-podium-row"><span><span class="podium-badge">'+(i+1)+'</span>'+esc(t.name)+'</span><span class="kg num">'+fmt(t.kg)+' kg</span></div>';
       }).join("");
+      var href=rezultatHref(c.code);
       return '<div class="comp-card"><div class="comp-card-h"><span class="cn">'+esc(c.name)+'</span><span class="cd">'+(c.date?dateLabel(c.date):'fără dată')+' · '+c.n+' particip.</span></div>'+
         (podium || '<p class="hint" style="margin:0;">Fără rezultate cu nume.</p>')+
+        (href?'<a class="btn btn-ghost" style="margin-top:8px;text-decoration:none;display:flex;align-items:center;justify-content:center;min-height:42px;" href="'+esc(href)+'">Vezi rezultatele</a>':'')+
       '</div>';
     }).join("");
 

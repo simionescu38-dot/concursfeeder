@@ -38,6 +38,7 @@ const TESTE = [
   ["Aducerea variantei noi", "test-actualizare.js"],
   ["Poza pentru WhatsApp", "test-imagine.js"],
   ["Arhivarea în sezon", "test-arhivare.js"]
+  ,["Pagina publică a concursului", "test-rezultat-public.js"]
 ];
 
 let picate = [];
