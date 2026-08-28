@@ -15,4 +15,7 @@ t("PIN-ul nu este afișat",/pinHash[^\n]*innerHTML/.test(html),false);
 t("folosește generatorul QR local",html.includes('<script src="qr.js"></script>'),true);
 t("QR-ul conține linkul concursului",/QR\.svg\(location\.href\)/.test(html),true);
 t("codul QR se salvează PNG",/toBlob[\s\S]*image\/png/.test(html),true);
+t("imaginea include toți participanții",/430\+list\.length\*rowH/.test(html),true);
+t("imaginea folosește clasamentul general",/function imagineRezultate\(\).*pointsCombo\(\).*sortByPoints/s.test(html),true);
+t("imaginea poate fi distribuită ca PNG",/rezultate-concurs\.png/.test(html),true);
 if(failed)process.exit(1);console.log("Pagina publică este verificată.");
