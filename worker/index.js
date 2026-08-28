@@ -499,7 +499,13 @@ export default {
 
     if (url.pathname === "/api/events") {
       if (req.method === "GET") {
-        const cutoff = new Date(Date.now() - 24 * 3600 * 1000).toISOString().slice(0, 10);
+        /* Opt zile, nu una. `event_date` ține data de ÎNCEPUT, chiar și la concursurile de
+           mai multe zile („2026-09-12/14"). Cu o singură zi de răgaz, unul de trei zile
+           dispărea din calendar chiar în ultima lui zi, când lumea încă pescuia.
+           Se poate lărgi fără grijă fiindcă aplicația taie ea concursurile terminate, după
+           data lor de sfârșit — altfel unul vechi de o săptămână ar rămâne agățat acolo.
+           Amândouă părțile sunt probate în test-calendar-doua-zile.js. */
+        const cutoff = new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString().slice(0, 10);
         const rs = await env.DB.prepare(
           "SELECT id,name,location,event_date,type,fee,slots_total,slots_taken,organizer,contact,created_at " +
           "FROM events WHERE event_date >= ? ORDER BY event_date ASC LIMIT 200"

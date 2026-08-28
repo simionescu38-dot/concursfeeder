@@ -179,6 +179,11 @@ console.log("\n=== 7. Nimic nu s-a schimbat pe server ===");
   t("worker-ul n-are nicio coloană de dată-sfârșit",
     /event_date_end|end_date|dataSfarsit/.test(w), false);
   t("worker-ul ține tot o singură coloană de dată", /event_date/.test(w), true);
+  /* Fereastra serverului: opt zile, nu una. `event_date` ține data de ÎNCEPUT, deci cu o
+     singură zi de răgaz un concurs de trei zile dispărea din calendar chiar în ultima lui
+     zi. Se poate lărgi fiindcă aplicația taie ea ce s-a terminat — proba de mai jos. */
+  t("serverul lasă opt zile de răgaz, nu una",
+    /Date\.now\(\) - 8 \* 24 \* 3600 \* 1000/.test(w), true);
   t("…și taie tot la 20 de caractere", /eventDate[\s\S]{0,80}slice\(0,\s*20\)/.test(w), true);
 }
 
