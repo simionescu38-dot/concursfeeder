@@ -21,6 +21,7 @@ const TESTE = [
   ["Instalarea de pe linkul primit", "test-instalare-link.js"],
   ["Poza și ora la peștele extra", "test-peste-extra-poza.js"],
   ["Pozele nu pleacă la sincronizare", "test-poze-sincronizare.js"],
+  ["Cardul cu versiunea aplicației", "test-versiune-card.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],
   ["Soare / lună (solunar)", "test-astro.js"],

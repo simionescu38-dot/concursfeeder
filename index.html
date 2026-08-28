@@ -3227,6 +3227,12 @@
     if(v==="cantar") renderList(); // standul se scrie din formularul fiecărui participant
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
     if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); improspateazaStatus(); }
+    /* Versiunea se citea o singură dată, la pornire — adică ÎNAINTE ca service worker-ul
+       să apuce să salveze aplicația. Cardul rămânea apoi pe „Încă nu s-a salvat nimic"
+       cât ținea aplicația deschisă, deși memoria era deja acolo. Cel mai rău cădea exact
+       după „Adu varianta nouă": ștergea memoria, reîncărca, iar cardul se uita prea
+       devreme — omul apăsa iar și iar, crezând că nu se salvează. */
+    if(v==="set") updateVersiune();
     if(v==="strat"){ renderStrat(); loadPasPicheti(); }
     if(v==="reg") renderReg();
     if(v==="spons") renderSpons();
@@ -5212,6 +5218,11 @@ if('serviceWorker' in navigator){
       reg.update();
       // verifică actualizări de fiecare dată când aplicația revine în prim-plan
       document.addEventListener('visibilitychange',function(){ if(!document.hidden) reg.update(); });
+    }).catch(function(){});
+    // Salvarea în telefon se termină la câteva clipe după pornire. Fără rândul ăsta,
+    // cardul rămânea pe „nu s-a salvat nimic" până la următoarea deschidere.
+    navigator.serviceWorker.ready.then(function(){
+      if(typeof updateVersiune==='function') updateVersiune();
     }).catch(function(){});
     // când versiunea nouă preia controlul, reîncarcă pagina automat
     var hadController=!!navigator.serviceWorker.controller;
