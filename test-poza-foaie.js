@@ -29,7 +29,8 @@ const FUNCTII = ["num", "fmt", "esc", "uid", "numManse", "manseRange", "emptyMan
   "mOf", "sectorOfM", "standOfM", "nameOf", "cantOfM", "extraOfM", "totalOfM", "scrieInJurnal",
   "oraPozei", "standDinLegenda", "standuriDinLegenda", "pescarulStandului", "randuriBune",
   "randeazaFoaia", "scrieKg", "scrieStandul", "improspateazaFoaieRezumat", "treceDeFoaie",
-  "renuntaLaPoze", "inchidePozele", "citesteCantarul", "amprentaPozei"];
+  "renuntaLaPoze", "inchidePozele", "citesteCantarul", "amprentaPozei",
+  "deschidePoze", "citesteToatePozele", "oraDinNume"];
 
 /** un JPEG minuscul, dar cu EXIF adevărat: așa se probează cititorul fără pozele lui */
 function jpegCuOra(txt) {
@@ -141,6 +142,71 @@ function pune(c, randuri) {
     t("un JPEG fără EXIF dă 0, nu crapă", await ora(Buffer.from([0xFF, 0xD8, 0xFF, 0xD9])), 0);
     t("un fișier care nu e JPEG dă 0", await ora(Buffer.from("nu sunt poza")), 0);
     t("citește doar începutul fișierului, nu tot", /blob\.slice\(0, 131072\)/.test(H.grabFunction(src, "oraPozei")), true);
+  }
+  /* ---- ora capturii, în patru trepte ----
+     La prima trimitere adevărată din WhatsApp, eticheta capturii scria ora importului
+     (12:40), nu 16:55 când se cântărise: WhatsApp taie ora din poză când o trimite mai
+     departe. Deci treapta întâi lipsește tocmai pe drumul obișnuit. */
+  {
+    const c = pornire(LOT);
+    const nume = x => vm.runInContext("oraDinNume(" + JSON.stringify(x) + ")", c);
+    const iso = t0 => new Date(t0).toISOString().slice(0, 19);
+
+    /* Numele e SINGURUL loc de unde se mai poate afla ziua pe drumul din „Distribuie":
+       ora din poză o taie WhatsApp, iar ora fișierului nu trece printr-un POST multipart
+       (măsurat în browser — ajungea tot „acum"). */
+    t("numele de la WhatsApp dă ziua", iso(nume("IMG-20260827-WA0012.jpg")), "2026-08-27T12:00:00");
+    t("numele de la cameră dă ziua și ora", iso(nume("IMG_20260827_165511.jpg")), "2026-08-27T16:55:11");
+    t("și cel de Pixel", iso(nume("PXL_20260827_135511123.jpg")), "2026-08-27T13:55:11");
+    t("și unul fără prefix", iso(nume("20260827_165511.jpg")), "2026-08-27T16:55:11");
+    /* Fără oră se ia mijlocul zilei: la miezul nopții, fusul orar ar muta ziua. */
+    t("fără oră se ia mijlocul zilei, nu miezul nopții", new Date(nume("IMG-20260827-WA0012.jpg")).getUTCHours(), 12);
+    t("un nume fără dată nu inventează una", nume("poza.jpg"), 0);
+    t("nici un număr care nu e dată", nume("IMG-20269932-WA0012.jpg"), 0);
+    t("nici numele gol", nume(""), 0);
+  }
+  {
+    const c = pornire(LOT);
+    const deschide = async (buf, oraFisier, numeFisier) => {
+      c.__in = [{ blob: blobDin(buf), ora: oraFisier, nume: numeFisier || "" }];
+      await vm.runInContext("deschidePoze(__in, '')", c);
+      return vm.runInContext("pozePrimite[0].ora", c);
+    };
+    const GOL = Buffer.from([0xFF, 0xD8, 0xFF, 0xD9]);
+
+    t("1. ora din poză, când există, bate tot",
+      await deschide(jpegCuOra("2026:08:27 16:55:11"), 1700000000000, "IMG-20200101-WA0001.jpg"),
+      Date.UTC(2026, 7, 27, 16, 55, 11));
+    t("2. fără ea, data din numele fișierului",
+      await deschide(GOL, 1700000000000, "IMG-20260827-WA0012.jpg"), Date.UTC(2026, 7, 27, 12, 0, 0));
+    t("3. fără nume bun, ora fișierului (merge doar din galerie)",
+      await deschide(GOL, 1787000000000, "poza.jpg"), 1787000000000);
+    {
+      const inainte = Date.now();
+      const o = await deschide(GOL, 0, "");
+      t("4. fără niciuna, „acum\" — dar niciodată zero", o >= inainte && o <= Date.now(), true);
+    }
+    t("o poză dată de-a dreptul, fără plic, nu crapă",
+      (await (async () => { c.__in = [blobDin(jpegCuOra("2026:08:27 17:01:03"))];
+        await vm.runInContext("deschidePoze(__in, '')", c);
+        return vm.runInContext("pozePrimite[0].ora", c); })()),
+      Date.UTC(2026, 7, 27, 17, 1, 3));
+    t("standul din legendă se pune și pe drumul ăsta",
+      (await (async () => { c.__in = [{ blob: blobDin(jpegCuOra("2026:08:27 16:55:11")), ora: 0 }];
+        await vm.runInContext("deschidePoze(__in, 'St 13')", c);
+        return vm.runInContext("pozePrimite[0].stand", c); })()), "13");
+  }
+  {
+    /* Numele trece prin trimitere, ora nu — de-aia el e cel care contează aici. */
+    t("service worker-ul duce mai departe numele fișierului",
+      /"X-Poza-Nume": encodeURIComponent\(poze\[i\]\.name \|\| ""\)/.test(swSrc), true);
+    t("…și ora lui, bună când poza vine din galerie",
+      /"X-Poza-Ora": String\(poze\[i\]\.lastModified \|\| 0\)/.test(swSrc), true);
+    const ia = H.grabFunction(src, "iaPozelePrimite");
+    t("aplicația citește numele de acolo", /r\.headers\.get\("X-Poza-Nume"\)/.test(ia), true);
+    t("…și ora", /r\.headers\.get\("X-Poza-Ora"\)/.test(ia), true);
+    t("pozele alese din galerie își aduc numele și ora",
+      /ora:x\.lastModified\|\|0, nume:x\.name\|\|""/.test(H.grabFunction(src, "pozeDinTelefon")), true);
   }
 
   /* ================================================================
@@ -459,7 +525,7 @@ function pune(c, randuri) {
     t("service worker-ul păstrează legenda", /form\.get\("title"\)[\s\S]{0,40}form\.get\("text"\)/.test(swSrc), true);
     t("…sub o adresă recunoscută de aplicație", /legenda-primita/.test(swSrc), true);
     t("aplicația o caută acolo", /indexOf\("legenda"\)/.test(src), true);
-    t("versiunea a fost urcată", /concurs-pescuit-v137/.test(swSrc), true);
+    t("versiunea a fost urcată", /concurs-pescuit-v138/.test(swSrc), true);
     /* „Nu-mi apare aplicația la Distribuie." Nu e lămurit dacă Androidul duce mai departe
        interogarea din „action"; dacă n-o duce, POST-ul vine curat pe „./index.html". Se
        prinde orice POST către aplicație — altfel ar pleca spre GitHub Pages, care nu
