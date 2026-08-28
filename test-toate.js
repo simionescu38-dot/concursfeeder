@@ -20,6 +20,7 @@ const TESTE = [
   ["Butonul Statistici din meniu", "test-statistici-meniu.js"],
   ["Instalarea de pe linkul primit", "test-instalare-link.js"],
   ["Poza și ora la peștele extra", "test-peste-extra-poza.js"],
+  ["Pozele nu pleacă la sincronizare", "test-poze-sincronizare.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],
   ["Soare / lună (solunar)", "test-astro.js"],
