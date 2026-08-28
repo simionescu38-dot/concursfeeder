@@ -1,7 +1,7 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v134";
+var CACHE = "concurs-pescuit-v135";
 /* Magazia pozelor venite din meniul „Distribuie" al telefonului. Separată de cache-ul
    aplicației fiindcă are altă viață: se golește la fiecare trimitere nouă și după ce
    cântarele au fost trecute — nu la fiecare versiune nouă a aplicației. */
@@ -83,6 +83,15 @@ self.addEventListener("fetch", function (e) {
         for (var i = 0; i < poze.length; i++) {
           await c.put(new Request("./poza-primita-" + i),
             new Response(poze[i], { headers: { "Content-Type": poze[i].type || "image/jpeg" } }));
+        }
+        /* Greutatea e în imagine, dar STANDUL e în textul de sub poză: pe grup se scrie
+           „St 13", „St 5". Manifestul cere deja câmpurile astea la share_target; până acum
+           se aruncau, iar aplicația rămânea fără singurul lucru care spune al cui e
+           cântarul. Se păstrează lângă poze, sub o adresă cu „legenda" în ea. */
+        var legenda = [form.get("title") || "", form.get("text") || ""].join("\n").trim();
+        if (legenda) {
+          await c.put(new Request("./legenda-primita"),
+            new Response(legenda, { headers: { "Content-Type": "text/plain; charset=utf-8" } }));
         }
       } catch (err) {}
       return Response.redirect(new URL("./index.html?poze=1", self.location).href, 303);
