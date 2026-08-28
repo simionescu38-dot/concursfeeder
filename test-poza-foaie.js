@@ -55,12 +55,16 @@ const blobDin = b => new Blob([b], { type: "image/jpeg" });
 function pornire(pescari, optiuni) {
   const o = optiuni || {};
   const el = {};
+  /* Rândurile au copii căutați pe clasă („.poza-stare", „.poza-nume"): fără ei, proba
+     n-ar putea vedea că textul de sub nume se schimbă când scrie omul — exact scăparea
+     care s-a văzut pe telefon. */
   const facEl = () => {
-    const cls = new Set();
+    const cls = new Set(), copii = {};
     return { innerHTML: "", textContent: "", value: "",
       classList: { toggle: (c, on) => (on ? cls.add(c) : cls.delete(c)), remove: c => cls.delete(c),
                    contains: c => cls.has(c) },
-      querySelector: () => null };
+      querySelector: sel => (copii[sel] || (copii[sel] = { innerHTML: "", textContent: "" })),
+      _copii: copii };
   };
   ["poza-foaie", "poza-rezumat", "st-total", "photoImg", "photoCap"].forEach(id => el[id] = facEl());
   const ctx = {
@@ -209,12 +213,21 @@ function pune(c, randuri) {
   {
     const c = pornire(LOT);
     pune(c, [{ stand: "", kg: null, stare: "nesigur" }]);
+    /* Rândul se pregătește cu textul pus de citire DEJA pe el, ca proba să vadă că se
+       șterge. Altfel, scoaterea pazei ar crăpa proba (copil inexistent) în loc s-o pice —
+       iar o probă care crapă nu păzește nimic. */
+    c.document.getElementById("pr-0").querySelector(".poza-stare").textContent = "citit nesigur — uită-te";
     vm.runInContext("scrieStandul(0,'13'); scrieKg(0,'12,340')", c);
     t("standul scris se ține minte", vm.runInContext("pozePrimite[0].stand", c), "13");
     t("virgula se citește ca zecimală", vm.runInContext("pozePrimite[0].kg", c), 12.34);
-    /* După ce omul a scris cifra cu mâna lui, semnul „citit nesigur" n-are ce căuta acolo:
-       răspunde el de ea acum, nu modelul. */
+    /* După ce omul a scris cifra cu mâna lui, semnul pus de citire n-are ce căuta acolo:
+       răspunde el de ea acum, nu modelul. Pe telefon s-a văzut invers — omul scrisese
+       11,29, iar rândul îi spunea mai departe „n-am putut citi — scrie tu". */
     t("semnul de nesigur pică după ce scrie omul", vm.runInContext("pozePrimite[0].stare", c), "asteapta");
+    t("…și textul de pe rând se schimbă pe loc, nu la următoarea redesenare",
+      c.el["pr-0"]._copii[".poza-stare"].textContent, "");
+    t("…iar citirea care vine după nu-i mai calcă cifra",
+      vm.runInContext("pozePrimite[0].scrisDeMana", c), true);
     t("standul ia doar cifre", (vm.runInContext("scrieStandul(0,'St 7'); pozePrimite[0].stand", c)), "7");
     vm.runInContext("scrieKg(0,'')", c);
     t("căsuța golită scoate cifra", vm.runInContext("pozePrimite[0].kg", c), null);
@@ -258,6 +271,21 @@ function pune(c, randuri) {
     const c = pornire(LOT, { raspuns: { ok: true, kg: 9.48, sigur: false } });
     const r = await vm.runInContext("citesteCantarul(null)", c);
     t("citirea nesigură se însemnează, nu se aruncă", [r.kg, r.stare], [9.48, "nesigur"]);
+  }
+  {
+    /* „N-am putut citi" spunea același lucru pentru trei defecte cu trei reparații
+       diferite. Pe telefon s-a văzut exact așa: omul n-avea de unde să știe dacă e de
+       vină cheia, serverul, sau poza. Fiecare își spune acum numele. */
+    const c = pornire(LOT, { raspuns: { ok: false, error: "fara-ai" } });
+    const r = await vm.runInContext("citesteCantarul(null)", c);
+    t("modelul nepornit pe server își spune numele", r.stare, "fara-ai");
+    t("…și scrie unde să se uite", /modelul nu e pornit pe server/.test(c.STARI[r.stare]), true);
+  }
+  {
+    const c = pornire(LOT, { raspuns: { ok: false, error: "forbidden" } });
+    const r = await vm.runInContext("citesteCantarul(null)", c);
+    t("cheia greșită își spune numele", r.stare, "cheie-rea");
+    t("…și nu se confundă cu cheia lipsă", c.STARI["cheie-rea"] !== c.STARI["fara-cheie"], true);
   }
 
   /* ================================================================
@@ -431,7 +459,7 @@ function pune(c, randuri) {
     t("service worker-ul păstrează legenda", /form\.get\("title"\)[\s\S]{0,40}form\.get\("text"\)/.test(swSrc), true);
     t("…sub o adresă recunoscută de aplicație", /legenda-primita/.test(swSrc), true);
     t("aplicația o caută acolo", /indexOf\("legenda"\)/.test(src), true);
-    t("versiunea a fost urcată", /concurs-pescuit-v136/.test(swSrc), true);
+    t("versiunea a fost urcată", /concurs-pescuit-v137/.test(swSrc), true);
     /* „Nu-mi apare aplicația la Distribuie." Nu e lămurit dacă Androidul duce mai departe
        interogarea din „action"; dacă n-o duce, POST-ul vine curat pe „./index.html". Se
        prinde orice POST către aplicație — altfel ar pleca spre GitHub Pages, care nu
@@ -449,7 +477,7 @@ function pune(c, randuri) {
 
     /* 17 cereri deodată pe 4G se calcă în picioare. */
     t("pozele se citesc una câte una", /i\+\+; urmatoarea\(\);/.test(H.grabFunction(src, "citesteToatePozele")), true);
-    t("ce a scris omul nu se calcă de citire", /if\(p\.kg===null\)\{ p\.kg=r\.kg; \}/.test(H.grabFunction(src, "citesteToatePozele")), true);
+    t("ce a scris omul nu se calcă de citire", /if\(!p\.scrisDeMana\)\{ p\.kg=r\.kg; p\.stare=r\.stare; \}/.test(H.grabFunction(src, "citesteToatePozele")), true);
 
     const s0 = src.indexOf('id="view-poze"');
     t("un singur buton albastru pe ecranul lui",

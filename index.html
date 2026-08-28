@@ -3716,7 +3716,13 @@
         method:"POST",
         headers:{"Content-Type":"application/json", "x-write-key":syncKey},
         body: JSON.stringify({poza:d})
-      }).then(function(r){ return r.json(); }).then(function(j){
+      }).then(function(r){ return r.json().catch(function(){ return {ok:false}; }); }).then(function(j){
+        /* „N-am putut citi" spunea același lucru și când modelul nu e pornit pe server, și
+           când cheia e greșită, și când chiar n-a putut citi afișajul. Trei drumuri
+           diferite de reparat, un singur mesaj — omul n-avea de unde să știe unde să se
+           uite. Acum fiecare își spune numele. */
+        if(j && j.error==="fara-ai") return {kg:null, sigur:false, stare:"fara-ai"};
+        if(j && j.error==="forbidden") return {kg:null, sigur:false, stare:"cheie-rea"};
         if(!j || !j.ok || !(j.kg>0)) return {kg:null, sigur:false, stare:"necitit"};
         return {kg:j.kg, sigur:!!j.sigur, stare:j.sigur?"citit":"nesigur"};
       });
@@ -3751,9 +3757,9 @@
       var p=pozePrimite[i];
       p.stare="citeste"; randeazaFoaia();
       citesteCantarul(p.blob).then(function(r){
-        // omul poate să fi scris deja cifra cât se citea; ce a scris el nu se calcă
-        if(p.kg===null){ p.kg=r.kg; }
-        p.stare=r.stare;
+        // omul poate să fi scris cifra cât se citea; ce a scris el nu se calcă, nici cu
+        // cifra venită, nici cu semnul de citire
+        if(!p.scrisDeMana){ p.kg=r.kg; p.stare=r.stare; }
         randeazaFoaia();
         i++; urmatoarea();
       });
@@ -3779,7 +3785,10 @@
   }
   var STARI={asteapta:"", citeste:"se citește…", citit:"citit de pe poză",
              nesigur:"citit nesigur — uită-te", necitit:"n-am putut citi — scrie tu",
-             "fara-cheie":"fără cheie de scriere — scrie tu", nemicsorata:"n-am putut citi — scrie tu"};
+             "fara-cheie":"pune cheia de scriere în Contul meu",
+             "cheie-rea":"cheia de scriere nu e bună",
+             "fara-ai":"modelul nu e pornit pe server — scrie tu",
+             nemicsorata:"n-am putut citi — scrie tu"};
   function randeazaFoaia(){
     var box=document.getElementById("poza-foaie"); if(!box) return;
     var mi=state.manche||1;
@@ -3812,9 +3821,20 @@
     var p=pozePrimite[i]; if(!p) return;
     var kg=num(v);
     p.kg = kg>0 ? Math.round(kg*1000)/1000 : null;
-    if(p.stare==="nesigur" || p.stare==="necitit" || p.stare==="fara-cheie") p.stare="asteapta";
+    /* De-acum cifra e a omului, nu a modelului: pică orice semn pus de citire, și „citit
+       nesigur", și „n-am putut citi". Rândul scria mai departe „scrie tu" după ce omul
+       tocmai scrisese — s-a văzut pe telefon și arată a aplicație care nu te ascultă.
+       Textul se schimbă pe rândul acela, nu se redesenează foaia: redesenarea ar fura
+       degetul din căsuță la fiecare cifră bătută. */
+    p.scrisDeMana = true;
+    p.stare = "asteapta";
     var r=document.getElementById("pr-"+i);
-    if(r){ r.classList.toggle("mare", kg>PRAG_KG); r.classList.remove("nesigur"); }
+    if(r){
+      r.classList.toggle("mare", kg>PRAG_KG);
+      r.classList.remove("nesigur");
+      var s=r.querySelector(".poza-stare");
+      if(s) s.textContent = STARI[p.stare]||"";
+    }
     improspateazaFoaieRezumat();
   }
   function scrieStandul(i, v){
