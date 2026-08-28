@@ -330,8 +330,11 @@
 
   function rezultatHref(code){
     code=(code||"")+"";
-    if(code.indexOf("arhiva-api:")===0) return "rezultat.html?id="+encodeURIComponent(code.slice(12));
-    if(code.indexOf("arhiva:")===0) return "rezultat.html?file="+encodeURIComponent(code.slice(8));
+    /* Se taie exact prefixul, nicio literă în plus: „arhiva:" are 7 caractere, iar
+       „arhiva-api:" are 11. Cu o literă mâncată, adresa pleca „rhiva/2026-…json" și pagina
+       de rezultate o refuza pe drept — „Adresă de arhivă invalidă" la fiecare concurs. */
+    if(code.indexOf("arhiva-api:")===0) return "rezultat.html?id="+encodeURIComponent(code.slice("arhiva-api:".length));
+    if(code.indexOf("arhiva:")===0) return "rezultat.html?file="+encodeURIComponent(code.slice("arhiva:".length));
     return "";
   }
 
