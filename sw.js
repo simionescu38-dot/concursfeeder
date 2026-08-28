@@ -1,7 +1,7 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v135";
+var CACHE = "concurs-pescuit-v136";
 /* Magazia pozelor venite din meniul „Distribuie" al telefonului. Separată de cache-ul
    aplicației fiindcă are altă viață: se golește la fiecare trimitere nouă și după ce
    cântarele au fost trecute — nu la fiecare versiune nouă a aplicației. */
@@ -70,7 +70,14 @@ self.addEventListener("fetch", function (e) {
      poate primi un POST — fără rândurile astea Androidul ar lua 405 și omul ar vedea o
      pagină de eroare în loc de foaia lui. Deci îl oprim aici: punem pozele în magazie și
      trimitem aplicația, cu GET, la ecranul ei de import. */
-  if (e.request.method === "POST" && url.searchParams.has("poze")) {
+  /* Se prinde ORICE POST către aplicație, nu doar cel cu „?poze=1".
+     Motivul: nu e lămurit dacă Androidul duce mai departe interogarea scrisă în „action"
+     din manifest. Dacă n-o duce, POST-ul ar veni pe „./index.html" curat, n-ar fi
+     recunoscut aici, ar pleca spre GitHub Pages — care nu primește POST-uri — și omul ar
+     vedea o pagină de eroare în loc de foaia lui. Pe originea noastră nu există niciun alt
+     POST de pierdut: tot ce merge la server pleacă spre worker, pe altă adresă. */
+  if (e.request.method === "POST" && url.origin === self.location.origin
+      && url.pathname.indexOf("/api/") < 0) {
     e.respondWith((async function () {
       try {
         var form = await e.request.formData();

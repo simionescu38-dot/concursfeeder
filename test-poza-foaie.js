@@ -431,7 +431,14 @@ function pune(c, randuri) {
     t("service worker-ul păstrează legenda", /form\.get\("title"\)[\s\S]{0,40}form\.get\("text"\)/.test(swSrc), true);
     t("…sub o adresă recunoscută de aplicație", /legenda-primita/.test(swSrc), true);
     t("aplicația o caută acolo", /indexOf\("legenda"\)/.test(src), true);
-    t("versiunea a fost urcată", /concurs-pescuit-v135/.test(swSrc), true);
+    t("versiunea a fost urcată", /concurs-pescuit-v136/.test(swSrc), true);
+    /* „Nu-mi apare aplicația la Distribuie." Nu e lămurit dacă Androidul duce mai departe
+       interogarea din „action"; dacă n-o duce, POST-ul vine curat pe „./index.html". Se
+       prinde orice POST către aplicație — altfel ar pleca spre GitHub Pages, care nu
+       primește POST-uri, și s-ar vedea o pagină de eroare în loc de foaie. */
+    t("orice POST către aplicație e recunoscut, nu doar cel cu „?poze=1\"",
+      /e\.request\.method === "POST" && url\.origin === self\.location\.origin/.test(swSrc), true);
+    t("…dar nu se fură cererile către server", /url\.pathname\.indexOf\("\/api\/"\) < 0/.test(swSrc), true);
     t("actualizarea nu șterge pozele primite", /k !== CACHE && k !== POZE/.test(swSrc), true);
 
     const desc = H.grabFunction(src, "deschidePoze");
