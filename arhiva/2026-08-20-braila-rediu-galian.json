@@ -429,8 +429,6 @@
   "nadireMin": 10,
   "balta": "Bazinul Trofee",
   "numStanduri": "15",
-  "pinHash": "h576c85c584f60555c2a024cbb99dfbbdb5f58c3bdcf28dbc8ea315fd46a388f3",
-  "lock": false,
   "startAt": 1787202000000,
   "endAt": 1787230800000,
   "pushOn": true,

@@ -125,7 +125,9 @@ console.log("\n=== 3. Telefonul își păstrează pozele ===");
 console.log("\n=== 4. Cine o folosește ===");
 {
   const push = H.grabFunction(src, "pushState");
-  t("sincronizarea trimite starea curățată", /JSON\.stringify\(\{data: stareFaraPoze\(state\)\}\)/.test(push), true);
+  /* peste stareFaraPoze s-a pus și faraSecrete, ca PIN-ul să nu plece spre camera live;
+     aici ne interesează doar că starea trimisă trece prin curățarea de poze */
+  t("sincronizarea trimite starea curățată", /JSON\.stringify\(\{data: [^}]*stareFaraPoze\(state\)/.test(push), true);
   t("…și nu mai trimite starea întreagă", /JSON\.stringify\(\{data: state\}\)/.test(push), false);
 
   /* Arhiva e o singură urcare, la finalul concursului: acolo pozele TREBUIE să meargă,
