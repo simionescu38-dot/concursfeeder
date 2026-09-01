@@ -26,6 +26,7 @@ const TESTE = [
   ["Tragerea la sorți lipită sau din poză", "test-tragere.js"],
   ["Cântare de pe poza foii", "test-poza-foaie.js"],
   ["Tastatura de PIN", "test-pin.js"],
+  ["PIN-ul nu pleacă de pe telefon", "test-pin-nu-pleaca.js"],
   ["Coduri QR", "test-qr.js"],
   ["Codul QR la Sponsori", "test-qr-sponsori.js"],
   ["Soare / lună (solunar)", "test-astro.js"],

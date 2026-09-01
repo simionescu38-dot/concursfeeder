@@ -94,7 +94,7 @@ function aplicatie(opt) {
   };
   vm.createContext(ctx);
   vm.runInContext(["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "cantOfM", "extraOfM",
-    "cmmcOfM", "totalOfM", "fmt", "archiveToSeason", "wipe", "goleste", "amTerminatConcursul"]
+    "cmmcOfM", "totalOfM", "fmt", "faraSecrete", "archiveToSeason", "wipe", "goleste", "amTerminatConcursul"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
@@ -198,7 +198,9 @@ const linistit = () => new Promise(r => setTimeout(r, 30));
   console.log("\n=== 6. Codul spune ce trebuie ===");
   {
     const fn = grabFunction(src, "archiveToSeason");
-    t("starea se îngheață la apăsare, nu la trimitere", /var deTrimis *= *JSON\.parse\(JSON\.stringify\(state\)\)/.test(fn), true);
+    /* copia adâncă a rămas, doar că trece și prin faraSecrete: PIN-ul nu pleacă în
+       arhivă, care e publică. Ce contează aici e că starea se copiază la apăsare. */
+    t("starea se îngheață la apăsare, nu la trimitere", /var deTrimis *= *[a-zA-Z]*\(?JSON\.parse\(JSON\.stringify\(state\)\)/.test(fn), true);
     t("cererea duce copia înghețată, nu starea vie", /body: JSON\.stringify\(\{data: deTrimis\}\)/.test(fn), true);
     t("nu mai rămâne nicio trimitere a stării vii", /\{data: state\}/.test(fn), false);
     t("salvarea e înaintea ștergerii în text, nu doar în intenție",

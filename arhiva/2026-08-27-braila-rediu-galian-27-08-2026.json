@@ -1172,8 +1172,6 @@
   "durataMin": 0,
   "numStanduri": "",
   "pushOn": true,
-  "voiceOn": true,
-  "pinHash": "h576c85c584f60555c2a024cbb99dfbbdb5f58c3bdcf28dbc8ea315fd46a388f3",
-  "lock": false
+  "voiceOn": true
  }
 }

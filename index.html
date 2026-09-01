@@ -3054,6 +3054,18 @@
     });
     return c;
   }
+  /* PIN-ul n-are ce căuta în afara telefonului. Pleca în trei locuri, toate citite
+     fără nicio cheie: starea camerei live (o citește oricine are codul camerei, adică
+     toți cei cărora le-am dat linkul), arhiva de sezon (e publică, așa a fost cerută)
+     și fișierul de backup trimis pe WhatsApp. `pinHash` e urma unui PIN de 4–6 cifre,
+     deci cifrele se află din ea în mai puțin de o secundă.
+     Lacătul pleacă odată cu el: singur nu înseamnă nimic, iar la citire e oricum
+     înlocuit — stareDinFisier ia PIN-ul și lacătul telefonului, nu pe cele din fișier,
+     iar cine se uită la camera live e din start doar privitor. */
+  function faraSecrete(s){
+    var c={}; for(var k in s) if(k!=="pinHash" && k!=="lock") c[k]=s[k];
+    return c;
+  }
   function pushState(){
     if(!syncRoom || !syncKey) return;
     clearTimeout(syncRetryT);
@@ -3063,7 +3075,7 @@
     fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
       method:"PUT",
       headers:{"Content-Type":"application/json","x-write-key":syncKey},
-      body: JSON.stringify({data: stareFaraPoze(state)})
+      body: JSON.stringify({data: faraSecrete(stareFaraPoze(state))})
     }).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       syncBusy=false;
       if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM();
@@ -3100,7 +3112,7 @@
        apoi golește `state` pe loc, fără să aștepte; cum trimiterea venea abia după ce se
        ștergea arhiva veche, pe server urca `state` cel golit. La Remus Lake, pe 22
        august, arhiva bună a fost ștearsă și în locul ei a urcat un concurs cu 0 pescari. */
-    var deTrimis = JSON.parse(JSON.stringify(state));
+    var deTrimis = faraSecrete(JSON.parse(JSON.stringify(state)));
     var vechiul = currentArchiveId;
     // Chemată tăcut (din Reset sau din butonul de sfârșit de concurs), nu scrie pe rândul
     // de stare: acela e al celui care a chemat-o. Altfel apărea Arhivat înainte ca
@@ -6040,7 +6052,7 @@
   }
   // ---------- sync (export / import fisier) ----------
   function exportData(){
-    var payload={app:"concurs-pescuit", ver:1, exportedAt:new Date().toISOString(), data:state};
+    var payload={app:"concurs-pescuit", ver:1, exportedAt:new Date().toISOString(), data:faraSecrete(state)};
     var json=JSON.stringify(payload);
     var d=new Date();
     function p2(n){ return (n<10?"0":"")+n; }
