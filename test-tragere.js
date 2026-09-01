@@ -21,7 +21,8 @@ const FUNCTII = ["uid", "esc", "numManse", "manseRange", "emptyManche", "ensureM
   "sectorOfM", "standOfM", "setStandSector", "nameOf", "faraSemne",
   "cantOfM", "extraOfM", "totalOfM", "scrieInJurnal", "sectorRanges", "sectorForStand",
   "citesteTragerea", "pescarulTragerii", "randuriTragerii", "sectorulTragerii",
-  "intervaleleTragerii", "verificaTragerea", "treceTragerea"];
+  "intervaleleTragerii", "verificaTragerea", "treceTragerea", "adaugaDinTragere",
+  "splitName", "curataNumarul"];
 
 /** un concurs adevărat, cu DOM-ul strict cât îi trebuie */
 function pornire(pescari, optiuni) {
@@ -45,6 +46,8 @@ function pornire(pescari, optiuni) {
     toast(m) { ctx.toasturi.push(m); },
     queueSave() { ctx.salvat++; },
     renderList() { ctx.desenat++; },
+    renderSectors() { ctx.sectoareDesenate = (ctx.sectoareDesenate || 0) + 1; },
+    isLocked() { return ctx.blocat; },
     puneDeoParte(motiv) { ctx.copii.push(motiv); }
   };
   ctx.camp = camp; ctx.preview = preview;
@@ -308,6 +311,82 @@ console.log("\n=== 10. Ce scrie pe ecran la „Verifică\" ===");
   t("arată numele pescarului mutat", h.indexOf("Mihai Ionescu") >= 0, true);
   t("nimic nu s-a mutat doar din „Verifică\"",
     c.state.participants[0].m[2].stand, "");
+}
+
+/* ================================================================
+   10b. Foaia aduce și oamenii, la primul concurs
+   ================================================================ */
+console.log("\n=== 10b. Când nu e nimeni de mutat, foaia îi poate aduce ===");
+{
+  /* Prima dată a ieșit „15 nu știu cine sunt": foaia citită bine, dar concursul gol.
+     Tragerea mută, nu adaugă — așa trebuie, ca o listă lipită de două ori să nu dubleze
+     concursul. Dar la primul concurs foaia E lista de participanți. */
+  const c = pornire([], { mansa: 1 });
+  c.camp.value = "A 2 NICU ROMAN\nA 3 CIPRIAN IACOB\nB 8 COSTEL TATIANA";
+  vm.runInContext("verificaTragerea()", c);
+
+  t("previzualizarea spune că nu-i știe", /3<\/b> nu știu cine sunt/.test(c.preview.innerHTML), true);
+  t("…și oferă butonul de adăugare", /adaugaDinTragere\(\)/.test(c.preview.innerHTML), true);
+  t("butonul spune pe câți îi adaugă", /pe cei 3 în concurs/.test(c.preview.innerHTML), true);
+
+  vm.runInContext("adaugaDinTragere()", c);
+  t("s-a cerut confirmarea", c.intrebat.length, 1);
+  t("s-a pus o copie deoparte înainte", c.copii.length, 1);
+  t("cei 3 au intrat în concurs", c.state.participants.length, 3);
+
+  const p = c.state.participants;
+  t("numele s-a împărțit în prenume și nume",
+    [p[0].prenume, p[0].nume], ["NICU", "ROMAN"]);
+  t("standul de pe foaie e al manșei", p[0].m[1].stand, "2");
+  t("sectorul de pe foaie e păstrat, nu socotit din stand",
+    [p[0].m[1].sector, p[2].m[1].sector], ["A", "B"]);
+  t("jurnalul ține minte de unde au venit", c.state.jurnal[0].cine, "tragerea de pe WhatsApp");
+
+  /* După adăugare sunt găsiți, deci butonul dispare de la sine. */
+  vm.runInContext("verificaTragerea()", c);
+  t("butonul nu mai apare după ce au intrat",
+    /adaugaDinTragere\(\)/.test(c.preview.innerHTML), false);
+  t("…iar acum se văd ca mutați", /3<\/b> pescari se mută/.test(c.preview.innerHTML), true);
+}
+{
+  /* Cel ambiguu nu se adaugă: încă un Popa n-ar lămuri nimic. */
+  const c = pornire([
+    { stand: "1", prenume: "Ion", nume: "Popa", sector: "A" },
+    { stand: "2", prenume: "Vasile", nume: "Popa", sector: "A" }
+  ], { mansa: 1 });
+  c.camp.value = "A 3 Popa\nA 4 NICU ROMAN";
+  vm.runInContext("adaugaDinTragere()", c);
+  t("doar cel negăsit a intrat, nu și ambiguul", c.state.participants.length, 3);
+  t("…iar cel intrat e cel cu numele limpede",
+    c.state.participants[2].nume, "ROMAN");
+}
+{
+  const c = pornire([], { mansa: 1, confirma: false });
+  c.camp.value = "A 2 NICU ROMAN";
+  vm.runInContext("adaugaDinTragere()", c);
+  t("dacă răspunzi „nu\", nu intră nimeni", c.state.participants.length, 0);
+}
+{
+  const c = pornire([], { mansa: 1, blocat: true });
+  c.camp.value = "A 2 NICU ROMAN";
+  vm.runInContext("verificaTragerea()", c);
+  t("cu concursul blocat butonul nici nu apare",
+    /adaugaDinTragere\(\)/.test(c.preview.innerHTML), false);
+  vm.runInContext("adaugaDinTragere()", c);
+  t("…iar dacă tot se cheamă, nu adaugă nimic", c.state.participants.length, 0);
+}
+{
+  /* O literă care nu e sector al concursului NU e luată drept sector — paza asta e mai
+     de preț decât un sector nou: fără ea, „Ionescu M" și-ar pierde inițiala și pescarul
+     n-ar mai fi găsit. Omul intră oricum, cu sectorul socotit din stand. */
+  const c = pornire([], { mansa: 1, sectors: ["A", "B"] });
+  c.camp.value = "A 2 NICU ROMAN\nE 30 CINEVA NOU";
+  vm.runInContext("adaugaDinTragere()", c);
+  t("amândoi au intrat în concurs", c.state.participants.length, 2);
+  t("cel cu sector cunoscut îl păstrează", c.state.participants[0].m[1].sector, "A");
+  t("cel cu literă necunoscută primește sectorul din stand",
+    c.state.participants[1].m[1].sector, "B");
+  t("iar lista de sectoare a rămas neatinsă", c.state.sectors, ["A", "B"]);
 }
 
 /* ================================================================

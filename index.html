@@ -864,7 +864,7 @@
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-tragere')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec tragerea la sorți <span class="rar">o dată pe manșă</span></button>
       <div class="pliant-in" hidden>
         <textarea id="trg-text" rows="6" placeholder="Lipește lista de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu&#10;2 Vasile Popescu&#10;3 Gheorghe Marin"></textarea>
-        <p class="hint">Un pescar pe linie: <b>stand, nume</b>. Sectorul iese singur din stand. Nu se adaugă nimeni — cei din listă se <b>mută</b> pe standurile manșei. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
+        <p class="hint">Un pescar pe linie: <b>stand, nume</b>. Sectorul iese singur din stand. Cei din listă se <b>mută</b> pe standurile manșei. Cine nu e încă în concurs poate fi adăugat, dacă vrei — butonul apare sub numele lor. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
         <div class="row">
           <button class="btn btn-ghost" onclick="verificaTragerea()">Verifică</button>
           <button class="btn btn-ghost" onclick="treceTragerea()">Mută pe standuri</button>
@@ -4325,6 +4325,15 @@
     if(nu.length){
       h+=(h?"<br><br>":"")+"<b>"+nu.length+"</b> nu știu cine sunt:<br>"+
         nu.map(function(x){ return "• "+esc(x.rand)+(x.cum==="doi"?" <i>(sunt doi cu numele ăsta)</i>":""); }).join("<br>");
+      /* La primul concurs nu e nimeni de mutat: foaia aduce și oamenii, nu doar standurile.
+         Butonul apare DOAR când chiar sunt de adăugat, sub numele lor, ca să se vadă cine
+         intră înainte de a intra. Cei cu nume ambiguu nu se adaugă: încă un Popa ar face
+         ambiguitatea mai mare, nu mai mică. */
+      var deAdaugat=nu.filter(function(x){ return x.cum==="negasit" && x.nume; }).length;
+      if(deAdaugat && !isLocked()){
+        h+='<br><button class="btn btn-ghost" style="margin-top:8px;" onclick="adaugaDinTragere()">'+
+           "Adaugă-"+(deAdaugat===1?"l":"i")+" pe cei "+deAdaugat+" în concurs</button>";
+      }
     }
     if(r.faraStand.length){
       h+=(h?"<br><br>":"")+"<b>"+r.faraStand.length+"</b> nu apar în listă — rămân fără stand în manșa "+mi+":<br>"+
@@ -4366,6 +4375,36 @@
     document.getElementById("trg-preview").innerHTML="";
     queueSave(); renderList();
     toast(intra.length+" "+(intra.length===1?"pescar mutat":"pescari mutați")+" pe standuri");
+  }
+
+  /* Foaia de tragere e, la primul concurs, și lista de participanți: pe ea scrie cine
+     pescuiește, pe ce stand și în ce sector. Fără asta, omul ar trebui să treacă aceiași
+     oameni de două ori — o dată la import, o dată la tragere.
+     Se adaugă DOAR cei căutați și negăsiți. Ambiguii se lasă: încă un Popa n-ar lămuri
+     nimic. Iar cei găsiți nu se ating — pentru ei e „Mută pe standuri". */
+  function adaugaDinTragere(){
+    if(guard()) return;
+    var r=randuriTragerii(document.getElementById("trg-text").value);
+    var noi=r.filter(function(x){ return !x.p && x.cum==="negasit" && x.nume; });
+    if(!noi.length){ toast("N-am pe cine adăuga"); return; }
+    var mi=state.manche||1;
+    if(!confirm("Adaugi "+noi.length+" "+(noi.length===1?"pescar nou":"pescari noi")+
+                " în concurs, pe standurile din listă?")) return;
+    puneDeoParte("înainte de adăugarea din tragere");
+    var ranges=intervaleleTragerii();
+    noi.forEach(function(x){
+      var nm=splitName(x.nume);
+      var sec=sectorulTragerii(x.stand, x.sector, ranges);
+      var np={id:uid(), stand:x.stand, prenume:nm.prenume, nume:nm.nume, sector:sec, m:{}};
+      curataNumarul(np);
+      ensureManche(np);
+      setStandSector(np, mi, x.stand, sec);
+      state.participants.push(np);
+      scrieInJurnal(np, mi, "participant", "adaugat", x.stand, "", x.stand, "tragerea de pe WhatsApp");
+    });
+    queueSave(); renderList();
+    verificaTragerea();
+    toast(noi.length+" "+(noi.length===1?"pescar adăugat":"pescari adăugați"));
   }
 
   /* O foaie de 50 de rânduri citită dintr-o privire pierde rânduri din mijloc — s-a văzut
