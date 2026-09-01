@@ -393,6 +393,135 @@ console.log("\n=== 13. Poza foii pleacă mai mare decât cea a cântarului ===")
     t("…dar nu la nesfârșit: se oprește la ultima treaptă",
       ctx.cerute.length, 3);
 
+    await test14();
     t.raport();
   })();
+}
+
+/* ================================================================
+   14. Foaia citită pe bucăți
+   ================================================================ */
+async function test14() {
+  console.log("\n=== 14. Foaia lungă se citește în două bucăți ===");
+
+  /* Foaia întreagă, dintr-o privire, a sărit de la standul 31 la 55. Două priviri scurte
+     au fiecare mai puține rânduri de ținut minte și de două ori mai multe puncte pe rând. */
+  function ctxFoaie(optiuni) {
+    const o = optiuni || {};
+    const el = { innerHTML: "", value: "" };
+    const ctx = {
+      console, Math, Promise, JSON, parseInt, String, Array, setTimeout,
+      taieturi: [], cereri: 0, toasturi: [], verificat: 0,
+      syncKey: o.cheie === undefined ? "cheia" : o.cheie,
+      API_BASE: "https://api.test",
+      raspunsuri: (o.raspunsuri || []).slice(),
+      URL: { createObjectURL: () => "blob:x", revokeObjectURL() {} },
+      Image: function () {
+        const self = this;
+        self.naturalWidth = 2400; self.naturalHeight = 3200;
+        Object.defineProperty(self, "src", { set() { setTimeout(() => self.onload(), 0); } });
+      },
+      document: {
+        getElementById: () => el,
+        createElement() {
+          return {
+            width: 0, height: 0,
+            getContext() {
+              const c = this;
+              return { drawImage(img, sx, sy, sw, sh) { ctx.taieturi.push({ sy, sh, w: c.width, h: c.height }); } };
+            },
+            toDataURL() { return "data:image/jpeg;base64,AAA"; }
+          };
+        }
+      },
+      fetch() {
+        ctx.cereri++;
+        const r = ctx.raspunsuri.shift() || { ok: false };
+        return Promise.resolve({ json: () => Promise.resolve(r) });
+      },
+      toast(m) { ctx.toasturi.push(m); },
+      verificaTragerea() { ctx.verificat++; }
+    };
+    ctx.el = el;
+    ctx.state = { participants: new Array(o.pescari === undefined ? 44 : o.pescari).fill(0).map((_, i) => ({ id: "p" + i })) };
+    vm.createContext(ctx);
+    ["pozaMicsorata", "pozaFoiiMicsorata", "pozaBucata", "bucataMicsorata", "trimiteFoaia",
+     "lipesteRanduri", "cateRanduriAsteptam", "tragereaDinPozaPeBucati", "tragereaDinPoza",
+     "pozaTragerii"].forEach(f => vm.runInContext(H.grabFunction(src, f), ctx));
+    vm.runInContext(src.match(/var TREPTE_FOAIE\s*=\s*\[[^;]*\];/)[0], ctx);
+    vm.runInContext(src.match(/var SUPRAPUNERE\s*=\s*[\d.]+;/)[0], ctx);
+    return ctx;
+  }
+
+  const ruleaza = ctx => new Promise(res => {
+    ctx.gata = res;
+    const vechi = ctx.toast;
+    ctx.toast = m => { vechi(m); setTimeout(() => ctx.gata(), 0); };
+    vm.runInContext("pozaTragerii({files:[{}]})", ctx);
+    setTimeout(() => res(), 300);
+  });
+
+  const rand = (a, b) => { const o = []; for (let i = a; i <= b; i++) o.push({ stand: String(i), nume: "Pescar" + i }); return o; };
+
+  /* citire întreagă, cât trebuie: nu se mai citește a doua oară */
+  {
+    const c = ctxFoaie({ pescari: 10, raspunsuri: [{ ok: true, randuri: rand(1, 10) }] });
+    await ruleaza(c);
+    t("o citire întreagă nu mai cere a doua", c.cereri, 1);
+    t("lista ajunge în căsuță", c.el.value.split("\n").length, 10);
+    t("s-a verificat singură", c.verificat, 1);
+  }
+
+  /* citire ciuntită: se reia pe bucăți și se lipesc */
+  {
+    const c = ctxFoaie({
+      pescari: 44,
+      raspunsuri: [
+        { ok: true, randuri: rand(1, 31).concat(rand(55, 55)) },  // ce a pățit pe foaia adevărată
+        { ok: true, randuri: rand(1, 28) },                        // jumătatea de sus
+        { ok: true, randuri: rand(25, 55) }                        // jumătatea de jos
+      ]
+    });
+    await ruleaza(c);
+    t("citirea ciuntită duce la încă două citiri", c.cereri, 3);
+
+    const standuri = c.el.value.split("\n").map(l => parseInt(l, 10));
+    t("banda pierdută (31…55) a fost recuperată", standuri.length, 55);
+    t("standurile ies în ordine, de la 1 la 55", [standuri[0], standuri[54]], [1, 55]);
+    t("niciun stand nu apare de două ori", new Set(standuri).size, 55);
+  }
+
+  /* tăieturile chiar se suprapun, ca rândul de la mijloc să nu cadă între ele */
+  {
+    const c = ctxFoaie({
+      pescari: 44,
+      raspunsuri: [{ ok: true, randuri: rand(1, 5) }, { ok: true, randuri: rand(1, 3) }, { ok: true, randuri: rand(3, 8) }]
+    });
+    await ruleaza(c);
+    const bucati = c.taieturi.slice(1);   // prima tăietură e foaia întreagă
+    t("s-au tăiat două bucăți", bucati.length, 2);
+    t("prima pornește de sus", bucati[0].sy, 0);
+    t("a doua se termină jos", bucati[1].sy + bucati[1].sh, 3200);
+    t("bucățile se suprapun, nu se ating doar",
+      bucati[0].sy + bucati[0].sh > bucati[1].sy, true);
+  }
+
+  /* fără cheie nu se încearcă de două ori degeaba */
+  {
+    const c = ctxFoaie({ cheie: "", pescari: 44 });
+    await ruleaza(c);
+    t("fără cheie nu se trimite nimic", c.cereri, 0);
+    t("…și se spune o singură dată ce lipsește",
+      /cheia de scriere/i.test(c.el.innerHTML), true);
+  }
+
+  /* tot ciuntită după bucăți: se spune cifra, nu se pretinde că foaia a intrat întreagă */
+  {
+    const c = ctxFoaie({
+      pescari: 44,
+      raspunsuri: [{ ok: true, randuri: rand(1, 20) }, { ok: true, randuri: rand(1, 20) }, { ok: true, randuri: rand(1, 20) }]
+    });
+    await ruleaza(c);
+    t("spune câte a citit din câte", /Am citit 20 din 44/.test(c.toasturi.join(" ")), true);
+  }
 }

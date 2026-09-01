@@ -4353,24 +4353,107 @@
     toast(intra.length+" "+(intra.length===1?"pescar mutat":"pescari mutați")+" pe standuri");
   }
 
+  /* O foaie de 50 de rânduri citită dintr-o privire pierde rânduri din mijloc — s-a văzut
+     pe foaia adevărată: a citit până la standul 31, apoi a sărit direct la 55. Mărirea
+     pozei de la 1000 la 1800 de puncte n-a fost de ajuns.
+     Așa că foaia se citește pe bucăți: jumătatea de sus, apoi jumătatea de jos, cu o
+     suprapunere lată cât să nu cadă niciun rând exact pe tăietură. Fiecare bucată are mai
+     puține rânduri de ținut minte și, la aceeași lățime trimisă, de două ori mai multe
+     puncte pe rând. */
+  var SUPRAPUNERE = 0.12;   // cât se suprapun bucățile, ca rândul de la tăietură să apară în amândouă
+
+  function pozaBucata(blob, sus, jos, max, calitate){
+    max = max || 1800; calitate = calitate || 0.82;
+    return new Promise(function(res){
+      var url=URL.createObjectURL(blob), img=new Image();
+      img.onload=function(){
+        var W=img.naturalWidth, H=img.naturalHeight;
+        var y=Math.max(0, Math.round(H*sus)), h=Math.min(H-y, Math.round(H*(jos-sus)));
+        if(h<=0){ try{ URL.revokeObjectURL(url); }catch(e){} res(null); return; }
+        var w=W, scara=1;
+        if(w>max){ scara=max/w; w=max; }
+        var hh=Math.round(h*scara);
+        var c=document.createElement("canvas"); c.width=w; c.height=hh;
+        c.getContext("2d").drawImage(img, 0, y, W, h, 0, 0, w, hh);
+        var d=null; try{ d=c.toDataURL("image/jpeg",calitate); }catch(e){}
+        try{ URL.revokeObjectURL(url); }catch(e){}
+        res(d);
+      };
+      img.onerror=function(){ try{ URL.revokeObjectURL(url); }catch(e){} res(null); };
+      img.src=url;
+    });
+  }
+
+  /* Aceeași scară de trepte ca la foaia întreagă: serverul refuză peste 1,4 milioane de
+     semne, iar o bucată fotografiată de aproape poate trece de prag. */
+  function bucataMicsorata(blob, sus, jos, i){
+    i = i || 0;
+    var t = TREPTE_FOAIE[i];
+    return pozaBucata(blob, sus, jos, t[0], t[1]).then(function(d){
+      if(d && d.length > 1350000 && i+1 < TREPTE_FOAIE.length) return bucataMicsorata(blob, sus, jos, i+1);
+      return d;
+    });
+  }
+
+  function trimiteFoaia(d){
+    if(!d) return Promise.resolve({randuri:null, stare:"nemicsorata"});
+    return fetch(API_BASE+"/api/citeste-tragerea", {
+      method:"POST",
+      headers:{"Content-Type":"application/json", "x-write-key":syncKey},
+      body: JSON.stringify({poza:d})
+    }).then(function(r){ return r.json().catch(function(){ return {ok:false}; }); }).then(function(j){
+      if(j && j.error==="fara-ai") return {randuri:null, stare:"fara-ai"};
+      if(j && j.error==="forbidden") return {randuri:null, stare:"cheie-rea"};
+      if(!j || !j.ok || !Array.isArray(j.randuri) || !j.randuri.length) return {randuri:null, stare:"necitit"};
+      return {randuri:j.randuri, stare:"citit"};
+    }).catch(function(){ return {randuri:null, stare:"necitit"}; });
+  }
+
+  /* Rândurile din bucăți se lipesc după stand: suprapunerea dă același rând de două ori,
+     iar din două citiri ale aceluiași stand rămâne prima. Se ordonează după stand fiindcă
+     așa se poate compara cu foaia dintr-o privire — perechea stand-nume nu depinde de
+     ordine, dar ochiul care verifică da. */
+  function lipesteRanduri(liste){
+    var vazut={}, out=[];
+    liste.forEach(function(l){
+      (l||[]).forEach(function(x){
+        var s=x && x.stand ? String(x.stand) : "";
+        if(!s || vazut[s]) return;
+        vazut[s]=true; out.push({stand:s, nume:(x.nume||"")});
+      });
+    });
+    out.sort(function(a,b){ return parseInt(a.stand,10)-parseInt(b.stand,10); });
+    return out;
+  }
+
+  /* Câte rânduri ar trebui să aibă foaia: numărul de pescari înscriși. Nu e o certitudine
+     — foaia poate fi de la alt concurs — dar e singura măsură pe care o avem ca să știm
+     dacă o citire e întreagă sau ciuntită. */
+  function cateRanduriAsteptam(){
+    return (state.participants||[]).length;
+  }
+
+  function tragereaDinPozaPeBucati(blob, spune){
+    return bucataMicsorata(blob, 0, 0.5+SUPRAPUNERE).then(function(d1){
+      if(spune) spune("Citesc jumătatea de sus…");
+      return trimiteFoaia(d1);
+    }).then(function(sus){
+      if(spune) spune("Citesc jumătatea de jos…");
+      return bucataMicsorata(blob, 0.5-SUPRAPUNERE, 1).then(function(d2){
+        return trimiteFoaia(d2).then(function(jos){
+          var randuri=lipesteRanduri([sus.randuri, jos.randuri]);
+          if(!randuri.length) return {randuri:null, stare:(sus.stare!=="citit"?sus.stare:jos.stare)};
+          return {randuri:randuri, stare:"citit"};
+        });
+      });
+    });
+  }
   /* Poza foii de tragere, citită pe server. Ce iese NU intră direct în concurs: se scrie
      în căsuța de text, ca omul să se uite peste ea și s-o dreagă înainte de „Verifică".
      Un stand citit greșit e mai rău decât unul netrecut — netrecutul se vede. */
   function tragereaDinPoza(blob){
     if(!syncKey) return Promise.resolve({randuri:null, stare:"fara-cheie"});
-    return pozaFoiiMicsorata(blob).then(function(d){
-      if(!d) return {randuri:null, stare:"nemicsorata"};
-      return fetch(API_BASE+"/api/citeste-tragerea", {
-        method:"POST",
-        headers:{"Content-Type":"application/json", "x-write-key":syncKey},
-        body: JSON.stringify({poza:d})
-      }).then(function(r){ return r.json().catch(function(){ return {ok:false}; }); }).then(function(j){
-        if(j && j.error==="fara-ai") return {randuri:null, stare:"fara-ai"};
-        if(j && j.error==="forbidden") return {randuri:null, stare:"cheie-rea"};
-        if(!j || !j.ok || !Array.isArray(j.randuri) || !j.randuri.length) return {randuri:null, stare:"necitit"};
-        return {randuri:j.randuri, stare:"citit"};
-      });
-    }).catch(function(){ return {randuri:null, stare:"necitit"}; });
+    return pozaFoiiMicsorata(blob).then(trimiteFoaia);
   }
 
   function pozaTragerii(input){
@@ -4378,14 +4461,27 @@
     input.value="";
     if(!f) return;
     var box=document.getElementById("trg-preview");
-    box.innerHTML="Citesc poza…";
+    var spune=function(m){ box.innerHTML=m; };
+    spune("Citesc poza…");
     tragereaDinPoza(f).then(function(rez){
+      /* Fără cheie, cu cheie greșită sau cu modelul oprit, a doua încercare ar da exact
+         aceeași eroare — se spune o dată și gata. */
+      if(rez.stare==="fara-cheie" || rez.stare==="cheie-rea" || rez.stare==="fara-ai") return rez;
+      var asteptate=cateRanduriAsteptam();
+      var ciuntita = !rez.randuri || (asteptate && rez.randuri.length < asteptate);
+      if(!ciuntita) return rez;
+      return tragereaDinPozaPeBucati(f, spune).then(function(peBucati){
+        if(!peBucati.randuri) return rez;
+        if(!rez.randuri) return peBucati;
+        return {randuri: lipesteRanduri([rez.randuri, peBucati.randuri]), stare:"citit"};
+      });
+    }).then(function(rez){
       if(!rez.randuri){
-        box.innerHTML=
+        spune(
           rez.stare==="fara-cheie" ? "N-am cheia de scriere — pune-o în Setări și încearcă iar." :
           rez.stare==="cheie-rea"  ? "Cheia de scriere nu e bună — uită-te în Setări." :
           rez.stare==="fara-ai"    ? "Cititul de pe poză nu e pornit pe server." :
-                                     "N-am putut citi foaia. Scrie lista de mână sau lipește-o ca text.";
+                                     "N-am putut citi foaia. Scrie lista de mână sau lipește-o ca text.");
         return;
       }
       var text=rez.randuri.map(function(x){
@@ -4395,10 +4491,14 @@
       el.value=el.value.trim() ? (el.value.replace(/\s+$/,"")+"\n"+text) : text;
       /* Nu se trece singură: se scrie în căsuță și se verifică, ca și cum ar fi fost lipită. */
       verificaTragerea();
-      toast("Am citit "+rez.randuri.length+" "+(rez.randuri.length===1?"rând":"rânduri")+" — uită-te peste ele");
+      var asteptate=cateRanduriAsteptam(), n=rez.randuri.length;
+      /* Tot mai puține decât pescarii înscriși: se spune cifra, ca omul să știe că mai are
+         de completat, în loc să creadă că foaia a intrat întreagă. */
+      toast(asteptate && n<asteptate
+        ? ("Am citit "+n+" din "+asteptate+" — fotografiază și restul foii")
+        : ("Am citit "+n+" "+(n===1?"rând":"rânduri")+" — uită-te peste ele"));
     });
   }
-
   /* ---------- jurnalul cântăririlor ---------- */
   function deschideJurnal(){
     plianteaza("pliant-jurnal");
