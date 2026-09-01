@@ -274,6 +274,41 @@
     return folded;
   }
 
+  /* Același om, scris în două feluri.
+     Pe foaia scrisă de mână un nume iese uneori altfel: „Ciufi Man" într-un concurs,
+     „Ciufy Man" în altul. Sezonul îi socotea ca doi pescari, fiecare cu jumătate din
+     concursuri — iar pragul de participări îi lăsa pe amândoi neclasați, deși omul
+     fusese la toate.
+     Unirea NU se ghicește. „Paul Selig" și „Paul Pelin" diferă tot cu două litere și
+     sunt doi pescari, amândoi pe aceeași foaie: o unire automată i-ar fi topit într-unul
+     singur, tăcut. Deci lista se scrie de mână, în arhiva/acelasi-om.json.
+     Fără fișier, sau cu el stricat, sezonul merge exact ca înainte. */
+  var ACELASI = {};   // cheia unei scrieri -> {cheie, nume} ale omului adevărat
+  async function incarcaAcelasiOm(){
+    try{
+      var r = await fetch(faraCache("arhiva/acelasi-om.json"));
+      var j = await r.json();
+      var grupuri = (j && Array.isArray(j.acelasi)) ? j.acelasi : [];
+      grupuri.forEach(function(g){
+        if(!Array.isArray(g) || g.length < 2) return;
+        var bun = normKey(g[0]);
+        if(!bun) return;
+        g.forEach(function(nm){
+          var k = normKey(nm);
+          if(k) ACELASI[k] = {cheie:bun, nume:g[0]};
+        });
+      });
+    }catch(e){ /* fără listă, fiecare scriere rămâne un om, ca până acum */ }
+  }
+  function cheiaOmului(nm){
+    var k = normKey(nm);
+    return (ACELASI[k] && ACELASI[k].cheie) || k;
+  }
+  function numeleOmului(nm){
+    var k = normKey(nm);
+    return (ACELASI[k] && ACELASI[k].nume) || nm;
+  }
+
   function mOf(p, mi){
     if(p.m && p.m[mi]) return p.m[mi];
     if(mi===1 && !p.m){ return {catches:Array.isArray(p.catches)?p.catches:[], extras:Array.isArray(p.extras)?p.extras:[]}; }
@@ -486,6 +521,7 @@
   }
 
   async function loadSeason(){
+    await incarcaAcelasiOm();
     var liveSources = await fetchLiveSources();
     var archiveSources = await fetchArchiveSources();
     // Arhivele primele: au nume și dată stabile, camera live e doar o copie de moment.
@@ -516,7 +552,7 @@
       }).sort(function(a,b){ return b.kg - a.kg; });
 
       var top3 = ranked.filter(function(row){ return nameOf(row.p); }).slice(0,3).map(function(row){
-        return {name:nameOf(row.p), kg:row.kg};
+        return {name:numeleOmului(nameOf(row.p)), kg:row.kg};
       });
       comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length, top3:top3});
 
@@ -525,10 +561,10 @@
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
         if(!nm) return;
-        var key = normKey(nm);
+        var key = cheiaOmului(nm);
         if(!key) return;
         if(!byKey[key]){
-          byKey[key] = {name:nm, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
+          byKey[key] = {name:numeleOmului(nm), totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
         }
         var rec = byKey[key];
         var place = places[idx];
@@ -538,7 +574,7 @@
         rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish});
         if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = src.compName; }
         if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
-          seasonFish = {v:row.fish, name:nm, comp:src.compName};
+          seasonFish = {v:row.fish, name:numeleOmului(nm), comp:src.compName};
         }
 
         var stand = (row.p.stand || "").toString().trim();
