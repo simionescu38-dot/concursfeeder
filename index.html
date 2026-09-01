@@ -664,6 +664,11 @@
   th{background:#101f2c; color:#91a6b8;}
   td{border-color:var(--line);}
   tbody tr:nth-child(even):not(.p1):not(.p2):not(.p3) td{background:#0f1a25;}
+  /* Rândurile de pe podium primesc în tema închisă un fundal pe td, dar cu alfa.
+     Fundalul crem al rândului, rămas din tema deschisă, se vedea pe dedesubt și
+     albea rândul întâi — iar scrisul alb pe crem nu se citește pe telefon, la
+     soare. Se stinge aici, ca dedesubtul să rămână cardul închis. */
+  tr.p1,tr.p2,tr.p3{background:transparent;}
   tr.p1 td{background:linear-gradient(90deg,rgba(242,193,78,.16),rgba(44,37,22,.72));}
   tr.p2 td{background:linear-gradient(90deg,rgba(174,189,202,.12),rgba(22,31,40,.72));}
   tr.p3 td{background:linear-gradient(90deg,rgba(216,137,88,.14),rgba(38,29,25,.72));}
