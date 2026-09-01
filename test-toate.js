@@ -27,6 +27,7 @@ const TESTE = [
   ["Cântare de pe poza foii", "test-poza-foaie.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],
+  ["Codul QR la Sponsori", "test-qr-sponsori.js"],
   ["Soare / lună (solunar)", "test-astro.js"],
   ["Meteo", "test-meteo.js"],
   ["Adrese date mai departe", "test-adrese.js"],
