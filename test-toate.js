@@ -38,7 +38,8 @@ const TESTE = [
   ["Lista lipită de pe WhatsApp", "test-import.js"],
   ["Aducerea variantei noi", "test-actualizare.js"],
   ["Poza pentru WhatsApp", "test-imagine.js"],
-  ["Arhivarea în sezon", "test-arhivare.js"]
+  ["Arhivarea în sezon", "test-arhivare.js"],
+  ["Același om, scris în două feluri", "test-acelasi-om.js"]
   ,["Pagina publică a concursului", "test-rezultat-public.js"]
 ];
 
