@@ -23,6 +23,7 @@ const TESTE = [
   ["Pozele nu pleacă la sincronizare", "test-poze-sincronizare.js"],
   ["Cardul cu versiunea aplicației", "test-versiune-card.js"],
   ["Cântarele lipite de pe WhatsApp", "test-cantare-whatsapp.js"],
+  ["Tragerea la sorți lipită sau din poză", "test-tragere.js"],
   ["Cântare de pe poza foii", "test-poza-foaie.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["Coduri QR", "test-qr.js"],

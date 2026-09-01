@@ -87,6 +87,34 @@ function kgDinText(text) {
   if (!(kg > 0) || kg > 50) return { kg: null, sigur: false };
   return { kg: Math.round(kg * 1000) / 1000, sigur };
 }
+/* Foaia de tragere: din răspunsul modelului iese o listă de perechi stand+nume. Ce nu arată
+   a stand (1…999) sau a nume se aruncă aici, nu pe telefon: un rând stricat plecat de pe
+   server ar ajunge în căsuța de text și ar părea citit de pe foaie. */
+function randuriDinText(text) {
+  let brut = null;
+  const acolada = text.match(/\{[\s\S]*\}/);
+  if (acolada) { try { brut = JSON.parse(acolada[0]).randuri; } catch (e) {} }
+  if (!Array.isArray(brut)) {
+    const paranteze = text.match(/\[[\s\S]*\]/);
+    if (paranteze) { try { brut = JSON.parse(paranteze[0]); } catch (e) {} }
+  }
+  if (!Array.isArray(brut)) return [];
+  const out = [], vazute = {};
+  for (const x of brut) {
+    if (!x || typeof x !== "object") continue;
+    const stand = String(x.stand === undefined || x.stand === null ? "" : x.stand).trim();
+    if (!/^\d{1,3}$/.test(stand) || Number(stand) < 1) continue;
+    // numele: litere, spații și cratime; cifrele n-au ce căuta în el
+    const nume = String(x.nume || "").replace(/[^\p{L}\s'-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 60);
+    if (nume.length < 2) continue;
+    // un stand citit de două ori înseamnă că modelul a alunecat pe rânduri; rămâne primul
+    if (vazute[stand]) continue;
+    vazute[stand] = true;
+    out.push({ stand, nume });
+    if (out.length >= 200) break;
+  }
+  return out;
+}
 
 // ---------- utilitare binare / base64url ----------
 function b64urlToBytes(s) {
@@ -336,6 +364,53 @@ export default {
       // „brut" rămâne în răspuns ca să se poată vedea, la o citire greșită, ce a spus
       // modelul de fapt — altfel n-ai cum să deosebești un model prost de un cod prost
       return json({ ok: true, kg: citit.kg, sigur: citit.sigur, brut: text.slice(0, 200) });
+    }
+
+    /* Foaia de tragere la sorți, fotografiată și trimisă pe grup. Ce iese de aici NU intră
+       în concurs: telefonul scrie lista în căsuța de text, ca omul s-o vadă și s-o dreagă
+       înainte de „Verifică". Un stand citit greșit e mai rău decât unul netrecut. */
+    if (url.pathname === "/api/citeste-tragerea" && req.method === "POST") {
+      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+        return json({ ok: false, error: "forbidden" }, 403);
+      if (!env.AI) return json({ ok: false, error: "fara-ai" }, 501);
+
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+      const poza = (body && body.poza) || "";
+      if (!/^data:image\/(jpeg|jpg|png|webp);base64,/.test(poza))
+        return json({ ok: false, error: "fara poza" }, 400);
+      if (poza.length > 1400000) return json({ ok: false, error: "poza prea mare" }, 413);
+
+      const INTREBARE =
+        "În poză e foaia unui concurs de pescuit: tragerea la sorți. Fiecare rând are un " +
+        "număr de stand și numele unui pescar, scrise de mână sau tipărite. Citește TOATE " +
+        "rândurile, în ordinea de pe foaie. Numele sunt românești, cu diacritice. " +
+        "Nu inventa rânduri și nu completa numele pe care nu le poți citi — sari peste ele. " +
+        "Ignoră titlul foii, data, semnăturile și orice coloană de greutăți. " +
+        "Răspunde doar cu JSON, fără nimic în jurul lui: " +
+        "{\"randuri\": [{\"stand\": \"1\", \"nume\": \"Ionescu Marian\"}, {\"stand\": \"2\", \"nume\": \"Popa Vasile\"}]}";
+
+      let raspuns;
+      try {
+        raspuns = await env.AI.run("@cf/qwen/qwen3.8-27b", {
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: poza } },
+              { type: "text", text: INTREBARE },
+            ],
+          }],
+          // o foaie de 50 de pescari are nevoie de loc; la cântar ajungeau 120
+          max_tokens: 3000,
+        });
+      } catch (e) {
+        return json({ ok: false, error: "citirea n-a mers" }, 502);
+      }
+
+      const text = textDinRaspuns(raspuns);
+      const randuri = randuriDinText(text);
+      if (!randuri.length) return json({ ok: false, error: "necitit", brut: text.slice(0, 300) });
+      return json({ ok: true, randuri, brut: text.slice(0, 300) });
     }
 
     if (url.pathname === "/api/state") {
