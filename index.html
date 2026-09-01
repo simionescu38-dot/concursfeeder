@@ -860,6 +860,25 @@
         <input type="file" id="poza-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozeDinTelefon(this)">
       </div>
     </div>
+    <div class="pliant mt lockhide" id="pliant-tragere">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-tragere')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec tragerea la sorți <span class="rar">o dată pe manșă</span></button>
+      <div class="pliant-in" hidden>
+        <textarea id="trg-text" rows="6" placeholder="Lipește lista de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu&#10;2 Vasile Popescu&#10;3 Gheorghe Marin"></textarea>
+        <p class="hint">Un pescar pe linie: <b>stand, nume</b>. Sectorul iese singur din stand. Nu se adaugă nimeni — cei din listă se <b>mută</b> pe standurile manșei. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="verificaTragerea()">Verifică</button>
+          <button class="btn btn-ghost" onclick="treceTragerea()">Mută pe standuri</button>
+        </div>
+        <p class="hint" id="trg-preview"></p>
+        <p class="hint" style="margin-top:14px;">Sau <b>poza foii de tragere</b>: o citesc și scriu lista în căsuța de sus, ca s-o vezi și s-o dregi înainte de „Verifică".</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="document.getElementById('trg-fis').click()">Alege poza foii</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('trg-cam').click()">Fotografiază foaia</button>
+        </div>
+        <input type="file" id="trg-fis" accept="image/*" style="display:none;" onchange="pozaTragerii(this)">
+        <input type="file" id="trg-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozaTragerii(this)">
+      </div>
+    </div>
     <div class="pliant mt" id="pliant-jurnal">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideJurnal()"><svg class="ui-ico" aria-hidden="true"><use href="#i-notebook"></use></svg>Jurnalul cântăririlor <span class="rar">nu se șterge</span></button>
       <div class="pliant-in" hidden><div id="jurnalBody"></div></div>
@@ -4140,6 +4159,227 @@
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
     improspateazaCantariti();
     toast(intra.length+" cântare trecute"+(sar?" · "+sar+" sărite":""));
+  }
+
+  /* ============ TRAGEREA LA SORȚI, LIPITĂ SAU CITITĂ DE PE POZĂ ============
+     Tragerea se face la bilă, la baltă. Partea proastă venea după: standurile trecute
+     de mână, unul câte unul, pe telefon, în picioare — iar la un concurs de două manșe,
+     încă o dată duminică dimineața, după a doua tragere. La 44 de pescari sunt 88 de
+     treceri într-un weekend, fiecare cu ocazia ei de a greși un stand.
+     Aici lista se lipește de pe grup (sau se citește de pe poza foii) și oamenii se MUTĂ
+     pe standurile manșei. Nu se adaugă nimeni: adăugatul e treaba importului, iar dacă
+     tragerea ar adăuga, o listă lipită de două ori ar dubla tot concursul. */
+
+  function citesteTragerea(text){
+    var out=[], sarite=[];
+    (text||"").split(/\r?\n/).forEach(function(line){
+      var raw=(line||"").trim();
+      if(!raw) return;
+      /* Mesaj copiat întreg din WhatsApp. Cine l-a scris se taie DOAR când rândul a venit
+         cu ora în paranteze drepte — altfel „Ionescu: 12" și-ar pierde tocmai pescarul. */
+      var dinExport=/^\[[^\]]{3,40}\]/.test(raw);
+      raw=raw.replace(/^\[[^\]]{3,40}\]\s*/,"");
+      if(dinExport) raw=raw.replace(/^[^:]{1,40}:\s*/,"");
+      raw=raw.replace(/^(?:standul|stand|st\.?|nr\.?)\s*(?=\d)/i,"");
+      /* Datele și orele nu sunt standuri: „Tragerea 06.09.2026" ar da standul 6, iar
+         „ne vedem la 08:30" standul 8. Cifrele lor se acoperă cu semne de aceeași lungime,
+         ca pozițiile găsite în rândul acoperit să se potrivească peste rândul adevărat. */
+      var curat=raw.replace(/\d{1,4}[.\/-]\d{1,2}[.\/-]\d{2,4}/g, function(x){ return x.replace(/\d/g,"·"); })
+                   .replace(/\d{1,2}:\d{2}/g, function(x){ return x.replace(/\d/g,"·"); });
+      var m=curat.match(/\d{1,3}/);
+      if(!m){ sarite.push(line.trim()); return; }
+      var stand=m[0], de=m.index+m[0].length;
+      var rest=raw.slice(de), restCurat=curat.slice(de);
+      /* Sectorul, dacă e scris pe rând („12, Ionescu Marian, B"). Se ia numai când litera
+         chiar e un sector al concursului: altfel „Ionescu M" și-ar pierde inițiala,
+         iar pescarul n-ar mai fi găsit. */
+      var sector="", ms=restCurat.match(/(?:[,;|]|\s)\s*([A-Za-z])\s*$/);
+      if(ms){
+        var cand=ms[1].toUpperCase();
+        if((state.sectors||[]).some(function(s){ return String(s).toUpperCase()===cand; })){
+          sector=cand; rest=rest.slice(0, ms.index);
+        }
+      }
+      var nume=rest.replace(/[-–—,;:|.]/g," ").replace(/\s+/g," ").trim();
+      /* Un rând cu stand dar fără nume nu poate muta pe nimeni. „12" singur, uitat pe grup,
+         n-ar trebui să mute pe cine se nimerește să fie acum pe standul 12. */
+      if(!nume){ sarite.push(line.trim()); return; }
+      out.push({stand:stand, nume:nume, sector:sector, rand:line.trim()});
+    });
+    out.sarite=sarite;
+    return out;
+  }
+
+  /* La cântărire pescarul se caută după stand, fiindcă standul e știut. La tragere e
+     invers: standul e tocmai ce se dă, deci omul se caută după NUME. */
+  function pescarulTragerii(nume){
+    var lista=state.participants||[], n=faraSemne(nume);
+    if(!n) return {p:null, cum:"negasit"};
+    var potriviti=lista.filter(function(p){
+      return faraSemne(nameOf(p))===n || faraSemne((p.nume||"")+" "+(p.prenume||""))===n;
+    });
+    var cuv=n.split(" ").filter(function(x){ return x.length>2; });
+    if(!potriviti.length && cuv.length){
+      potriviti=lista.filter(function(p){
+        var bucati=faraSemne(nameOf(p)).split(" ");
+        return cuv.every(function(c){ return bucati.indexOf(c)>=0; });
+      });
+    }
+    if(potriviti.length===1) return {p:potriviti[0], cum:"nume"};
+    if(potriviti.length>1) return {p:null, cum:"doi"};
+    return {p:null, cum:"negasit"};
+  }
+
+  function randuriTragerii(text){
+    var citite=citesteTragerea(text), r=[], laStand={}, alOmului={};
+    citite.forEach(function(x){
+      var g=pescarulTragerii(x.nume);
+      var rand={stand:x.stand, nume:x.nume, sector:x.sector, rand:x.rand,
+                p:g.p, cum:g.cum, standDublu:false, omDublu:false};
+      /* Două rânduri pe același stand, sau același om de două ori: una din ele e greșită
+         și nu se poate ști care. Se opresc amândouă — un stand pus pe cine nu trebuie
+         nu se mai vede până la premiere. */
+      if(laStand[x.stand]) rand.standDublu=true; else laStand[x.stand]=true;
+      if(g.p){ if(alOmului[g.p.id]) rand.omDublu=true; else alOmului[g.p.id]=true; }
+      r.push(rand);
+    });
+    r.sarite=citite.sarite||[];
+    r.faraStand=(state.participants||[]).filter(function(p){ return !alOmului[p.id]; });
+    return r;
+  }
+
+  /* Sectorul unei trageri: cel scris pe rând dacă e unul de-al concursului, altfel cel
+     care iese din stand, exact ca la importul de participanți. */
+  function sectorulTragerii(stand, scris, ranges){
+    if(scris && (state.sectors||[]).indexOf(scris)>=0) return scris;
+    var nr=parseInt(stand,10);
+    return isNaN(nr) ? "" : sectorForStand(nr, ranges);
+  }
+
+  function intervaleleTragerii(){
+    var N=parseInt(state.numStanduri,10);
+    if(!N || N<1) N=(state.participants||[]).length;
+    return sectorRanges(N, state.sectors||[]);
+  }
+
+  function verificaTragerea(){
+    var r=randuriTragerii(document.getElementById("trg-text").value);
+    var box=document.getElementById("trg-preview");
+    var mi=state.manche||1;
+    if(!r.length){
+      box.innerHTML="N-am găsit niciun stand în text."+
+        (r.sarite.length?("<br>Am sărit <b>"+r.sarite.length+"</b> "+(r.sarite.length===1?"rând":"rânduri")+"."):"");
+      return;
+    }
+    var ranges=intervaleleTragerii();
+    var intra=r.filter(function(x){ return x.p && !x.standDublu && !x.omDublu; });
+    var dubluri=r.filter(function(x){ return x.p && (x.standDublu || x.omDublu); });
+    var nu=r.filter(function(x){ return !x.p; });
+    var h="";
+    /* Toate se arată, nu primele câteva: ăsta e rostul lui „Verifică" — omul se uită peste
+       ele cum se uită peste foaia de hârtie, înainte să apese. */
+    if(intra.length){
+      h+="<b>"+intra.length+"</b> "+(intra.length===1?"pescar se mută":"pescari se mută")+" în manșa "+mi+":<br>"+
+        intra.map(function(x){
+          var vechi=standOfM(x.p, mi), sec=sectorulTragerii(x.stand, x.sector, ranges);
+          return "• "+esc(nameOf(x.p))+" — st. <b>"+esc(x.stand)+"</b>"+(sec?" · sec "+esc(sec):"")+
+                 (vechi&&vechi!==x.stand?' <i>(era pe '+esc(vechi)+")</i>":"");
+        }).join("<br>");
+    }
+    if(dubluri.length){
+      h+=(h?"<br><br>":"")+"<b>"+dubluri.length+"</b> apar de două ori — le sar:<br>"+
+        dubluri.map(function(x){ return "• "+esc(x.rand)+(x.standDublu?" <i>(standul e scris de două ori)</i>":" <i>(pescarul e scris de două ori)</i>"); }).join("<br>");
+    }
+    if(nu.length){
+      h+=(h?"<br><br>":"")+"<b>"+nu.length+"</b> nu știu cine sunt:<br>"+
+        nu.map(function(x){ return "• "+esc(x.rand)+(x.cum==="doi"?" <i>(sunt doi cu numele ăsta)</i>":""); }).join("<br>");
+    }
+    if(r.faraStand.length){
+      h+=(h?"<br><br>":"")+"<b>"+r.faraStand.length+"</b> nu apar în listă — rămân fără stand în manșa "+mi+":<br>"+
+        r.faraStand.slice(0,8).map(function(p){ return "• "+esc(nameOf(p)); }).join("<br>")+
+        (r.faraStand.length>8?"<br>…":"");
+    }
+    if(r.sarite.length){
+      h+=(h?"<br><br>":"")+"Am sărit <b>"+r.sarite.length+"</b> "+(r.sarite.length===1?"rând":"rânduri")+":<br>"+
+        r.sarite.slice(0,4).map(function(l){ return "• "+esc(l); }).join("<br>")+(r.sarite.length>4?"<br>…":"");
+    }
+    box.innerHTML=h;
+  }
+
+  function treceTragerea(){
+    if(guard()) return;
+    var el=document.getElementById("trg-text");
+    var r=randuriTragerii(el.value);
+    var intra=r.filter(function(x){ return x.p && !x.standDublu && !x.omDublu; });
+    verificaTragerea();
+    if(!intra.length){ toast("Niciun stand de mutat"); return; }
+    var mi=state.manche||1;
+    var dubluri=r.filter(function(x){ return x.p && (x.standDublu || x.omDublu); }).length;
+    var nu=r.filter(function(x){ return !x.p; }).length;
+    var q="Muți "+intra.length+" "+(intra.length===1?"pescar":"pescari")+" pe standurile manșei "+mi+"?";
+    if(dubluri) q+="\n"+dubluri+" apar de două ori — le sar.";
+    if(nu) q+="\n"+nu+" nu știu cine sunt — rămân unde erau.";
+    if(r.faraStand.length) q+="\n"+r.faraStand.length+" nu apar în listă — rămân fără stand în manșa asta.";
+    if(!confirm(q)) return;
+    puneDeoParte("înainte de tragerea la sorți");
+    var ranges=intervaleleTragerii();
+    intra.forEach(function(x){
+      var vechi=standOfM(x.p, mi);
+      setStandSector(x.p, mi, x.stand, sectorulTragerii(x.stand, x.sector, ranges));
+      /* Jurnalul ține minte de pe ce stand a plecat fiecare: la o contestație, aia e
+         diferența dintre „așa a ieșit la bilă" și „s-a greșit la trecut". */
+      scrieInJurnal(x.p, mi, "stand", "tragere", x.stand, vechi||"", x.stand, "tragerea de pe WhatsApp");
+    });
+    el.value="";
+    document.getElementById("trg-preview").innerHTML="";
+    queueSave(); renderList();
+    toast(intra.length+" "+(intra.length===1?"pescar mutat":"pescari mutați")+" pe standuri");
+  }
+
+  /* Poza foii de tragere, citită pe server. Ce iese NU intră direct în concurs: se scrie
+     în căsuța de text, ca omul să se uite peste ea și s-o dreagă înainte de „Verifică".
+     Un stand citit greșit e mai rău decât unul netrecut — netrecutul se vede. */
+  function tragereaDinPoza(blob){
+    if(!syncKey) return Promise.resolve({randuri:null, stare:"fara-cheie"});
+    return pozaMicsorata(blob).then(function(d){
+      if(!d) return {randuri:null, stare:"nemicsorata"};
+      return fetch(API_BASE+"/api/citeste-tragerea", {
+        method:"POST",
+        headers:{"Content-Type":"application/json", "x-write-key":syncKey},
+        body: JSON.stringify({poza:d})
+      }).then(function(r){ return r.json().catch(function(){ return {ok:false}; }); }).then(function(j){
+        if(j && j.error==="fara-ai") return {randuri:null, stare:"fara-ai"};
+        if(j && j.error==="forbidden") return {randuri:null, stare:"cheie-rea"};
+        if(!j || !j.ok || !Array.isArray(j.randuri) || !j.randuri.length) return {randuri:null, stare:"necitit"};
+        return {randuri:j.randuri, stare:"citit"};
+      });
+    }).catch(function(){ return {randuri:null, stare:"necitit"}; });
+  }
+
+  function pozaTragerii(input){
+    var f=input && input.files && input.files[0];
+    input.value="";
+    if(!f) return;
+    var box=document.getElementById("trg-preview");
+    box.innerHTML="Citesc poza…";
+    tragereaDinPoza(f).then(function(rez){
+      if(!rez.randuri){
+        box.innerHTML=
+          rez.stare==="fara-cheie" ? "N-am cheia de scriere — pune-o în Setări și încearcă iar." :
+          rez.stare==="cheie-rea"  ? "Cheia de scriere nu e bună — uită-te în Setări." :
+          rez.stare==="fara-ai"    ? "Cititul de pe poză nu e pornit pe server." :
+                                     "N-am putut citi foaia. Scrie lista de mână sau lipește-o ca text.";
+        return;
+      }
+      var text=rez.randuri.map(function(x){
+        return (x && x.stand ? x.stand+" " : "")+((x && x.nume) || "");
+      }).join("\n").trim();
+      var el=document.getElementById("trg-text");
+      el.value=el.value.trim() ? (el.value.replace(/\s+$/,"")+"\n"+text) : text;
+      /* Nu se trece singură: se scrie în căsuță și se verifică, ca și cum ar fi fost lipită. */
+      verificaTragerea();
+      toast("Am citit "+rez.randuri.length+" "+(rez.randuri.length===1?"rând":"rânduri")+" — uită-te peste ele");
+    });
   }
 
   /* ---------- jurnalul cântăririlor ---------- */
