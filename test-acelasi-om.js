@@ -88,8 +88,13 @@ const LISTA = JSON.parse(fs.readFileSync(path.join(H.RADACINA, "arhiva/acelasi-o
       /^arhiva\/acelasi-om\.json/.test(c.cerute[0]), true);
     t("„Ciufi Man\" și „Ciufy Man\" ajung același om",
       cheie(c, "Ciufi Man") === cheie(c, "Ciufy Man"), true);
-    t("se arată sub numele scris primul în grup",
-      [nume(c, "Ciufi Man"), nume(c, "Ciufy Man")], ["Ciufi Man", "Ciufi Man"]);
+    t("se arată sub numele adevărat, nu sub porecla de pe foaie",
+      [nume(c, "Ciufi Man"), nume(c, "Ciufy Man")], ["Dragoș Carâmb", "Dragoș Carâmb"]);
+    /* Numele adevărat nu apare în nicio arhivă: pe foi scrie porecla. Grupul îl aduce. */
+    t("cele două porecle duc la același om", cheie(c, "Ciufy Man"), cheie(c, "Dragoș Carâmb"));
+    /* „David Caramb" e alt om — două litere diferență la prenume, dar nu e în grup. */
+    t("„David Caramb\" rămâne separat",
+      cheie(c, "David Caramb") === cheie(c, "Dragoș Carâmb"), false);
     t("merge și scris cu litere mici", cheie(c, "ciufy man"), cheie(c, "Ciufi Man"));
 
     /* Paza care contează: doi oameni adevărați, cu două litere diferență. */
@@ -127,11 +132,14 @@ const LISTA = JSON.parse(fs.readFileSync(path.join(H.RADACINA, "arhiva/acelasi-o
       });
     });
 
-    const ciufi = peOm[cheie(c, "Ciufi Man")];
-    t("Ciufi Man are acum două concursuri, nu două rânduri de câte unul",
+    const ciufi = peOm[cheie(c, "Dragoș Carâmb")];
+    t("are acum două concursuri, nu două rânduri de câte unul",
       ciufi ? ciufi.size : 0, 2);
-    t("nu mai există un al doilea rând pentru el",
-      Object.keys(peOm).filter(k => /ciuf/.test(k)).length, 1);
+    /* Poreclele au dispărut de tot din sezon: rândul lui e sub numele adevărat. */
+    t("„Ciufi\"/„Ciufy\" nu mai sunt chei în sezon",
+      Object.keys(peOm).filter(k => /ciuf/.test(k)).length, 0);
+    t("…iar rândul lui e unul singur, sub numele adevărat",
+      Object.keys(peOm).filter(k => /dragos caramb/.test(k)).length, 1);
 
     t("Paul Selig a rămas cu concursurile lui",
       peOm[cheie(c, "Paul Selig")].size, 4);
