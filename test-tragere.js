@@ -122,6 +122,39 @@ console.log("\n=== 2. Ce NU se citește ===");
   t("un rând fără niciun număr e sărit", citit(c, "gata tragerea, mult succes").length, 0);
 }
 
+console.log("\n=== 2b. Foaia adevărată: sectorul stă înaintea standului ===");
+{
+  /* Pe foaia de la Rediu Galian, sectorul și standul sunt într-o singură coloană: „A 2".
+     Iar sectoarele de acolo NU se potrivesc cu cele socotite din stand — A ține 2…7, deci
+     standul 7 ar cădea în B dacă am împărți 1…N în patru. Un sector greșit schimbă
+     punctele, așa că ce scrie pe foaie bate socoteala. */
+  const c = pornire(LOT);
+  const unul = txt => {
+    const r = citit(c, txt);
+    return r.length ? { stand: r[0].stand, nume: r[0].nume, sector: r[0].sector } : null;
+  };
+
+  t("„A 2 NICU ROMAN\" — sectorul din față e citit",
+    unul("A 2 NICU ROMAN"), { stand: "2", nume: "NICU ROMAN", sector: "A" });
+  t("lipit, fără spațiu", unul("C14 PETRISOR VULPE"),
+    { stand: "14", nume: "PETRISOR VULPE", sector: "C" });
+  t("cu litere mici", unul("b 8 COSTEL TATIANA"),
+    { stand: "8", nume: "COSTEL TATIANA", sector: "B" });
+  t("o literă care nu e sector nu e luată drept sector",
+    unul("Z 5 Cineva Oarecare").sector, "");
+  t("…iar standul e tot 5", unul("Z 5 Cineva Oarecare").stand, "5");
+
+  /* Pe foaia lui: 24 de standuri, patru sectoare, dar A ține 2…7 fiindcă standul 1 nu se
+     folosește. Socoteala împarte 1…24 în patru și-l pune pe 7 în B — adică exact greșeala
+     pe care o repară sectorul scris pe foaie. */
+  const c24 = pornire(LOT, { numStanduri: "24" });
+  const sec = (stand, scris) => vm.runInContext(
+    "sectorulTragerii(" + JSON.stringify(String(stand)) + "," + JSON.stringify(scris || "") +
+    ", intervaleleTragerii())", c24);
+  t("socoteala din stand l-ar pune pe 7 în B, nu în A", sec(7), "B");
+  t("dar sectorul scris pe foaie câștigă", sec(7, "A"), "A");
+}
+
 console.log("\n=== 3. Pe cine găsește ===");
 {
   const c = pornire(LOT);
@@ -489,6 +522,23 @@ async function test14() {
     t("banda pierdută (31…55) a fost recuperată", standuri.length, 55);
     t("standurile ies în ordine, de la 1 la 55", [standuri[0], standuri[54]], [1, 55]);
     t("niciun stand nu apare de două ori", new Set(standuri).size, 55);
+  }
+
+  /* sectorul citit de pe foaie ajunge în căsuță, în fața standului */
+  {
+    const c = ctxFoaie({
+      pescari: 3,
+      raspunsuri: [{ ok: true, randuri: [
+        { sector: "A", stand: "2", nume: "NICU ROMAN" },
+        { sector: "B", stand: "8", nume: "COSTEL TATIANA" },
+        { stand: "14", nume: "PETRISOR VULPE" }
+      ] }]
+    });
+    await ruleaza(c);
+    const linii = c.el.value.split("\n");
+    t("sectorul se scrie în față, ca pe foaie", linii[0], "A 2 NICU ROMAN");
+    t("…și pe rândul următor", linii[1], "B 8 COSTEL TATIANA");
+    t("un rând fără sector rămâne doar cu standul", linii[2], "14 PETRISOR VULPE");
   }
 
   /* tăieturile chiar se suprapun, ca rândul de la mijloc să nu cadă între ele */
