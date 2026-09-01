@@ -1297,6 +1297,12 @@
   <section class="view" id="view-spons">
     <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
     <div id="spons-body"></div>
+    <div class="card">
+      <div class="sec-title">Codul QR al aplicației</div>
+      <div style="display:flex; justify-content:center; padding:4px 0 8px;"><div id="spons-qr" style="width:220px; max-width:100%; background:#fff; padding:8px; border-radius:12px;" role="img" aria-label="Cod QR cu adresa aplicației"></div></div>
+      <p class="hint" style="text-align:center;">Arată ecranul ăsta la baltă: cine scanează cu camera telefonului intră direct în clasamentul live.</p>
+      <p class="hint" style="text-align:center;">Codul duce la <b id="spons-qr-link" style="word-break:break-all;"></b></p>
+    </div>
     <div class="card lockhide">
       <div class="sec-title">Adaugă sponsor</div>
       <label class="f">Numele</label>
@@ -2395,6 +2401,7 @@
   }
   function sponsCod(cod){ copyText(cod); }
   function renderSpons(){
+    deseneazaQrAplicatie("spons-qr","spons-qr-link");
     var box=document.getElementById("spons-body");
     if(!box) return;
     var l=state.sponsors||[];
@@ -2808,14 +2815,18 @@
   function adresaAfisata(){
     return (location.host+location.pathname).replace(/\/index\.html$/,"").replace(/\/$/,"");
   }
-  function updateInstallQr(){
-    var box=document.getElementById("install-qr");
+  // Codul stă pe două ecrane: Setări (ca să-l instaleze) și Sponsori (ca să-l arate la
+  // baltă). Se desenează dintr-un singur loc — două funcții ar fi ajuns, într-o zi, să
+  // ducă în două adrese diferite, și n-ar fi observat nimeni până la concurs.
+  function deseneazaQrAplicatie(idCutie, idEticheta){
+    var box=document.getElementById(idCutie);
     if(!box) return;
     try{ box.innerHTML=QR.svg(installLink()); }
     catch(e){ box.innerHTML=""; }
-    var lbl=document.getElementById("install-qr-link");
+    var lbl=document.getElementById(idEticheta);
     if(lbl) lbl.textContent=installLink();
   }
+  function updateInstallQr(){ deseneazaQrAplicatie("install-qr","install-qr-link"); }
   // Banda spunea „încă n-a plecat nimic" și nu dădea nimănui ce să apese: datele urcă
   // doar când se schimbă ceva, deci un telefon pregătit dinainte de concurs rămânea cu
   // lista pe el, iar camera live arăta goală celor care primiseră deja linkul.
