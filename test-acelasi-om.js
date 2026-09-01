@@ -98,6 +98,10 @@ const LISTA = JSON.parse(fs.readFileSync(path.join(H.RADACINA, "arhiva/acelasi-o
     t("…și fiecare cu numele lui",
       [nume(c, "Paul Selig"), nume(c, "Paul Pelin")], ["Paul Selig", "Paul Pelin"]);
 
+    t("„Costel Titiana\" e același cu „Costel Tatiana\"",
+      cheie(c, "Costel Titiana") === cheie(c, "Costel Tatiana"), true);
+    t("…și se arată cum scrie pe foaie", nume(c, "Costel Titiana"), "Costel Tatiana");
+
     t("un nume care nu e în listă rămâne al lui",
       nume(c, "Sandel Hartopeanu"), "Sandel Hartopeanu");
   }
@@ -134,8 +138,14 @@ const LISTA = JSON.parse(fs.readFileSync(path.join(H.RADACINA, "arhiva/acelasi-o
     t("…iar Paul Pelin cu ale lui, separat",
       peOm[cheie(c, "Paul Pelin")].size, 1);
 
-    /* 55 de nume înainte; unind două scrieri, rămân 54 de oameni. */
-    t("sezonul are un om mai puțin, nu un rând mai puțin", Object.keys(peOm).length, 54);
+    const costel = peOm[cheie(c, "Costel Tatiana")];
+    t("Costel Tatiana ajunge la 3 concursuri, adică la pragul de clasare",
+      costel ? costel.size : 0, 3);
+    t("nu mai are un al doilea rând",
+      Object.keys(peOm).filter(k => /tatiana|titiana/.test(k)).length, 1);
+
+    /* 55 de nume înainte; unind două perechi, rămân 53 de oameni. */
+    t("sezonul are doi oameni mai puțin, nu două rânduri", Object.keys(peOm).length, 53);
   }
 
   t.raport();
