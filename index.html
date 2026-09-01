@@ -3728,21 +3728,38 @@
 
   /* Poza de telefon are 3-12 MB. Pe 4G, la baltă, nu se urcă așa ceva de 17 ori: se
      micșorează la 1000px, cât să rămână cifrele citibile, și pleacă vreo 150 KB. */
-  function pozaMicsorata(blob){
+  /* Latura mare și calitatea sunt date din afară fiindcă cele două poze n-au aceeași
+     nevoie: afișajul cântarului are patru cifre mari, iar 1000 de puncte îi ajung. Foaia
+     de tragere are zeci de rânduri scrise de mână — strânsă la 1000, modelul a citit
+     capetele foii și a pierdut o bandă din mijloc, de la standul 31 la 55. */
+  function pozaMicsorata(blob, max, calitate){
+    max = max || 1000; calitate = calitate || 0.75;
     return new Promise(function(res){
       var url=URL.createObjectURL(blob), img=new Image();
       img.onload=function(){
-        var max=1000, w=img.naturalWidth, h=img.naturalHeight;
+        var w=img.naturalWidth, h=img.naturalHeight;
         if(w>=h && w>max){ h=Math.round(h*max/w); w=max; }
         else if(h>w && h>max){ w=Math.round(w*max/h); h=max; }
         var c=document.createElement("canvas"); c.width=w; c.height=h;
         c.getContext("2d").drawImage(img,0,0,w,h);
-        var d=null; try{ d=c.toDataURL("image/jpeg",0.75); }catch(e){}
+        var d=null; try{ d=c.toDataURL("image/jpeg",calitate); }catch(e){}
         try{ URL.revokeObjectURL(url); }catch(e){}
         res(d);
       };
       img.onerror=function(){ try{ URL.revokeObjectURL(url); }catch(e){} res(null); };
       img.src=url;
+    });
+  }
+  /* Serverul refuză pozele peste 1,4 milioane de semne. O foaie la 1800 de puncte trece
+     de obicei, dar una fotografiată de aproape, pe hârtie albă, poate să nu — atunci se
+     încearcă mai mic, în loc să se întoarcă degeaba cu „poza prea mare". */
+  var TREPTE_FOAIE = [[1800, 0.82], [1400, 0.78], [1000, 0.75]];
+  function pozaFoiiMicsorata(blob, i){
+    i = i || 0;
+    var t = TREPTE_FOAIE[i];
+    return pozaMicsorata(blob, t[0], t[1]).then(function(d){
+      if(d && d.length > 1350000 && i+1 < TREPTE_FOAIE.length) return pozaFoiiMicsorata(blob, i+1);
+      return d;
     });
   }
   /* Cheia de scriere NU pleacă din telefon spre model: se trimite worker-ului lui, care o
@@ -4341,7 +4358,7 @@
      Un stand citit greșit e mai rău decât unul netrecut — netrecutul se vede. */
   function tragereaDinPoza(blob){
     if(!syncKey) return Promise.resolve({randuri:null, stare:"fara-cheie"});
-    return pozaMicsorata(blob).then(function(d){
+    return pozaFoiiMicsorata(blob).then(function(d){
       if(!d) return {randuri:null, stare:"nemicsorata"};
       return fetch(API_BASE+"/api/citeste-tragerea", {
         method:"POST",

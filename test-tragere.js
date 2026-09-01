@@ -326,4 +326,73 @@ console.log("\n=== 12. Lipită de două ori ===");
   t("jurnalul arată că s-a trecut de două ori", c.state.jurnal.length, 4);
 }
 
-t.raport();
+/* ================================================================
+   13. Cât de mare pleacă poza foii
+   ================================================================ */
+console.log("\n=== 13. Poza foii pleacă mai mare decât cea a cântarului ===");
+{
+  /* Foaia strânsă la 1000 de puncte a pierdut o bandă din mijloc (standurile 31…55):
+     modelul a citit capetele și a sărit restul. Aici se verifică treptele. */
+  const trepteSrc = src.match(/var TREPTE_FOAIE\s*=\s*\[[^;]*\];/);
+  const ctx = {
+    console, Math, Promise,
+    cerute: [],
+    lungimeIntoarsa: 100,
+    URL: { createObjectURL() { return "blob:x"; }, revokeObjectURL() {} },
+    Image: function () {
+      const self = this;
+      self.naturalWidth = 4000; self.naturalHeight = 3000;
+      Object.defineProperty(self, "src", { set() { setTimeout(() => self.onload(), 0); } });
+    },
+    document: {
+      createElement() {
+        return {
+          width: 0, height: 0,
+          getContext() { return { drawImage() {} }; },
+          toDataURL(tip, calitate) {
+            ctx.cerute.push({ w: this.width, calitate });
+            return "data:image/jpeg;base64," + "x".repeat(ctx.lungimeIntoarsa);
+          }
+        };
+      }
+    }
+  };
+  vm.createContext(ctx);
+  vm.runInContext(H.grabFunction(src, "pozaMicsorata"), ctx);
+  vm.runInContext(trepteSrc[0], ctx);
+  vm.runInContext(H.grabFunction(src, "pozaFoiiMicsorata"), ctx);
+
+  t("treptele foii pornesc de la 1800 de puncte",
+    vm.runInContext("TREPTE_FOAIE[0]", ctx), [1800, 0.82]);
+  t("…și coboară până la 1000, cât e cântarul",
+    vm.runInContext("TREPTE_FOAIE[TREPTE_FOAIE.length-1][0]", ctx), 1000);
+
+  const asteapta = cod => new Promise(res => {
+    ctx.gata = res;
+    vm.runInContext(cod + ".then(function(d){ gata(d ? d.length : null); })", ctx);
+    setTimeout(() => {}, 0);
+  });
+
+  (async () => {
+    ctx.cerute = []; ctx.lungimeIntoarsa = 100;
+    await asteapta("pozaMicsorata({})");
+    t("cântarul rămâne la 1000 de puncte și calitate 0,75",
+      ctx.cerute.map(x => [x.w, x.calitate]), [[1000, 0.75]]);
+
+    ctx.cerute = []; ctx.lungimeIntoarsa = 100;
+    await asteapta("pozaFoiiMicsorata({})");
+    t("foaia pleacă de la 1800, dintr-o singură încercare",
+      ctx.cerute.map(x => x.w), [1800]);
+
+    /* Serverul refuză peste 1,4 milioane de semne: dacă poza mare iese prea grea,
+       se încearcă mai mic în loc să se întoarcă degeaba cu „poza prea mare". */
+    ctx.cerute = []; ctx.lungimeIntoarsa = 1400000;
+    await asteapta("pozaFoiiMicsorata({})");
+    t("dacă iese prea grea, coboară treaptă cu treaptă",
+      ctx.cerute.map(x => x.w), [1800, 1400, 1000]);
+    t("…dar nu la nesfârșit: se oprește la ultima treaptă",
+      ctx.cerute.length, 3);
+
+    t.raport();
+  })();
+}
