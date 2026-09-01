@@ -110,7 +110,12 @@ function randuriDinText(text) {
     // un stand citit de două ori înseamnă că modelul a alunecat pe rânduri; rămâne primul
     if (vazute[stand]) continue;
     vazute[stand] = true;
-    out.push({ stand, nume });
+    /* Sectorul e scris pe foaie, într-o coloană cu standul („A 2"), și NU se potrivește
+       întotdeauna cu cel socotit din stand: pe foaia de la Rediu Galian A ține standurile
+       2…7, fiindcă standul 1 nu se folosește. Un sector greșit schimbă punctele, deci se
+       duce mai departe ce scrie pe hârtie. */
+    const sector = String(x.sector || "").trim().toUpperCase().slice(0, 1);
+    out.push(/^[A-Z]$/.test(sector) ? { stand, nume, sector } : { stand, nume });
     if (out.length >= 200) break;
   }
   return out;
@@ -381,14 +386,26 @@ export default {
         return json({ ok: false, error: "fara poza" }, 400);
       if (poza.length > 1400000) return json({ ok: false, error: "poza prea mare" }, 413);
 
+      /* Întrebarea e scrisă după foaia adevărată, nu după una închipuită. Prima variantă
+         cerea „un număr de stand și un nume" și pierdea o bandă din mijloc: foaia are
+         sectorul și standul într-o coloană („A 2"), numele pe DOUĂ rânduri (prenumele
+         deasupra, numele dedesubt) și, în dreapta, o grilă goală de cantități, lată cât
+         jumătate de pagină. Grila aia e zgomotul care făcea citirea să-și piardă locul. */
       const INTREBARE =
-        "În poză e foaia unui concurs de pescuit: tragerea la sorți. Fiecare rând are un " +
-        "număr de stand și numele unui pescar, scrise de mână sau tipărite. Citește TOATE " +
-        "rândurile, în ordinea de pe foaie. Numele sunt românești, cu diacritice. " +
-        "Nu inventa rânduri și nu completa numele pe care nu le poți citi — sari peste ele. " +
-        "Ignoră titlul foii, data, semnăturile și orice coloană de greutăți. " +
-        "Răspunde doar cu JSON, fără nimic în jurul lui: " +
-        "{\"randuri\": [{\"stand\": \"1\", \"nume\": \"Ionescu Marian\"}, {\"stand\": \"2\", \"nume\": \"Popa Vasile\"}]}";
+        "În poză e foaia unui concurs de pescuit, un tabel cu rânduri. Structura fiecărui rând:\n" +
+        "- prima coloană (SECTOR): o literă de sector (A, B, C sau D) urmată de numărul standului, " +
+        "de exemplu \"A 2\", \"B 8\", \"C 14\";\n" +
+        "- a doua coloană (NUME): numele pescarului, scris de mână cu majuscule, de obicei pe " +
+        "DOUĂ rânduri — prenumele deasupra, numele de familie dedesubt. Lipește-le într-un " +
+        "singur nume, în ordinea în care sunt scrise;\n" +
+        "- restul foii, în dreapta (CANTITATE): o grilă de căsuțe, goală. IGNOR-O complet.\n" +
+        "Ignoră și antetul: data, manșa, arbitrul, sigla, LOCUL 1/2/3, CMMC.\n" +
+        "Citește rândurile de sus în jos, pe rând, fără să sari niciunul. Rândurile în care " +
+        "coloana NUME e goală se sar — sunt locuri neocupate.\n" +
+        "Numele sunt românești. Nu inventa nimic: dacă un nume nu se poate citi, sari rândul.\n" +
+        "Răspunde doar cu JSON, fără nimic în jurul lui:\n" +
+        "{\"randuri\": [{\"sector\": \"A\", \"stand\": \"2\", \"nume\": \"NICU ROMAN\"}, " +
+        "{\"sector\": \"B\", \"stand\": \"8\", \"nume\": \"COSTEL TATIANA\"}]}";
 
       let raspuns;
       try {

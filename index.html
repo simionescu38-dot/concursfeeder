@@ -4203,6 +4203,20 @@
          ca pozițiile găsite în rândul acoperit să se potrivească peste rândul adevărat. */
       var curat=raw.replace(/\d{1,4}[.\/-]\d{1,2}[.\/-]\d{2,4}/g, function(x){ return x.replace(/\d/g,"·"); })
                    .replace(/\d{1,2}:\d{2}/g, function(x){ return x.replace(/\d/g,"·"); });
+      /* Foaia adevărată are sectorul ÎNAINTEA standului, într-o singură coloană: „A 2".
+         Sectoarele de acolo nu se potrivesc cu cele socotite din stand — pe foaia lui A ține
+         standurile 2…7, iar aplicația, împărțind 1…N în patru, l-ar pune pe 7 în B. Un
+         sector greșit schimbă punctele, deci ce scrie pe foaie bate socoteala.
+         Se ia doar litera care chiar e un sector al concursului, ca „C 14" să nu piardă
+         nimic dintr-un nume care începe cu o inițială. */
+      var sectorFata="", mf=curat.match(/^([A-Za-z])\s*(?=\d)/);
+      if(mf){
+        var cf=mf[1].toUpperCase();
+        if((state.sectors||[]).some(function(s){ return String(s).toUpperCase()===cf; })){
+          sectorFata=cf;
+          raw=raw.slice(mf[0].length); curat=curat.slice(mf[0].length);
+        }
+      }
       var m=curat.match(/\d{1,3}/);
       if(!m){ sarite.push(line.trim()); return; }
       var stand=m[0], de=m.index+m[0].length;
@@ -4217,6 +4231,7 @@
           sector=cand; rest=rest.slice(0, ms.index);
         }
       }
+      if(sectorFata) sector=sectorFata;
       var nume=rest.replace(/[-–—,;:|.]/g," ").replace(/\s+/g," ").trim();
       /* Un rând cu stand dar fără nume nu poate muta pe nimeni. „12" singur, uitat pe grup,
          n-ar trebui să mute pe cine se nimerește să fie acum pe standul 12. */
@@ -4419,7 +4434,7 @@
       (l||[]).forEach(function(x){
         var s=x && x.stand ? String(x.stand) : "";
         if(!s || vazut[s]) return;
-        vazut[s]=true; out.push({stand:s, nume:(x.nume||"")});
+        vazut[s]=true; out.push({stand:s, nume:(x.nume||""), sector:(x.sector||"")});
       });
     });
     out.sort(function(a,b){ return parseInt(a.stand,10)-parseInt(b.stand,10); });
@@ -4484,8 +4499,11 @@
                                      "N-am putut citi foaia. Scrie lista de mână sau lipește-o ca text.");
         return;
       }
+      /* Sectorul citit de pe foaie se scrie în față, ca pe hârtie: „A 2 NICU ROMAN".
+         De acolo îl ia citirea rândului, iar el bate socoteala din stand — pe foaia lui,
+         sectorul A ține standurile 2…7, nu 1…6 cât ar ieși din împărțire. */
       var text=rez.randuri.map(function(x){
-        return (x && x.stand ? x.stand+" " : "")+((x && x.nume) || "");
+        return (x && x.sector ? x.sector+" " : "")+(x && x.stand ? x.stand+" " : "")+((x && x.nume) || "");
       }).join("\n").trim();
       var el=document.getElementById("trg-text");
       el.value=el.value.trim() ? (el.value.replace(/\s+$/,"")+"\n"+text) : text;
