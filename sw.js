@@ -1,7 +1,7 @@
 /* Service worker – Cântar & Clasament
    Strategie: stale-while-revalidate (servește din cache instant, actualizează în fundal).
    Mărește versiunea CACHE când modifici index.html ca să forțezi reîmprospătarea. */
-var CACHE = "concurs-pescuit-v146";
+var CACHE = "concurs-pescuit-v147";
 /* Magazia pozelor venite din meniul „Distribuie" al telefonului. Separată de cache-ul
    aplicației fiindcă are altă viață: se golește la fiecare trimitere nouă și după ce
    cântarele au fost trecute — nu la fiecare versiune nouă a aplicației. */
