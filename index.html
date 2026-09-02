@@ -1349,10 +1349,15 @@
       <p class="hint" style="margin:0 0 10px;">Fiecare pescar are un cod, dat de aplicație. Codul rămâne al lui tot sezonul, oricum i-ar fi scris numele pe foaie. Se completează o dată.</p>
       <div id="pescari-numar" class="hint" style="margin:0;"></div>
     </div>
-    <div class="card lockhide" id="card-pescari-din-concurs">
-      <div class="sec-title">Ia-i din concursul de acum</div>
-      <p class="hint" style="margin:0 0 10px;" id="pescari-din-concurs-cati"></p>
-      <button class="btn btn-ghost" onclick="pescariDinConcurs()">Adaugă-i pe cei care nu-s în bază</button>
+    <div class="card lockhide">
+      <div class="sec-title">Ia-i de-a gata</div>
+      <div id="pescari-din-concurs">
+        <p class="hint" style="margin:0 0 10px;" id="pescari-din-concurs-cati"></p>
+        <button class="btn btn-ghost" onclick="pescariDinConcurs()">Adaugă-i din concursul de acum</button>
+      </div>
+      <p class="hint" style="margin-top:16px;">Sau din <b>concursurile de peste sezon</b>, de pe server — acolo sunt toți oamenii care au pescuit anul ăsta, nu doar cei de pe telefon acum. Îi caut întâi și îți spun câți sunt; nimeni nu intră până nu vezi.</p>
+      <button class="btn btn-ghost" onclick="pescariCautaSezonul()">Caută în concursurile din sezon</button>
+      <p class="hint" id="pescari-sezon" style="margin-top:10px;"></p>
       <p class="hint">Cine e deja în bază nu se pune a doua oară. Numele se caută fără diacritice, ca peste tot în aplicație.</p>
     </div>
     <div class="card lockhide">
@@ -2592,6 +2597,99 @@
     pescariSalveaza(); renderPescari();
   }
 
+  /* ---------- baza umplută din tot sezonul ----------
+     Concursul de pe telefon are 44 de oameni; sezonul are 79. Cei care au pescuit la
+     etapa a doua și n-au mai venit la ultima nu sunt nicăieri pe telefon — doar în
+     arhivele de pe server.
+     Numele se pliază EXACT ca în clasamentul de sezon, inclusiv perechile scrise de mână
+     în arhiva/acelasi-om.json. Altfel „Ciufi Man" și „Ciufy Man" ar lua două coduri,
+     adică fix greșeala pe care baza vine s-o repare. */
+  var acelasiOm=null;   // cheia unei scrieri -> numele adevărat al omului
+  function incarcaAcelasiOm(){
+    if(acelasiOm) return Promise.resolve(acelasiOm);
+    return fetch("arhiva/acelasi-om.json?cb="+Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var m={};
+        (((j||{}).acelasi)||[]).forEach(function(g){
+          if(!Array.isArray(g) || g.length<2) return;
+          g.forEach(function(nm){ var k=faraSemne(nm); if(k) m[k]=g[0]; });
+        });
+        acelasiOm=m; return m;
+      })
+      /* Fără fișier, sau cu el stricat, se merge mai departe: fiecare scriere rămâne un
+         om, ca până acum. Mai bine două coduri de dres decât niciun cod. */
+      .catch(function(){ acelasiOm={}; return acelasiOm; });
+  }
+  function numeleDinSezon(nm){ var k=faraSemne(nm); return (acelasiOm && acelasiOm[k]) || nm; }
+  function cheiaSezon(nm){ return faraSemne(numeleDinSezon(nm)); }
+
+  /* Ce a ieșit din căutare, ținut deoparte ca „Adaugă-i" să nu mai umble o dată pe
+     server — și ca să adauge exact ce a văzut omul pe ecran, nu altceva. */
+  var sezonGasit=null;
+  function pescariDinArhive(arhive){
+    var eInBaza={};
+    pescari.forEach(function(p){ eInBaza[cheiaSezon(numePescar(p))]=1; });
+    var vazut={}, noi=[], erau=0, concursuri=0, oameni=0;
+    (arhive||[]).forEach(function(a){
+      var lista=((a && a.data && a.data.participants)||[]);
+      if(!lista.length) return;
+      concursuri++;
+      lista.forEach(function(p){
+        var nm=numeleDinSezon(nameOf(p));
+        var k=faraSemne(nm);
+        if(!k || k==="—") return;
+        if(vazut[k]) return;          // același om, la mai multe etape: un singur cod
+        vazut[k]=1; oameni++;
+        if(eInBaza[k]){ erau++; return; }
+        noi.push(splitName(nm));
+      });
+    });
+    return {noi:noi, erau:erau, concursuri:concursuri, oameni:oameni};
+  }
+
+  function pescariCautaSezonul(){
+    if(guard()) return;
+    var el=document.getElementById("pescari-sezon");
+    if(el) el.innerHTML="Mă uit pe server…";
+    sezonGasit=null;
+    incarcaAcelasiOm()
+      .then(function(){ return fetch(API_BASE+"/api/archive"); })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var arh=(j && j.ok && j.archives) ? j.archives : [];
+        var g=pescariDinArhive(arh);
+        if(!g.concursuri){ if(el) el.innerHTML="N-am găsit niciun concurs arhivat în sezon."; return; }
+        var cap="În <b>"+g.concursuri+"</b> "+(g.concursuri===1?"concurs":"concursuri")+
+                " din sezon sunt <b>"+g.oameni+"</b> pescari";
+        if(!g.noi.length){ if(el) el.innerHTML=cap+", și sunt toți în bază."; return; }
+        sezonGasit=g.noi;
+        if(el) el.innerHTML=cap+", dintre care <b>"+g.noi.length+"</b> nu-s încă în bază"+
+          (g.erau?" ("+g.erau+" sunt deja)":"")+":<br>"+
+          g.noi.slice(0,10).map(function(x){ return "• "+esc((x.prenume+" "+x.nume).trim()); }).join("<br>")+
+          (g.noi.length>10?"<br>…":"")+
+          /* ghost, nu primary: pe ecran e deja un buton scos în față („Adaugă în bază").
+             Două albastre și niciunul nu mai e cel important. Ca la tragere. */
+          '<br><button class="btn btn-ghost mt" onclick="pescariAdaugaSezonul()">Adaugă-i pe cei '+
+          g.noi.length+" în bază</button>";
+      })
+      /* La baltă nu e semnal. Asta se face o dată, acasă — și trebuie spus limpede,
+         nu lăsat un rând care se învârte la nesfârșit. */
+      .catch(function(){ if(el) el.innerHTML="N-am putut ajunge la server. Se face o dată, de acasă, cu internet."; });
+  }
+
+  function pescariAdaugaSezonul(){
+    if(guard()) return;
+    if(!sezonGasit || !sezonGasit.length){ toast("N-am pe cine adăuga"); return; }
+    var n=sezonGasit.length;
+    if(!confirm("Adaugi "+n+" "+(n===1?"pescar":"pescari")+" în bază, fiecare cu codul lui?")) return;
+    sezonGasit.forEach(function(x){ pescari.push(pescarNou(x.prenume, x.nume)); });
+    sezonGasit=null;
+    pescariSalveaza(); renderPescari();
+    var el=document.getElementById("pescari-sezon"); if(el) el.innerHTML="";
+    toast(n+" "+(n===1?"pescar adăugat":"pescari adăugați")+" din sezon");
+  }
+
   /* Baza se umple cel mai repede din concursul care e chiar acum pe telefon: 44 de oameni
      scriși de mână ar însemna o seară pierdută. Cine e deja în bază nu se pune iar. */
   function pescariDinConcurs(){
@@ -2620,7 +2718,7 @@
       : "Baza e goală. Adaugă-i mai jos, sau ia-i dintr-un concurs.";
 
     var caz=document.getElementById("pescari-din-concurs-cati"),
-        card=document.getElementById("card-pescari-din-concurs");
+        card=document.getElementById("pescari-din-concurs");
     if(caz && card){
       var toti=0, afara=0;
       (state.participants||[]).forEach(function(p){
