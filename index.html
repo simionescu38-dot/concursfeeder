@@ -2714,9 +2714,18 @@
 
   function renderPescari(){
     var nr=document.getElementById("pescari-numar");
-    if(nr) nr.innerHTML = pescari.length
-      ? "<b>"+pescari.length+"</b> pescari în bază · codurile merg până la <b>"+pescariUltimCod+"</b>"
-      : "Baza e goală. Adaugă-i mai jos, sau ia-i dintr-un concurs.";
+    if(nr){
+      var coduriActive={};
+      pescari.forEach(function(p){
+        var c=parseInt(p.cod,10);
+        if(c>0 && c<=pescariUltimCod) coduriActive[c]=1;
+      });
+      var coduriRetrase=Math.max(0, pescariUltimCod-Object.keys(coduriActive).length);
+      nr.innerHTML = pescari.length
+        ? "<b>"+pescari.length+"</b> pescari activi · <b>"+coduriRetrase+
+          "</b> coduri retrase · următorul cod: <b>"+(pescariUltimCod+1)+"</b>"
+        : "Baza e goală. Adaugă-i mai jos, sau ia-i dintr-un concurs.";
+    }
 
     var caz=document.getElementById("pescari-din-concurs-cati"),
         card=document.getElementById("pescari-din-concurs");
