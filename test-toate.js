@@ -26,6 +26,7 @@ const TESTE = [
   ["Cântarele lipite de pe WhatsApp", "test-cantare-whatsapp.js"],
   ["Tragerea la sorți lipită sau din poză", "test-tragere.js"],
   ["Tragerea cu cod și nume", "test-tragere-cod.js"],
+  ["Codul pescarului pe ecranul Cântar", "test-cod-cantar.js"],
   ["Cântare de pe poza foii", "test-poza-foaie.js"],
   ["Tastatura de PIN", "test-pin.js"],
   ["PIN-ul nu pleacă de pe telefon", "test-pin-nu-pleaca.js"],
