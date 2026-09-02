@@ -202,7 +202,8 @@ console.log("\n=== 6. Un întârziat nu atinge manșa încheiată ===");
   ctx.sectorDinStand = () => {};
   const camp = { "in-stand": "3", "in-prenume": "Radu", "in-nume": "", "in-sector": "A" };
   ctx.document = { getElementById: id => (id in camp) ? { value: camp[id], dataset: {}, focus(){} } : null };
-  vm.runInContext(grabFunction(src, "addParticipant"), ctx);
+  vm.runInContext(["codParticipant", "problemaCodParticipant", "addParticipant"]
+    .map(n => grabFunction(src, n)).join("\n"), ctx);
 
   // manșa 1 s-a pescuit: patru oameni, doi pe sector
   ctx.state.participants = [

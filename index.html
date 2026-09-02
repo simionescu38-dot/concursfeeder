@@ -362,7 +362,7 @@
   .tag-plin{background:#fdecec !important; color:#a12727 !important; border-color:#f0b1b1 !important;}
   .tag-putine{background:#fff6e5 !important; color:#8a5a12 !important; border-color:#f0d29a !important;}
   /* pescarii fără sector formează un sector-fantomă care falsifică punctajul */
-  #warn-sector, #warn-stand{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
+  #warn-sector, #warn-stand, #warn-cod{background:#fdecec; border:1.5px solid #f0b1b1; color:#a12727;
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   /* tastatură de PIN – taste mari, se apasă cu degetul ud, în picioare, la baltă */
   #pinPad{position:fixed; inset:0; z-index:220; display:none; align-items:center; justify-content:center; background:rgba(3,8,13,.88); padding:16px; backdrop-filter:blur(12px);}
@@ -754,7 +754,7 @@
   #viewerBar,.lockbar{background:#352a16; border-color:#69501d; color:#f4cc77;}
   #instalBar{background:#102d37; border-color:#1d4a5a; color:#8fe6e2;}
   #instalBar .ib-do{background:#19d3d1; color:#04222a;}
-  #warn-sector,#warn-stand{background:#321b20; border-color:#63323b; color:#ffaaa4;}
+  #warn-sector,#warn-stand,#warn-cod{background:#321b20; border-color:#63323b; color:#ffaaa4;}
 
   .jrand{background:#0c1b27;}
   .jrand.sters{background:#27191d;}
@@ -866,6 +866,7 @@
       <div class="sec-title">Adaugă participant</div>
       <div class="row" style="margin-bottom:8px;">
         <div class="w-stand"><label class="f">Stand</label><input id="in-stand" inputmode="numeric" placeholder="Nr" oninput="sectorDinStand(this, document.getElementById('in-sector'))"></div>
+        <div class="w-stand"><label class="f">Cod</label><input id="in-cod" inputmode="numeric" placeholder="Cod"></div>
         <div><label class="f">Prenume</label><input id="in-prenume" placeholder="Prenume"></div>
       </div>
       <div class="row" style="margin-bottom:8px;">
@@ -882,7 +883,8 @@
 
     <div id="warn-stand" style="display:none;"></div>
     <div id="warn-sector" style="display:none;"></div>
-    <div class="searchbox"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume sau stand…" oninput="renderList()"></div>
+    <div id="warn-cod" style="display:none;"></div>
+    <div class="searchbox"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume, stand sau cod…" oninput="renderList()"></div>
     <div id="list"></div>
 
     <div class="pliant mt lockhide" id="pliant-cantare">
@@ -3706,14 +3708,38 @@
   }
 
   // ---------- participants ----------
+  function codParticipant(v){
+    var s=String(v===undefined || v===null ? "" : v).trim();
+    if(!s) return null;
+    if(!/^\d{1,6}$/.test(s)) return NaN;
+    var c=parseInt(s,10);
+    return c>0 ? c : NaN;
+  }
+  function problemaCodParticipant(cod, id, pre, nume){
+    if(cod===null) return "";
+    if(isNaN(cod)) return "Codul trebuie să fie un număr întreg mai mare decât zero.";
+    var alt=(state.participants||[]).find(function(p){
+      return p.id!==id && codParticipant(p.cod)===cod;
+    });
+    if(alt) return "Codul "+cod+" este deja la "+nameOf(alt)+".";
+    var b=pescarDupaCod(cod);
+    if(b && !numeleSePotriveste(((pre||"")+" "+(nume||"")).trim(), b)){
+      return "Codul "+cod+" este al lui "+numePescar(b)+" în baza de pescari.";
+    }
+    return "";
+  }
   function addParticipant(){
     if(guard()) return;
     var stand=document.getElementById("in-stand").value.trim();
+    var codEl=document.getElementById("in-cod"), cod=codParticipant(codEl&&codEl.value);
     var pre=document.getElementById("in-prenume").value.trim();
     var nume=document.getElementById("in-nume").value.trim();
     var sec=document.getElementById("in-sector").value;
     if(!pre && !nume && !stand){ return; }
+    var problema=problemaCodParticipant(cod, "", pre, nume);
+    if(problema){ toast(problema); if(codEl) codEl.focus(); return; }
     var np={id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{}};
+    if(cod!==null) np.cod=cod;
     curataNumarul(np);
     ensureManche(np);
     // Standul e al MANȘEI, nu al pescarului. Cât timp aplicația trăgea singură la sorți,
@@ -3723,6 +3749,7 @@
     setStandSector(np, state.manche||1, stand, sec);
     state.participants.push(np);
     document.getElementById("in-stand").value="";
+    if(codEl) codEl.value="";
     document.getElementById("in-prenume").value="";
     document.getElementById("in-nume").value="";
     // alegerea de mână a ținut de pescarul tocmai adăugat, nu de următorul
@@ -5088,10 +5115,16 @@
     if(guard()) return;
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var g=function(f){ var el=document.getElementById(f+"-"+id); return el?el.value:undefined; };
-    p.stand=(g("ed-stand")||"").trim();
+    var stand=(g("ed-stand")||"").trim();
+    var pre=(g("ed-prenume")||"").trim(), nume=(g("ed-nume")||"").trim();
+    var cod=codParticipant(g("ed-cod"));
+    var problema=problemaCodParticipant(cod, id, pre, nume);
+    if(problema){ toast(problema); var ce=document.getElementById("ed-cod-"+id); if(ce) ce.focus(); return; }
+    p.stand=stand;
     mOf(p, state.manche||1).stand=p.stand; // standul editat e al manșei active
-    p.prenume=(g("ed-prenume")||"").trim();
-    p.nume=(g("ed-nume")||"").trim();
+    p.prenume=pre;
+    p.nume=nume;
+    if(cod===null) delete p.cod; else p.cod=cod;
     var sec=g("ed-sector"); if(sec!==undefined){ p.sector=sec; mOf(p, state.manche||1).sector=sec; }
     curataNumarul(p);
     editingId=null; queueSave(); renderList();
@@ -5138,10 +5171,28 @@
       ". La baltă ajung doi oameni pe același loc, iar la cântar captura se poate trece pe cine nu trebuie.";
     w.style.display="block";
   }
+  function updateWarnCod(){
+    var w=document.getElementById("warn-cod");
+    if(!w) return;
+    var fara=[], pe={};
+    (state.participants||[]).forEach(function(p){
+      var c=codParticipant(p.cod);
+      if(c===null || isNaN(c)){ fara.push(nameOf(p)); return; }
+      (pe[c]=pe[c]||[]).push(nameOf(p));
+    });
+    var duble=Object.keys(pe).filter(function(c){ return pe[c].length>1; });
+    if(!fara.length && !duble.length){ w.style.display="none"; return; }
+    var buc=[];
+    if(fara.length) buc.push(fara.length+(fara.length===1?" pescar fără cod":" pescari fără cod"));
+    if(duble.length) buc.push(duble.map(function(c){ return "codul "+c+" este la "+pe[c].join(" și "); }).join(" · "));
+    w.textContent="⚠ "+buc.join(" · ")+". Completează codurile înainte de concurs.";
+    w.style.display="block";
+  }
   function renderList(){
     var list=document.getElementById("list");
     updateWarnStand();
     updateWarnSector();
+    updateWarnCod();
     improspateazaCantariti();
     document.getElementById("st-total").textContent = fmt(sumAll());
     if(state.participants.length===0){
@@ -5153,7 +5204,7 @@
     var visible=state.participants;
     if(q){
       visible=state.participants.filter(function(p){
-        var hay=((p.prenume||"")+" "+(p.nume||"")+" "+(p.stand||"")).toLowerCase();
+        var hay=((p.prenume||"")+" "+(p.nume||"")+" "+(p.stand||"")+" "+(p.cod||"")).toLowerCase();
         return hay.indexOf(q)!==-1;
       });
       if(!visible.length){
@@ -5174,7 +5225,7 @@
       var head;
       if(editingId===p.id){
         head='<div class="p-edit">'+
-          '<div class="erow"><input class="w-stand" id="ed-stand-'+p.id+'" inputmode="numeric" placeholder="Stand" value="'+esc(p.stand||"")+'" oninput="sectorDinStand(this, document.getElementById(\'ed-sector-'+p.id+'\'))"><input id="ed-prenume-'+p.id+'" placeholder="Prenume" value="'+esc(p.prenume||"")+'"></div>'+
+          '<div class="erow"><input class="w-stand" id="ed-stand-'+p.id+'" inputmode="numeric" placeholder="Stand" value="'+esc(p.stand||"")+'" oninput="sectorDinStand(this, document.getElementById(\'ed-sector-'+p.id+'\'))"><input class="w-stand" id="ed-cod-'+p.id+'" inputmode="numeric" placeholder="Cod" value="'+esc(p.cod||"")+'"><input id="ed-prenume-'+p.id+'" placeholder="Prenume" value="'+esc(p.prenume||"")+'"></div>'+
           '<div class="erow mt8"><input id="ed-nume-'+p.id+'" placeholder="Nume" value="'+esc(p.nume||"")+'"><select id="ed-sector-'+p.id+'" onchange="this.dataset.man=\'1\'">'+sectorOptions(p.sector)+'</select></div>'+
           '<div class="erow mt8"><button class="btn btn-primary" onclick="saveEdit(\''+p.id+'\')">Salvează</button><button class="btn btn-ghost" onclick="cancelEdit()">Renunță</button></div>'+
         '</div>';
@@ -5186,7 +5237,7 @@
             (p.photo&&!L?'<button class="av-x" onclick="removePhoto(\''+p.id+'\')">×</button>':'')+
           '</div>'+
           '<div class="p-name"><div class="nm">'+full+'</div>'+
-            '<div class="p-sub"><span>'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'Fără stand')+'</span>'+(sectorOfM(p,state.manche||1)?'<span>Sector '+esc(sectorOfM(p,state.manche||1))+'</span>':'')+'</div></div>'+
+            '<div class="p-sub"><span>'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'Fără stand')+'</span>'+(p.cod?'<span>Cod '+esc(String(p.cod))+'</span>':'<span>Fără cod</span>')+(sectorOfM(p,state.manche||1)?'<span>Sector '+esc(sectorOfM(p,state.manche||1))+'</span>':'')+'</div></div>'+
           (L?'':'<button class="edit" aria-label="Editează participantul" onclick="editParticipant(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-edit"></use></svg></button>'+
           '<button class="del" aria-label="Șterge participantul" onclick="delParticipant(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg></button>')+
         '</div>';
