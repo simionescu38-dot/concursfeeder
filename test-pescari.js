@@ -308,9 +308,15 @@ console.log("\n=== 7. Ce se vede pe ecran ===");
   adauga(ctx, "Mihai", "Ionescu");
   adauga(ctx, "Vasile", "Popescu");
   vm.runInContext("renderPescari();", ctx);
-  t("scrie câți sunt și până unde merg codurile",
+  t("scrie câți sunt, codurile retrase și codul următor",
     ctx.cutii["pescari-numar"].innerHTML,
-    "<b>2</b> pescari în bază · codurile merg până la <b>2</b>");
+    "<b>2</b> pescari activi · <b>0</b> coduri retrase · următorul cod: <b>3</b>");
+
+  vm.runInContext("pescarSterge(pescari[0].id);", ctx);
+  vm.runInContext("renderPescari();", ctx);
+  t("un cod șters apare retras și nu se dă din nou",
+    ctx.cutii["pescari-numar"].innerHTML,
+    "<b>1</b> pescari activi · <b>1</b> coduri retrase · următorul cod: <b>3</b>");
 }
 
 console.log("\n=== 7b. Căutarea din listă ===");
