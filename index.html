@@ -1372,6 +1372,20 @@
     </div>
     <input id="pescari-cauta" placeholder="Caută după nume sau cod" oninput="renderPescari()">
     <div id="pescari-lista"></div>
+
+    <div class="pliant mt" id="pliant-copie">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-copie')"><svg class="ui-ico" aria-hidden="true"><use href="#i-cloud"></use></svg>Copie de siguranță <span class="rar">din când în când</span></button>
+      <div class="pliant-in" hidden>
+        <p class="hint" style="margin:0 0 10px;">Baza stă numai pe telefonul ăsta. Dacă se șterg datele aplicației, sau schimbi telefonul, se pierde — iar codurile nu se pot reface, fiindcă nu ies din nume.</p>
+        <button class="btn btn-ghost" onclick="salveazaBaza()">Salvează baza într-un fișier</button>
+        <p class="hint">Îți dă un fișier pe care-l poți trimite pe WhatsApp, la tine însuți. Ține-l undeva: e tot ce-ți trebuie ca s-o aduci înapoi.</p>
+        <div class="lockhide">
+          <button class="btn btn-ghost mt" onclick="document.getElementById('baza-fis').click()">Adu baza dintr-un fișier</button>
+          <input type="file" id="baza-fis" accept=".json,application/json,text/plain" style="display:none;" onchange="aduBaza(this)">
+          <p class="hint">Cine lipsește se adaugă, cu codul din fișier. Cine e deja în bază nu se atinge — codul lui rămâne cel de acum.</p>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- SPONSORI -->
@@ -5179,6 +5193,110 @@
       ". La baltă ajung doi oameni pe același loc, iar la cântar captura se poate trece pe cine nu trebuie.";
     w.style.display="block";
   }
+  /* ---------- copie de siguranță a bazei ----------
+     Concursurile și arhivele stau pe server. Baza NU: e în memoria browserului de pe un
+     singur telefon. Ștergi datele aplicației, schimbi telefonul, sau Android curăță
+     singur memoria — și s-a dus. Codurile nu se pot reface din nume: sunt date pe rând,
+     în ordinea în care au intrat oamenii.
+     Deci: un fișier. Se salvează la fel ca exportul concursului — prin fereastra de
+     trimitere a telefonului, dacă o are, ca să poată pleca de-a dreptul pe WhatsApp. */
+  function salveazaBaza(){
+    if(!pescari.length){ toast("Baza e goală — n-am ce salva"); return; }
+    var payload={app:"concurs-pescuit-baza", ver:1, exportatLa:new Date().toISOString(),
+                 ultimulCod:pescariUltimCod, pescari:pescari};
+    var json=JSON.stringify(payload);
+    var d=new Date();
+    function p2(n){ return (n<10?"0":"")+n; }
+    var nume="baza-pescari-"+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+"-"+p2(d.getHours())+p2(d.getMinutes())+".json";
+    var file=null;
+    try{ file=new File([json], nume, {type:"application/json"}); }catch(e){}
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:"Baza de pescari"})
+        .catch(function(err){ if(err && err.name!=="AbortError") downloadJson(json,nume); });
+    } else { downloadJson(json,nume); }
+  }
+
+  /* Ce se citește dintr-un fișier de bază. Se primesc și formele mai sărace — o listă
+     goală de pescari, sau chiar lista scrisă direct — ca un fișier salvat cu mâna să nu
+     fie refuzat pentru un ambalaj lipsă. */
+  function bazaDinFisier(d){
+    if(Array.isArray(d)) return {lista:d, ultim:0};
+    if(!d || typeof d!=="object") return null;
+    var lista = Array.isArray(d.pescari) ? d.pescari : (Array.isArray(d.lista) ? d.lista : null);
+    if(!lista) return null;
+    var u=parseInt(d.ultimulCod,10);
+    return {lista:lista, ultim: isNaN(u)?0:u};
+  }
+
+  /* Ce s-ar întâmpla dacă s-ar aduce fișierul. Se socotește ÎNAINTE de a scrie ceva, ca
+     omul să vadă și apoi să hotărască.
+     Se ADAUGĂ, nu se înlocuiește: cine e deja în bază își păstrează codul. Altfel un
+     fișier vechi ar da înapoi codurile puse între timp, iar oamenii ar apărea de două
+     ori în clasamentul de sezon — fix greșeala pe care baza vine s-o repare. */
+  function potrivesteBaza(lista){
+    var codLuat={}, numeStiut={};
+    pescari.forEach(function(p){
+      var c=parseInt(p.cod,10);
+      if(!isNaN(c)) codLuat[c]=p;
+      numeStiut[cheiePescar(p.prenume,p.nume)]=p;
+    });
+    var noi=[], erau=0, ciocniri=[];
+    (lista||[]).forEach(function(x){
+      if(!x || typeof x!=="object") return;
+      var pr=(""+(x.prenume||"")).trim(), nm=(""+(x.nume||"")).trim();
+      var k=cheiePescar(pr, nm);
+      if(!k) return;
+      if(numeStiut[k]){ erau++; return; }
+      var c=parseInt(x.cod,10);
+      if(isNaN(c) || c<1){ ciocniri.push({nume:(pr+" "+nm).trim(), de:"fără cod în fișier"}); return; }
+      /* Codul din fișier e la altcineva aici. Nu se pune peste și nu se dă altul: ori
+         una, ori alta ar face doi oameni cu același cod în sezon. Se spune. */
+      if(codLuat[c]){ ciocniri.push({nume:(pr+" "+nm).trim(), de:"codul "+c+" e la "+numePescar(codLuat[c])}); return; }
+      var nou={id:x.id||uid(), cod:c, prenume:pr, nume:nm, adaugat:x.adaugat||Date.now()};
+      codLuat[c]=nou; numeStiut[k]=nou;
+      noi.push(nou);
+    });
+    return {noi:noi, erau:erau, ciocniri:ciocniri};
+  }
+
+  function aduBaza(input){
+    if(guard()){ if(input) input.value=""; return; }
+    var f=input && input.files && input.files[0];
+    if(input) input.value="";
+    if(!f) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var d=null;
+      try{ d=JSON.parse(e.target.result); }catch(err){ toast("Fișier invalid"); return; }
+      var b=bazaDinFisier(d);
+      if(!b){ toast("Fișier invalid – nu e o bază de pescari"); return; }
+      var g=potrivesteBaza(b.lista);
+      if(!g.noi.length && !g.ciocniri.length){
+        toast(g.erau ? "Toți cei "+g.erau+" din fișier sunt deja în bază" : "Fișierul n-are niciun pescar");
+        return;
+      }
+      var q=g.noi.length
+        ? "Aduci "+g.noi.length+" "+(g.noi.length===1?"pescar":"pescari")+" din fișier, cu codurile lor?"
+        : "N-am pe cine aduce din fișier.";
+      if(g.erau) q+="\n"+g.erau+" sunt deja în bază — nu-i ating.";
+      if(g.ciocniri.length){
+        q+="\n⚠️ "+g.ciocniri.length+" nu pot intra:\n"+
+           g.ciocniri.slice(0,6).map(function(c){ return "• "+c.nume+" ("+c.de+")"; }).join("\n")+
+           (g.ciocniri.length>6?"\n…":"");
+      }
+      if(!g.noi.length){ alert(q); return; }
+      if(!confirm(q)) return;
+      g.noi.forEach(function(p){ pescari.push(p); });
+      /* Numărătoarea urcă la cel mai mare cod văzut — al fișierului sau al celor aduși.
+         Altfel următorul venit ar primi un cod deja folosit de cineva din fișier. */
+      if(b.ultim>pescariUltimCod) pescariUltimCod=b.ultim;
+      g.noi.forEach(function(p){ if(p.cod>pescariUltimCod) pescariUltimCod=p.cod; });
+      pescariSalveaza(); renderPescari();
+      toast(g.noi.length+" "+(g.noi.length===1?"pescar adus":"pescari aduși")+" din fișier");
+    };
+    reader.readAsText(f);
+  }
+
   /* ---------- codurile bazei, puse pe concursul de pe telefon ----------
      Codul se putea scrie de mână, unul câte unul. La 44 de oameni e o seară pierdută,
      iar baza sezonului îi știe deja pe toți: se caută după nume și se pun deodată.
