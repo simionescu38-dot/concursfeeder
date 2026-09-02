@@ -48,7 +48,8 @@ const TESTE = [
   ["Același om, scris în două feluri", "test-acelasi-om.js"],
   ["Baza de pescari, cu codul fiecăruia", "test-pescari.js"],
   ["Baza umplută din tot sezonul", "test-pescari-sezon.js"],
-  ["Codurile bazei, puse pe concurs", "test-coduri-concurs.js"]
+  ["Codurile bazei, puse pe concurs", "test-coduri-concurs.js"],
+  ["Copie de siguranță a bazei", "test-copie-baza.js"]
   ,["Pagina publică a concursului", "test-rezultat-public.js"]
 ];
 
