@@ -5179,6 +5179,57 @@
       ". La baltă ajung doi oameni pe același loc, iar la cântar captura se poate trece pe cine nu trebuie.";
     w.style.display="block";
   }
+  /* ---------- codurile bazei, puse pe concursul de pe telefon ----------
+     Codul se putea scrie de mână, unul câte unul. La 44 de oameni e o seară pierdută,
+     iar baza sezonului îi știe deja pe toți: se caută după nume și se pun deodată.
+     Codurile se dau DIN BAZĂ, niciodată din concurs. Cine nu e în bază rămâne fără cod
+     și se spune pe nume — un cod inventat aici ar fi al nimănui la etapa următoare. */
+  function potrivesteCodurile(){
+    var aveau=0, luat={};
+    (state.participants||[]).forEach(function(p){
+      var c=codParticipant(p.cod);
+      if(c!==null && !isNaN(c)){ aveau++; luat[c]=true; }
+    });
+    var peCod={}, fara=[];
+    (state.participants||[]).forEach(function(p){
+      var c=codParticipant(p.cod);
+      if(c!==null && !isNaN(c)) return;          // are deja cod: nu se atinge
+      var b=pescarCauta(p.prenume, p.nume);
+      var cod=b ? codParticipant(b.cod) : null;
+      if(cod===null || isNaN(cod)){ fara.push(p); return; }
+      (peCod[cod]=peCod[cod]||[]).push(p);
+    });
+    var gasiti=[], incurcate=[];
+    Object.keys(peCod).forEach(function(c){
+      var lista=peCod[c], cod=parseInt(c,10);
+      /* Doi oameni din concurs care duc la același om din bază — sau un cod deja purtat
+         de altcineva. Nu se poate ști care e cel adevărat, iar două coduri la fel ar
+         strica tocmai clasamentul de sezon. Nu primește niciunul. */
+      if(luat[cod] || lista.length>1){ incurcate.push({cod:cod, oameni:lista}); return; }
+      gasiti.push({p:lista[0], cod:cod});
+    });
+    gasiti.sort(function(a,b){ return a.cod-b.cod; });
+    return {gasiti:gasiti, fara:fara, aveau:aveau, incurcate:incurcate};
+  }
+
+  function puneCodurile(){
+    if(guard()) return;
+    var g=potrivesteCodurile();
+    if(!g.gasiti.length){ toast("N-am ce cod să pun"); return; }
+    var q="Pui codurile din bază la "+g.gasiti.length+" "+(g.gasiti.length===1?"pescar":"pescari")+"?";
+    if(g.fara.length) q+="\n"+g.fara.length+" nu sunt în baza de pescari — rămân fără cod.";
+    if(g.incurcate.length) q+="\n⚠️ "+g.incurcate.length+" duc la mai mulți oameni deodată — nu le pun.";
+    if(!confirm(q)) return;
+    puneDeoParte("înainte de punerea codurilor");
+    var mi=state.manche||1;
+    g.gasiti.forEach(function(x){
+      x.p.cod=x.cod;
+      scrieInJurnal(x.p, mi, "cod", "pus", x.cod, "", x.cod, "din baza de pescari");
+    });
+    queueSave(); renderList();
+    toast(g.gasiti.length+" "+(g.gasiti.length===1?"cod pus":"coduri puse"));
+  }
+
   function updateWarnCod(){
     var w=document.getElementById("warn-cod");
     if(!w) return;
@@ -5189,11 +5240,22 @@
       (pe[c]=pe[c]||[]).push(nameOf(p));
     });
     var duble=Object.keys(pe).filter(function(c){ return pe[c].length>1; });
-    if(!fara.length && !duble.length){ w.style.display="none"; return; }
+    /* Se golește, nu doar se ascunde: altfel butonul de mai jos rămâne în pagină,
+       nevăzut, purtând o socoteală de acum două apăsări. */
+    if(!fara.length && !duble.length){ w.innerHTML=""; w.style.display="none"; return; }
     var buc=[];
     if(fara.length) buc.push(fara.length+(fara.length===1?" pescar fără cod":" pescari fără cod"));
     if(duble.length) buc.push(duble.map(function(c){ return "codul "+c+" este la "+pe[c].join(" și "); }).join(" · "));
-    w.textContent="⚠ "+buc.join(" · ")+". Completează codurile înainte de concurs.";
+    /* Textul intră acum ca HTML, ca să poată purta butonul de dedesubt — deci numele
+       trec prin esc(). Cu textContent erau ferite de la sine. */
+    w.innerHTML="⚠ "+esc(buc.join(" · "))+". Completează codurile înainte de concurs.";
+    /* Avertismentul spunea ce e greșit, dar nu și cum se drege. Butonul stă aici, unde e
+       spusă problema — nu la capătul celălalt al ecranului. */
+    var g=potrivesteCodurile();
+    if(g.gasiti.length && !isLocked()){
+      w.innerHTML+='<br><button class="btn btn-ghost mt" onclick="puneCodurile()">Pune '+
+        g.gasiti.length+" "+(g.gasiti.length===1?"cod":"coduri")+" din baza de pescari</button>";
+    }
     w.style.display="block";
   }
   function renderList(){

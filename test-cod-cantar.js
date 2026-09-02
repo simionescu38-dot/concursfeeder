@@ -57,7 +57,9 @@ console.log("\n=== 2. Codurile sunt validate înainte de salvare ===");
 
 console.log("\n=== 3. Avertismentul prinde lipsurile și duplicatele vechi ===");
 {
-  const warn = { style: {}, textContent: "" };
+  /* Avertismentul scrie acum HTML, ca să poată purta butonul „Pune codurile din bază":
+     deci numele trec prin esc(), iar proba se uită la innerHTML. */
+  const warn = { style: {}, innerHTML: "" };
   const ctx = {
     state: { participants: [
       { id: "1", cod: 4, prenume: "Ana", nume: "Unu" },
@@ -65,15 +67,20 @@ console.log("\n=== 3. Avertismentul prinde lipsurile și duplicatele vechi ===")
       { id: "3", prenume: "Ion", nume: "Trei" }
     ] },
     document: { getElementById: id => id === "warn-cod" ? warn : null },
-    String, parseInt, isNaN, Object, Array
+    String, parseInt, isNaN, Object, Array, Math, Date, JSON,
+    isLocked: () => false,
+    pescari: []
   };
-  ctx.nameOf = p => p.prenume + " " + p.nume;
+  ctx.nameOf = p => ((p.prenume || "") + " " + (p.nume || "")).trim();
   vm.createContext(ctx);
-  vm.runInContext(grabFunction(src, "codParticipant") + "\n" +
-                  grabFunction(src, "updateWarnCod"), ctx);
+  vm.runInContext(["codParticipant", "esc", "faraSemne", "cheiePescar", "pescarCauta",
+                   "potrivesteCodurile", "updateWarnCod"]
+    .map(n => grabFunction(src, n)).join("\n"), ctx);
   vm.runInContext("updateWarnCod()", ctx);
-  t("spune cine n-are cod", /1 pescar fără cod/.test(warn.textContent), true);
-  t("spune cine are cod dublu", /codul 4 este la Ana Unu și Dan Doi/.test(warn.textContent), true);
+  t("spune cine n-are cod", /1 pescar fără cod/.test(warn.innerHTML), true);
+  t("spune cine are cod dublu", /codul 4 este la Ana Unu și Dan Doi/.test(warn.innerHTML), true);
   t("avertismentul este vizibil", warn.style.display, "block");
+  /* baza e goală în proba asta, deci n-are de unde lua coduri: niciun buton */
+  t("fără bază, niciun buton de pus coduri", /puneCodurile/.test(warn.innerHTML), false);
 }
 
