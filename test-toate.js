@@ -18,6 +18,7 @@ const TESTE = [
   ["Calendar: concursuri de două zile", "test-calendar-doua-zile.js"],
   ["Calendar: editare cu cheia de scriere", "test-calendar-cheie.js"],
   ["Butonul Statistici din meniu", "test-statistici-meniu.js"],
+  ["Detaliile din Statistici", "test-statistici.js"],
   ["Instalarea de pe linkul primit", "test-instalare-link.js"],
   ["Poza și ora la peștele extra", "test-peste-extra-poza.js"],
   ["Pozele nu pleacă la sincronizare", "test-poze-sincronizare.js"],
