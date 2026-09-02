@@ -525,7 +525,7 @@ function pune(c, randuri) {
     t("service worker-ul păstrează legenda", /form\.get\("title"\)[\s\S]{0,40}form\.get\("text"\)/.test(swSrc), true);
     t("…sub o adresă recunoscută de aplicație", /legenda-primita/.test(swSrc), true);
     t("aplicația o caută acolo", /indexOf\("legenda"\)/.test(src), true);
-    t("versiunea a fost urcată", /concurs-pescuit-v158/.test(swSrc), true);
+    t("versiunea a fost urcată", /concurs-pescuit-v159/.test(swSrc), true);
     /* „Nu-mi apare aplicația la Distribuie." Nu e lămurit dacă Androidul duce mai departe
        interogarea din „action"; dacă n-o duce, POST-ul vine curat pe „./index.html". Se
        prinde orice POST către aplicație — altfel ar pleca spre GitHub Pages, care nu
