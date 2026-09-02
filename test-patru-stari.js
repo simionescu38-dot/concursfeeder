@@ -9,7 +9,7 @@
  * Acum sunt patru, iar cea nespusă („necântărit") oprește sfârșitul de concurs:
  *   cântărit      — are kilograme trecute
  *   n-a prins nimic — a venit, a stat, n-a prins (zero adevărat, ca până acum)
- *   n-a venit     — absent la manșa aia
+ *   absent        — n-a venit la manșa aia
  *   revin la el   — sărit dinadins, se întoarce la final
  *
  * Lucrul de care atârnă TOT: formulele nu se ating. Un concurs în care nimeni n-are
@@ -102,7 +102,7 @@ console.log("\n=== 1. Ce stare are fiecare ===");
   vm.runInContext("mOf(state.participants[2],1).stare='zero';", c);
   t("spus «n-a prins nimic»", stare(c, 2), "zero");
   vm.runInContext("mOf(state.participants[2],1).stare='absent';", c);
-  t("spus «n-a venit»", stare(c, 2), "absent");
+  t("spus «absent»", stare(c, 2), "absent");
   vm.runInContext("mOf(state.participants[2],1).stare='sarit';", c);
   t("spus «revin la el»", stare(c, 2), "sarit");
   vm.runInContext("mOf(state.participants[2],1).stare='ceva-inventat';", c);
@@ -142,7 +142,7 @@ console.log("\n=== 2. Fără nicio stare pusă, punctele rămân cum erau ===");
   t("«revin la el» nu schimbă niciun punct", puncte(sarit, 1), [1, 2, 3, 1, 2, 3]);
 }
 
-console.log("\n=== 2b. «N-a venit» îl scoate din sectorul lui, ca pe absentul de până acum ===");
+console.log("\n=== 2b. «Absent» îl scoate din sectorul lui, ca pe absentul de până acum ===");
 {
   const c = pornire();
   vm.runInContext("mOf(state.participants[2],1).stare='absent';", c);
@@ -179,11 +179,13 @@ console.log("\n=== 3. Ce se vede pe cardul celui fără cântar ===");
   const nec = h(2);
   t("cel fără cântar e numit necântărit", /Încă necântărit/.test(text(nec)), true);
   t("are toate trei butoanele",
-    ["N-a prins nimic", "N-a venit", "Revin la el"].every(x => text(nec).indexOf(x) >= 0), true);
-  t("butoanele spun ce fac, nu ce sunt", /Absent|Sărit|0,000/.test(text(nec)), false);
+    ["N-a prins nimic", "Absent", "Revin la el"].every(x => text(nec).indexOf(x) >= 0), true);
+  /* Numele sunt ale lui, alese de el. Aici se probează doar că pe buton scrie ce a ales,
+     nu vreo prescurtare a mea. */
+  t("nu s-au strecurat alte nume", /Sărit|0,000 kg|Nu a venit/.test(text(nec)), false);
 
   vm.runInContext("mOf(state.participants[2],1).stare='zero';", c);
-  t("cu starea pusă, butoanele dispar", /N-a venit/.test(text(h(2))), false);
+  t("cu starea pusă, butoanele dispar", /Absent/.test(text(h(2))), false);
   t("…și rămâne doar ce s-a spus", text(h(2)), "N-a prins nimic ×");
   t("…cu un × de șters", /stergeStarea/.test(h(2)), true);
 
@@ -200,7 +202,7 @@ console.log("\n=== 3b. Cu lacătul pus se vede, dar nu se apasă ===");
   t("blocat: se spune totuși ce e", text(h(2)), "încă necântărit");
 
   vm.runInContext("mOf(state.participants[2],1).stare='absent';", c);
-  t("blocat: starea pusă se citește", text(h(2)), "N-a venit");
+  t("blocat: starea pusă se citește", text(h(2)), "Absent");
   t("blocat: fără × de șters", /stergeStarea/.test(h(2)), false);
 
   vm.runInContext("puneStarea('p1','zero');", c);
@@ -219,7 +221,7 @@ console.log("\n=== 4. Ce se întâmplă când apeși ===");
   t("s-au redesenat și lista, și clasamentul", c.desenat, 2);
   t("i se spune omului ce a apăsat", c.toasturi[0], "Ștefan Bălan: n-a prins nimic");
 
-  /* Jurnalul: la o contestație, „cine a spus că n-a venit, și la ce oră" e tot atât
+  /* Jurnalul: la o contestație, „cine l-a pus absent, și la ce oră" e tot atât
      de important ca o greutate. */
   const j = vm.runInContext("state.jurnal.map(function(x){ return [x.fel,x.act,x.inainte,x.dupa,x.stand].join('|'); })", c);
   t("s-a scris în jurnal", j, ["stare|pus|necântărit|N-a prins nimic|3"]);
@@ -262,7 +264,7 @@ console.log("\n=== 5. Cine oprește sfârșitul de concurs ===");
   t("«n-a prins nimic» e un răspuns — iese din listă", nelamurite(c), ["M1:6"]);
 
   vm.runInContext("puneStarea('p5','absent');", c);
-  t("«n-a venit» e și el un răspuns — lista se golește", nelamurite(c), []);
+  t("«absent» e și el un răspuns — lista se golește", nelamurite(c), []);
 
   vm.runInContext("puneStarea('p5','sarit');", c);
   t("«revin la el» NU e un răspuns — rămâne pe listă", nelamurite(c), ["M1:6"]);
@@ -287,7 +289,7 @@ console.log("\n=== 5c. Rândul de sub «Am terminat concursul» ===");
   t("se vede", el.style.display, "");
   t("scrie ce se cere", /Standuri nelămurite/.test(text(el.innerHTML)), true);
   t("…cu manșa și standurile", /Manșa 1: 3 Ștefan Bălan · 6 Radu Georgescu/.test(text(el.innerHTML)), true);
-  t("…și cu ce e de făcut", /a prins ceva, n-a prins nimic, sau n-a venit/.test(text(el.innerHTML)), true);
+  t("…și cu ce e de făcut", /a prins ceva, n-a prins nimic, sau a fost absent/.test(text(el.innerHTML)), true);
 
   vm.runInContext("puneStarea('p2','zero'); puneStarea('p5','zero'); improspateazaNecantarite();", c);
   t("lămurite toate, rândul se ascunde", c.__el["necantarite"].style.display, "none");
@@ -327,7 +329,7 @@ console.log("\n=== 6. Un 0,000 din clasament spune acum ce fel de zero e ===");
   /* La General nu se scrie nicio stare: acolo omul are câte una pe fiecare manșă. */
   const hg = vm.runInContext("rankRows(sortRankS(state.participants,'total'),{mi:'total'})", c);
   t("la General nu se scrie nicio stare",
-    /necântărit|N-a prins nimic|Revin la el|N-a venit/.test(text(hg)), false);
+    /necântărit|N-a prins nimic|Revin la el|Absent/.test(text(hg)), false);
 }
 
 t.raport();
