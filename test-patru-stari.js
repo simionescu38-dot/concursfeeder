@@ -8,7 +8,7 @@
  *
  * Acum sunt patru, iar cea nespusă („necântărit") oprește sfârșitul de concurs:
  *   cântărit      — are kilograme trecute
- *   n-a prins nimic — a venit, a stat, n-a prins (zero adevărat, ca până acum)
+ *   lampă         — a venit, a stat, n-a prins (zero adevărat, ca până acum)
  *   absent        — n-a venit la manșa aia
  *   revin la el   — sărit dinadins, se întoarce la final
  *
@@ -100,7 +100,7 @@ console.log("\n=== 1. Ce stare are fiecare ===");
   t("cine n-are nimic, dar are stand, e necântărit", stare(c, 2), "necantarit");
 
   vm.runInContext("mOf(state.participants[2],1).stare='zero';", c);
-  t("spus «n-a prins nimic»", stare(c, 2), "zero");
+  t("spus «lampă»", stare(c, 2), "zero");
   vm.runInContext("mOf(state.participants[2],1).stare='absent';", c);
   t("spus «absent»", stare(c, 2), "absent");
   vm.runInContext("mOf(state.participants[2],1).stare='sarit';", c);
@@ -134,7 +134,7 @@ console.log("\n=== 2. Fără nicio stare pusă, punctele rămân cum erau ===");
 
   const zero = pornire();
   vm.runInContext("mOf(state.participants[2],1).stare='zero';", zero);
-  t("«n-a prins nimic» nu schimbă niciun punct", puncte(zero, 1), [1, 2, 3, 1, 2, 3]);
+  t("«lampă» nu schimbă niciun punct", puncte(zero, 1), [1, 2, 3, 1, 2, 3]);
   t("…fiindcă exact asta se socotea și înainte", stare(zero, 2), "zero");
 
   const sarit = pornire();
@@ -179,14 +179,14 @@ console.log("\n=== 3. Ce se vede pe cardul celui fără cântar ===");
   const nec = h(2);
   t("cel fără cântar e numit necântărit", /Încă necântărit/.test(text(nec)), true);
   t("are toate trei butoanele",
-    ["N-a prins nimic", "Absent", "Revin la el"].every(x => text(nec).indexOf(x) >= 0), true);
+    ["Lampă", "Absent", "Revin la el"].every(x => text(nec).indexOf(x) >= 0), true);
   /* Numele sunt ale lui, alese de el. Aici se probează doar că pe buton scrie ce a ales,
      nu vreo prescurtare a mea. */
-  t("nu s-au strecurat alte nume", /Sărit|0,000 kg|Nu a venit/.test(text(nec)), false);
+  t("nu s-au strecurat alte nume", /Sărit|0,000 kg|Nu a venit|prins nimic/.test(text(nec)), false);
 
   vm.runInContext("mOf(state.participants[2],1).stare='zero';", c);
   t("cu starea pusă, butoanele dispar", /Absent/.test(text(h(2))), false);
-  t("…și rămâne doar ce s-a spus", text(h(2)), "N-a prins nimic ×");
+  t("…și rămâne doar ce s-a spus", text(h(2)), "Lampă ×");
   t("…cu un × de șters", /stergeStarea/.test(h(2)), true);
 
   const fara = pornire({ lot: [{ pre: "Cine", num: "Va", st: "", kg1: [] }] });
@@ -219,16 +219,16 @@ console.log("\n=== 4. Ce se întâmplă când apeși ===");
   t("starea s-a pus", stare(c, 2), "zero");
   t("s-a salvat", c.salvat, 1);
   t("s-au redesenat și lista, și clasamentul", c.desenat, 2);
-  t("i se spune omului ce a apăsat", c.toasturi[0], "Ștefan Bălan: n-a prins nimic");
+  t("i se spune omului ce a apăsat", c.toasturi[0], "Ștefan Bălan: lampă");
 
   /* Jurnalul: la o contestație, „cine l-a pus absent, și la ce oră" e tot atât
      de important ca o greutate. */
   const j = vm.runInContext("state.jurnal.map(function(x){ return [x.fel,x.act,x.inainte,x.dupa,x.stand].join('|'); })", c);
-  t("s-a scris în jurnal", j, ["stare|pus|necântărit|N-a prins nimic|3"]);
+  t("s-a scris în jurnal", j, ["stare|pus|necântărit|Lampă|3"]);
 
   vm.runInContext("puneStarea('p2','absent');", c);
   t("schimbată, jurnalul ține minte de la ce",
-    vm.runInContext("state.jurnal[1].inainte", c), "N-a prins nimic");
+    vm.runInContext("state.jurnal[1].inainte", c), "Lampă");
 
   vm.runInContext("stergeStarea('p2');", c);
   t("ștearsă, se întoarce la necântărit", stare(c, 2), "necantarit");
@@ -245,7 +245,7 @@ console.log("\n=== 4b. Prima captură șterge starea ===");
   vm.runInContext("mOf(state.participants[2],1).stare='absent';", c);
   /* addCatchCore cere prea mult DOM ca s-o chemăm aici întreagă. Se ia funcția
      ADEVĂRATĂ din fișierul livrat și se citește ordinea: starea se golește înainte de
-     a intra captura, nu după — altfel „n-a prins nimic" ar sta lângă un cântar trecut. */
+     a intra captura, nu după — altfel „lampă" ar sta lângă un cântar trecut. */
   const corp = H.grabFunction(src, "addCatchCore");
   t("starea se golește în addCatchCore", corp.indexOf('m.stare="";') >= 0, true);
   t("…înainte ca prima captură să intre",
@@ -261,7 +261,7 @@ console.log("\n=== 5. Cine oprește sfârșitul de concurs ===");
   t("la început, cei doi fără cântar", nelamurite(c), ["M1:3,6"]);
 
   vm.runInContext("puneStarea('p2','zero');", c);
-  t("«n-a prins nimic» e un răspuns — iese din listă", nelamurite(c), ["M1:6"]);
+  t("«lampă» e un răspuns — iese din listă", nelamurite(c), ["M1:6"]);
 
   vm.runInContext("puneStarea('p5','absent');", c);
   t("«absent» e și el un răspuns — lista se golește", nelamurite(c), []);
@@ -289,7 +289,7 @@ console.log("\n=== 5c. Rândul de sub «Am terminat concursul» ===");
   t("se vede", el.style.display, "");
   t("scrie ce se cere", /Standuri nelămurite/.test(text(el.innerHTML)), true);
   t("…cu manșa și standurile", /Manșa 1: 3 Ștefan Bălan · 6 Radu Georgescu/.test(text(el.innerHTML)), true);
-  t("…și cu ce e de făcut", /a prins ceva, n-a prins nimic, sau a fost absent/.test(text(el.innerHTML)), true);
+  t("…și cu ce e de făcut", /a prins ceva, lampă, sau absent/.test(text(el.innerHTML)), true);
 
   vm.runInContext("puneStarea('p2','zero'); puneStarea('p5','zero'); improspateazaNecantarite();", c);
   t("lămurite toate, rândul se ascunde", c.__el["necantarite"].style.display, "none");
@@ -319,7 +319,7 @@ console.log("\n=== 6. Un 0,000 din clasament spune acum ce fel de zero e ===");
   const h = vm.runInContext("rankRows(sortRankS(state.participants,1),{mi:1,showSector:true})", c);
   t("cel cântărit n-are nicio stare scrisă",
     /Mihai Ionescu.{0,80}Stand 1 · Sec A</.test(h.replace(/<div class="small">/g, "")), true);
-  t("cel care n-a prins nimic o spune", /Stand 3 · Sec A ·.{0,40}N-a prins nimic/.test(text(h)), true);
+  t("cel care a dat lampă o spune", /Stand 3 · Sec A ·.{0,40}Lampă/.test(text(h)), true);
   t("cel neatins de nimeni scrie «necântărit»", /Stand 6 · Sec B ·.{0,40}necântărit/.test(text(h)), true);
 
   vm.runInContext("puneStarea('p5','sarit');", c);
@@ -329,7 +329,7 @@ console.log("\n=== 6. Un 0,000 din clasament spune acum ce fel de zero e ===");
   /* La General nu se scrie nicio stare: acolo omul are câte una pe fiecare manșă. */
   const hg = vm.runInContext("rankRows(sortRankS(state.participants,'total'),{mi:'total'})", c);
   t("la General nu se scrie nicio stare",
-    /necântărit|N-a prins nimic|Revin la el|Absent/.test(text(hg)), false);
+    /necântărit|Lampă|Revin la el|Absent/.test(text(hg)), false);
 }
 
 t.raport();

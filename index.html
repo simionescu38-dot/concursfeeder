@@ -5240,11 +5240,11 @@
      ultimul loc din sector, cu puncte cu tot, iar asta nu se mai vedea până la premiere.
      Acum starea se SPUNE. Cea nespusă e „necântărit", iar ea oprește sfârșitul de concurs
      până e lămurită.
-     Formulele NU se ating: „n-a prins nimic" se socotește exact ca zeroul de până acum,
+     Formulele NU se ating: „lampă" se socotește exact ca zeroul de până acum,
      iar „Absent" intră pe drumul absentului fără stand, care există de mult. Se schimbă doar cine
      intră pe care drum — și numai când o spune organizatorul, apăsând. Concursurile
      arhivate n-au starea asta scrisă nicăieri, deci niciun rezultat vechi nu se mișcă. */
-  var STARI_MANSA={ zero:"N-a prins nimic", absent:"Absent", sarit:"Revin la el" };
+  var STARI_MANSA={ zero:"Lampă", absent:"Absent", sarit:"Revin la el" };
   function stareaLaMansa(p, mi){
     /* La General omul n-are o stare: are câte una pe fiecare manșă. */
     if(mi==='total') return "";
@@ -5457,7 +5457,7 @@
           return "<b>"+(esc(standOfM(p,x.mi))||"fără stand")+"</b> "+esc(nameOf(p));
         }).join(" · ");
       }).join("<br>")+
-      '<br>Deschide <b>Cântar</b> și spune pentru fiecare: a prins ceva, n-a prins nimic, sau a fost absent.';
+      '<br>Deschide <b>Cântar</b> și spune pentru fiecare: a prins ceva, lampă, sau absent.';
   }
 
   function copyRank(){
@@ -6794,7 +6794,7 @@
       if(!confirm(cati+" "+(cati===1?"stand n-a fost lămurit":"standuri n-au fost lămurite")+":\n\n"+listat+
                   "\n\nDus așa în sezon, "+(cati===1?"el intră":"ei intră")+" cu 0 kg și "+
                   (cati===1?"ia":"iau")+" ultimul loc din sector.\n\nDeschide Cântar și spune pentru fiecare: "+
-                  "a prins ceva, n-a prins nimic, sau a fost absent.\n\nSalvezi totuși așa?")) return;
+                  "a prins ceva, lampă, sau absent.\n\nSalvezi totuși așa?")) return;
     }
     if(!cuCantar && !confirm("Niciun pescar n-are cântar trecut — concursul ar intra în Clasamentul de sezon cu 0 kg.\n\nDe obicei asta înseamnă că greutățile n-au fost trecute încă: deschide Cântar și verifică.\n\nChiar îl salvezi gol?")) return;
     if(!syncKey){ spune("⚠ Îți trebuie cheia de scriere — Contul meu, la Clasament live pe alte telefoane.", true); return; }
