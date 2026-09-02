@@ -427,6 +427,10 @@
              font-weight:900; font-size:15px;}
   .pesc .nm{flex:1; min-width:0; font-weight:800; font-size:15px;
             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  /* butoanele obișnuite se întind cât rândul; pe rândul unei versiuni trebuie să stea
+     lângă dată, nu sub ea */
+  .pesc .mic{flex:0 0 auto; width:auto; min-height:34px; padding:0 12px;
+             font-size:12px; font-weight:800; margin:0;}
 
   /* Rândurile de la Statistici au etichete din CUVINTE, nu litere de sector: în
      caseta îngustă a lui .hb-l, „Cea mai mare" se rupea pe trei rânduri. */
@@ -1380,6 +1384,9 @@
         <div class="lockhide" id="baza-server">
           <button class="btn btn-ghost" onclick="aduBazaDeLaServer()">Adu baza de pe server</button>
           <p class="hint">Baza pleacă singură pe server la fiecare schimbare, în camera ta de sincronizare. Butonul ăsta o aduce înapoi — de pildă pe telefonul celălalt, sau după ce ai reinstalat aplicația.</p>
+          <button class="btn btn-ghost mt" onclick="vediVersiunileBazei()">Vezi versiunile de pe server</button>
+          <p class="hint" id="baza-versiuni-stare" style="margin:8px 0 0;"></p>
+          <div id="baza-versiuni"></div>
         </div>
 
         <p class="hint" style="margin:14px 0 10px;">Și un fișier, pentru când n-ai net sau vrei ceva de ținut la tine:</p>
@@ -5327,6 +5334,97 @@
         toast(g.noi.length+" "+(g.noi.length===1?"pescar adus":"pescari aduși")+" de pe server");
       })
       .catch(function(){ bazaStare("Fără net — n-am putut ajunge la server."); });
+  }
+
+  /* ---------- versiunile bazei, de pe server ----------
+     Serverul păstrează ultimele 40 de variante ale oricărei camere, deci și ale bazei.
+     Aici se arată și se poate întoarce la una.
+     Câți pescari are o versiune se citește din NUMELE ei — „Baza de pescari · 98" —
+     fiindcă lista de versiuni de pe server dă numele, nu și cuprinsul. De-aia numele se
+     scrie cu numărul în el la fiecare trimitere. */
+  function catiDinNume(nume){
+    var m=(""+(nume||"")).match(/(\d+)\s*$/);
+    return m ? parseInt(m[1],10) : null;
+  }
+  function candBaza(iso){
+    try{ return new Date(iso).toLocaleString("ro-RO",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); }
+    catch(e){ return ""; }
+  }
+
+  function vediVersiunileBazei(mesaj){
+    if(!bazaPoateLaServer()){ toast("Îți trebuie codul de cameră și cheia de scriere"); return; }
+    var st=document.getElementById("baza-versiuni-stare"), cutie=document.getElementById("baza-versiuni");
+    if(st) st.textContent="Mă uit pe server…";
+    if(cutie) cutie.innerHTML="";
+    fetch(API_BASE+"/api/history?room="+encodeURIComponent(cameraBazei()))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var v=(j && j.ok && j.versions) ? j.versions : [];
+        if(!v.length){
+          if(st) st.textContent="Nicio versiune mai veche pe server încă. Se strâng singure, pe măsură ce schimbi baza.";
+          return;
+        }
+        if(st) st.textContent=(mesaj?mesaj+" · ":"")+
+          v.length+" "+(v.length===1?"versiune păstrată":"versiuni păstrate")+
+          " · serverul le ține pe ultimele 40.";
+        if(!cutie) return;
+        cutie.innerHTML=v.map(function(x){
+          var cati=catiDinNume(x.name);
+          return '<div class="pesc"><div class="cod">'+(cati===null?"?":cati)+'</div>'+
+            '<div class="nm">'+esc(candBaza(x.saved_at))+' <span style="font-weight:600; opacity:.7;">'+esc(timeAgoCal(x.saved_at))+'</span></div>'+
+            (isLocked()?'':'<button class="btn btn-ghost mic" onclick="restaureazaBaza(\''+esc(x.id)+'\','+
+              (cati===null?"null":cati)+','+JSON.stringify(candBaza(x.saved_at)).replace(/"/g,"&quot;")+')">Adu-o</button>')+
+          '</div>';
+        }).join("");
+      })
+      .catch(function(){ if(st) st.textContent="N-am putut citi versiunile de pe server."; });
+  }
+
+  /* Întoarcerea la o versiune ÎNLOCUIEȘTE baza, nu o adună: altfel n-ar fi o întoarcere.
+     Cine a intrat după versiunea aleasă dispare — de-aia se spune cu cifre înainte.
+     Nu se pierde nimic pentru totdeauna: baza de acum se trimite întâi pe server, iar
+     serverul o pune în istoric înainte de a restaura. Deci se poate și înapoi. */
+  function restaureazaBaza(id, cati, cand){
+    if(guard()) return;
+    if(!bazaPoateLaServer()){ toast("Îți trebuie codul de cameră și cheia de scriere"); return; }
+    var acum=pescari.length;
+    var q="Te întorci la versiunea din "+cand+"?";
+    if(cati!==null){
+      q+="\n\nAcum ai "+acum+" "+(acum===1?"pescar":"pescari")+", versiunea aia are "+cati+".";
+      if(acum>cati) q+="\nDupă întoarcere rămân "+cati+" — "+(acum-cati)+" "+((acum-cati)===1?"dispare":"dispar")+".";
+    }
+    q+="\n\nBaza de acum se pune întâi deoparte pe server, deci te poți întoarce și la ea.";
+    if(!confirm(q)) return;
+    var st=document.getElementById("baza-versiuni-stare");
+    if(st) st.textContent="Se întoarce…";
+    /* întâi se urcă baza de acum, ca ea să intre în istoric și să nu se piardă */
+    trimiteBaza().then(function(){
+      return fetch(API_BASE+"/api/restore?room="+encodeURIComponent(cameraBazei())+"&id="+encodeURIComponent(id), {
+        method:"POST", headers:{"x-write-key":syncKey}
+      }).then(function(r){ return r.json(); });
+    }).then(function(j){
+      if(!(j && j.ok)) throw new Error("nu s-a putut");
+      return fetch(API_BASE+"/api/state?room="+encodeURIComponent(cameraBazei()))
+        .then(function(r){ return r.json(); });
+    }).then(function(j){
+      var b=(j && j.ok && j.data) ? bazaDinFisier(j.data) : null;
+      if(!b) throw new Error("nu s-a putut citi");
+      var numaratoareaDeAcum=pescariUltimCod;
+      pescari=b.lista.slice();
+      pescariUltimCod=b.ultim||0;
+      pescari.forEach(function(p){ var c=parseInt(p.cod,10); if(c>pescariUltimCod) pescariUltimCod=c; });
+      /* Numărătoarea NU dă înapoi, oricât de veche ar fi versiunea adusă: un cod dat
+         cândva nu se mai dă altcuiva. Altfel, după o întoarcere, următorul venit ar
+         primi codul cuiva care e deja în clasamentul de sezon. */
+      if(numaratoareaDeAcum>pescariUltimCod) pescariUltimCod=numaratoareaDeAcum;
+      bazaScrieLocal();
+      bazaSalveazaRev(j.rev);
+      renderPescari();
+      vediVersiunileBazei("Gata — baza e cea din "+cand);
+      toast("Baza s-a întors la "+pescari.length+" "+(pescari.length===1?"pescar":"pescari"));
+    }).catch(function(){
+      if(st) st.textContent="N-am putut întoarce baza. Nu s-a schimbat nimic pe telefon.";
+    });
   }
 
   /* ---------- copie de siguranță a bazei ----------
