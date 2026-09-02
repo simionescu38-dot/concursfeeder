@@ -38,7 +38,7 @@ function lume(optiuni) {
                     "pb-nume":    { value: o.nume    || "", focus() {} },
                     "pescari-cauta": { value: o.cauta || "" } };
   const cutii = {};
-  ["pescari-numar", "pescari-din-concurs-cati", "card-pescari-din-concurs", "pescari-lista"]
+  ["pescari-numar", "pescari-din-concurs-cati", "pescari-din-concurs", "pescari-lista", "pescari-sezon"]
     .forEach(id => { cutii[id] = { innerHTML: "", style: {} }; });
 
   const ctx = {
@@ -212,11 +212,11 @@ console.log("\n=== 4b. Fără concurs pe telefon ===");
 {
   const ctx = lume({ state: { name: "", participants: [] } });
   vm.runInContext("renderPescari();", ctx);
-  t("cardul «ia-i din concurs» se ascunde", ctx.cutii["card-pescari-din-concurs"].style.display, "none");
+  t("bucata «din concursul de acum» se ascunde", ctx.cutii["pescari-din-concurs"].style.display, "none");
 
   const ctx2 = lume({ state: { name: "Cupa de probă", participants: [{ prenume: "Mihai", nume: "Ionescu" }] } });
   vm.runInContext("renderPescari();", ctx2);
-  t("cu concurs pe telefon, cardul se vede", ctx2.cutii["card-pescari-din-concurs"].style.display, "");
+  t("cu concurs pe telefon, bucata se vede", ctx2.cutii["pescari-din-concurs"].style.display, "");
   t("scrie ce concurs e și câți lipsesc",
     ctx2.cutii["pescari-din-concurs-cati"].innerHTML,
     "Pe telefon e concursul <b>Cupa de probă</b>, cu <b>1</b> pescari, dintre care <b>1</b> nu-s încă în bază.");
