@@ -278,8 +278,11 @@ console.log("\n=== 7. Ecranul e legat cum trebuie ===");
   t("spune cât de des se folosește", /Copie de siguranță <span class="rar">din când în când<\/span>/.test(ecran), true);
   t("butonul de salvat spune ce face", /Salvează baza într-un fișier<\/button>/.test(ecran), true);
   t("butonul de adus spune ce face", /Adu baza dintr-un fișier<\/button>/.test(ecran), true);
-  t("salvarea se vede și cu lacătul pus",
-    ecran.indexOf('onclick="salveazaBaza()"') < ecran.indexOf('class="lockhide"'), true);
+  /* Salvarea trebuie să meargă și cu lacătul pus, deci nu are voie să stea în vreo
+     bucată ascunsă la lacăt. Bucata serverului e ascunsă; salvarea în fișier, nu. */
+  const bucataServer = ecran.slice(ecran.indexOf('id="baza-server"'), ecran.indexOf("Și un fișier"));
+  t("bucata serverului chiar e ascunsă la lacăt", /lockhide" id="baza-server"/.test(ecran), true);
+  t("…dar butonul de salvat în fișier nu e în ea", /salveazaBaza/.test(bucataServer), false);
   t("aducerea se ascunde la lacăt",
     /<div class="lockhide">[\s\S]{0,400}baza-fis/.test(ecran), true);
   t("ecranul rămâne cu trei carduri", (ecran.match(/class="card/g) || []).length, 3);

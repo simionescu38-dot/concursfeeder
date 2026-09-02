@@ -1376,7 +1376,13 @@
     <div class="pliant mt" id="pliant-copie">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-copie')"><svg class="ui-ico" aria-hidden="true"><use href="#i-cloud"></use></svg>Copie de siguranță <span class="rar">din când în când</span></button>
       <div class="pliant-in" hidden>
-        <p class="hint" style="margin:0 0 10px;">Baza stă numai pe telefonul ăsta. Dacă se șterg datele aplicației, sau schimbi telefonul, se pierde — iar codurile nu se pot reface, fiindcă nu ies din nume.</p>
+        <p class="hint" style="margin:0 0 10px;" id="baza-stare"></p>
+        <div class="lockhide" id="baza-server">
+          <button class="btn btn-ghost" onclick="aduBazaDeLaServer()">Adu baza de pe server</button>
+          <p class="hint">Baza pleacă singură pe server la fiecare schimbare, în camera ta de sincronizare. Butonul ăsta o aduce înapoi — de pildă pe telefonul celălalt, sau după ce ai reinstalat aplicația.</p>
+        </div>
+
+        <p class="hint" style="margin:14px 0 10px;">Și un fișier, pentru când n-ai net sau vrei ceva de ținut la tine:</p>
         <button class="btn btn-ghost" onclick="salveazaBaza()">Salvează baza într-un fișier</button>
         <p class="hint">Îți dă un fișier pe care-l poți trimite pe WhatsApp, la tine însuți. Ține-l undeva: e tot ce-ți trebuie ca s-o aduci înapoi.</p>
         <div class="lockhide">
@@ -2545,6 +2551,9 @@
   function pescariSalveaza(){
     try{ localStorage.setItem(PESCARI_KEY, JSON.stringify({ultimulCod:pescariUltimCod, lista:pescari})); }
     catch(e){ toast("Stocare plină – nu am putut salva baza"); }
+    /* Copia de pe server pleacă ÎN URMA celei de pe telefon, niciodată înaintea ei: dacă
+       serverul nu e de găsit, baza tot s-a salvat aici. */
+    try{ bazaSpreServer(); }catch(e){}
   }
 
   /* Codul următor: cel mai mare dat vreodată, plus unu. Un cod scos din bază NU se mai
@@ -2727,6 +2736,7 @@
   }
 
   function renderPescari(){
+    try{ improspateazaStareaBazei(); }catch(e){}
     var nr=document.getElementById("pescari-numar");
     if(nr){
       var coduriActive={};
@@ -5193,6 +5203,132 @@
       ". La baltă ajung doi oameni pe același loc, iar la cântar captura se poate trece pe cine nu trebuie.";
     w.style.display="block";
   }
+  /* ---------- baza ținută și pe server ----------
+     Baza stă în camera ei, numită „baza:<camera ta>". Pentru server e o cameră ca
+     oricare alta — deci capătă pe gratis tot ce are o cameră: numărătoare de versiuni
+     și ultimele 40 de variante păstrate. Worker-ul nu se atinge deloc.
+     Iar fiindcă n-are participanți, nu apare nicăieri drept concurs live: peste tot
+     unde se caută concursuri se cere ca o cameră să aibă oameni în ea. Singura listă
+     care nu cerea asta e cea publică din concursuri.html — acolo se sare peste camerele
+     bazei, după prefix. */
+  var BAZA_PREFIX="baza:";
+  var BAZA_REV_KEY="concurs-baza-rev";
+  var bazaRevCunoscut=0;   // ce revizie a serverului am văzut ultima dată
+  var bazaT=null;          // amânarea trimiterii: zece adăugări la rând fac o singură cerere
+
+  function cameraBazei(){ return syncRoom ? BAZA_PREFIX+syncRoom : ""; }
+  function bazaPoateLaServer(){ return !!(cameraBazei() && syncKey); }
+  function bazaIncarcaRev(){
+    try{ bazaRevCunoscut=parseInt(localStorage.getItem(BAZA_REV_KEY),10)||0; }catch(e){ bazaRevCunoscut=0; }
+  }
+  function bazaSalveazaRev(r){
+    bazaRevCunoscut=parseInt(r,10)||0;
+    try{ localStorage.setItem(BAZA_REV_KEY, String(bazaRevCunoscut)); }catch(e){}
+  }
+  function bazaStare(txt){
+    var el=document.getElementById("baza-stare"); if(el) el.textContent=txt;
+    var sv=document.getElementById("baza-server"); if(sv) sv.style.display = bazaPoateLaServer() ? "" : "none";
+  }
+  function improspateazaStareaBazei(){
+    if(!bazaPoateLaServer()){
+      bazaStare("Baza stă numai pe telefonul ăsta — n-ai pus încă un cod de cameră și cheia de scriere (Contul meu). Salveaz-o măcar într-un fișier.");
+      return;
+    }
+    bazaStare(bazaRevCunoscut
+      ? "Pe server, în camera "+cameraBazei()+" · versiunea "+bazaRevCunoscut+". Pleacă singură la fiecare schimbare."
+      : "Pe server încă n-a ajuns. Pleacă singură la prima schimbare din bază.");
+  }
+
+  /* Scrierea în localStorage e a lui pescariSalveaza; aici se scrie fără el, ca să nu
+     se cheme din nou trimiterea spre server și să intre în cerc. */
+  function bazaScrieLocal(){
+    try{ localStorage.setItem(PESCARI_KEY, JSON.stringify({ultimulCod:pescariUltimCod, lista:pescari})); }catch(e){}
+  }
+  /* Ce vine de la server se adaugă cu aceleași reguli ca fișierul: cine e deja aici își
+     păstrează codul, iar un cod luat de altcineva nu se pune peste. */
+  function bazaAdunaDe(lista, ultim){
+    var g=potrivesteBaza(lista);
+    if(!g.noi.length) return g;
+    g.noi.forEach(function(p){ pescari.push(p); });
+    if(ultim>pescariUltimCod) pescariUltimCod=ultim;
+    g.noi.forEach(function(p){ if(p.cod>pescariUltimCod) pescariUltimCod=p.cod; });
+    bazaScrieLocal();
+    return g;
+  }
+
+  function bazaSpreServer(){
+    if(!bazaPoateLaServer()) return;
+    if(bazaT) clearTimeout(bazaT);
+    bazaT=setTimeout(function(){ bazaT=null; trimiteBaza(); }, 1500);
+  }
+
+  function trimiteBaza(){
+    if(!bazaPoateLaServer()) return Promise.resolve(false);
+    var cam=cameraBazei();
+    return fetch(API_BASE+"/api/state?room="+encodeURIComponent(cam))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        /* Serverul s-a mișcat de când l-am văzut ultima oară: a scris altcineva în
+           aceeași cameră. NU se pune peste — se adună întâi cine e acolo și lipsește
+           aici, altfel omul adăugat pe telefonul celuilalt organizator s-ar pierde.
+           Când reviziile se potrivesc, ce e pe telefon e ultimul cuvânt — așa se poate
+           și scoate cineva din bază, nu doar adăuga. */
+        if(j && j.ok && (j.rev||0)>bazaRevCunoscut && j.data){
+          var b=bazaDinFisier(j.data);
+          if(b){
+            var g=bazaAdunaDe(b.lista, b.ultim);
+            if(g.noi.length){ toast(g.noi.length+" "+(g.noi.length===1?"pescar adus":"pescari aduși")+" de pe server"); renderPescari(); }
+          }
+        }
+        return fetch(API_BASE+"/api/state?room="+encodeURIComponent(cam), {
+          method:"PUT",
+          headers:{"Content-Type":"application/json","x-write-key":syncKey},
+          body: JSON.stringify({data:{ baza:true, name:"Baza de pescari · "+pescari.length,
+                                       ultimulCod:pescariUltimCod, pescari:pescari }})
+        }).then(function(r){ return r.json(); });
+      })
+      .then(function(j){
+        if(j && j.ok){ bazaSalveazaRev(j.rev); improspateazaStareaBazei(); return true; }
+        bazaStare(j && j.error==="forbidden"
+          ? "Cheia de scriere nu e bună — baza n-a plecat pe server."
+          : "Baza n-a putut pleca pe server. Rămâne pe telefon.");
+        return false;
+      })
+      .catch(function(){ bazaStare("Fără net — baza a rămas pe telefon. Pleacă singură când prinde semnal."); return false; });
+  }
+
+  function aduBazaDeLaServer(){
+    if(guard()) return;
+    if(!bazaPoateLaServer()){ toast("Îți trebuie codul de cameră și cheia de scriere"); return; }
+    bazaStare("Mă uit pe server…");
+    fetch(API_BASE+"/api/state?room="+encodeURIComponent(cameraBazei()))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!(j && j.ok)){ bazaStare("N-am putut citi de pe server."); return; }
+        var b=j.data ? bazaDinFisier(j.data) : null;
+        if(!b || !b.lista.length){ bazaStare("Pe server nu e nicio bază încă."); return; }
+        var g=potrivesteBaza(b.lista);
+        if(!g.noi.length){
+          bazaSalveazaRev(j.rev);
+          bazaStare("Toți cei "+b.lista.length+" de pe server sunt deja în bază.");
+          return;
+        }
+        var q="Aduci "+g.noi.length+" "+(g.noi.length===1?"pescar":"pescari")+" de pe server, cu codurile lor?";
+        if(g.erau) q+="\n"+g.erau+" sunt deja în bază — nu-i ating.";
+        if(g.ciocniri.length){
+          q+="\n⚠️ "+g.ciocniri.length+" nu pot intra:\n"+
+             g.ciocniri.slice(0,6).map(function(c){ return "• "+c.nume+" ("+c.de+")"; }).join("\n")+
+             (g.ciocniri.length>6?"\n…":"");
+        }
+        if(!confirm(q)) return;
+        bazaAdunaDe(b.lista, b.ultim);
+        bazaSalveazaRev(j.rev);
+        renderPescari(); improspateazaStareaBazei();
+        toast(g.noi.length+" "+(g.noi.length===1?"pescar adus":"pescari aduși")+" de pe server");
+      })
+      .catch(function(){ bazaStare("Fără net — n-am putut ajunge la server."); });
+  }
+
   /* ---------- copie de siguranță a bazei ----------
      Concursurile și arhivele stau pe server. Baza NU: e în memoria browserului de pe un
      singur telefon. Ștergi datele aplicației, schimbi telefonul, sau Android curăță
@@ -7168,7 +7304,7 @@
   // ---------- init ----------
   (function(){
     load();
-    pescariIncarca();
+    pescariIncarca(); bazaIncarcaRev();
     loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
     wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
     stratLoad();

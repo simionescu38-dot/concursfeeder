@@ -119,6 +119,11 @@ var prevRooms = null; // null until after the first successful load — avoids f
 
 function render(rooms){
   var el = document.getElementById("list");
+  /* Baza de pescari a unui organizator stă tot într-o cameră, numită „baza:<camera>".
+     Nu e un concurs, deci n-are ce căuta în lista publică. Peste tot în aplicație
+     camerele fără participanți se sar de la sine; aici lista nu citește starea, deci
+     se sare după nume. */
+  rooms = (rooms||[]).filter(function(r){ return r && r.code && r.code.indexOf("baza:")!==0; });
   if(!rooms.length){ el.innerHTML = '<div class="empty"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Niciun concurs live momentan.<br>Revino mai târziu.</div>'; prevRooms = {}; return; }
   var prevMap = prevRooms || {};
   el.innerHTML = rooms.map(function(r){
