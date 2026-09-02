@@ -96,6 +96,11 @@ function aplicatie(opt) {
   vm.runInContext(["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "cantOfM", "extraOfM",
     "cmmcOfM", "totalOfM", "fmt", "faraSecrete", "archiveToSeason", "wipe", "goleste", "amTerminatConcursul"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
+  /* cele patru stări: sfârșitul de concurs le cere înainte de a arhiva */
+  vm.runInContext(src.match(/var STARI_MANSA=\{[^}]*\};/)[0], ctx);
+  vm.runInContext(["stareaLaMansa", "nelamurit", "standuriNecantarite",
+                   "mancheDisputata", "manseRange", "numManse", "mOf", "standOfM", "ensureManche"]
+    .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
 

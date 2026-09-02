@@ -132,6 +132,24 @@
   .del{background:#f4eae8; color:#b23b2e;}
   .edit{background:#e4eef9; color:var(--teal-d); margin-right:1px;}
   .del .ui-ico,.edit .ui-ico{width:17px; height:17px; margin:0; vertical-align:0;}
+  /* Cele patru stări ale pescarului fără cântar. Rândul stă exact în locul lui
+     „nicio captură încă" — nu se adaugă lângă el, îl înlocuiește. */
+  .stari{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+  .stari .st-nec{font-size:12px; font-weight:800; color:var(--muted); padding-right:2px;}
+  .stari .st-b{border:1.5px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:999px; padding:0 12px; min-height:34px; font-size:12px; font-weight:800;
+    font-family:inherit; cursor:pointer;}
+  .stari .st-b:active{transform:scale(.97);}
+  .stari .st-pus{display:inline-flex; align-items:center; min-height:34px;
+    padding:0 4px 0 12px; border-radius:999px; font-size:12px; font-weight:800;
+    background:var(--amber-soft); color:#8a5a12;}
+  /* × se întinde pe toată înălțimea pastilei: ca <b> obișnuit avea 17px, adică
+     jumătate de deget. La baltă, cu mâna udă, aia nu se nimerește. */
+  .stari .st-pus b{align-self:stretch; display:flex; align-items:center;
+    font-size:17px; line-height:1; padding:0 9px; cursor:pointer;}
+  /* În clasament, sub nume, lângă stand */
+  .st-mic{font-weight:800; color:var(--amber-d,#8a5a12);}
+
   .p-edit{margin-bottom:10px;}
   .erow{display:flex; gap:8px;}
   .erow>*{flex:1; min-width:0;}
@@ -653,7 +671,8 @@
   .stand{background:#142a39; color:var(--teal); border:1px solid #285063;}
   .edit{background:#142c3b; color:#79e7e1;}
   .del{background:#2b1b1e; color:#ff9d97;}
-  .chip,.cmmc{background:var(--amber-soft); color:#f4cc77; border-color:#69501d;}
+  .chip,.cmmc,.stari .st-pus{background:var(--amber-soft); color:#f4cc77; border-color:#69501d;}
+  .st-mic{color:#f4cc77;}
   .chip-c,.metric .ro,.wx-cell,.sec-chip{background:#102431; border-color:#264052;}
   .chip-c b,.sec-chip button{background:#1b3b49; color:var(--teal);}
   .p-sub span{background:#102431; border-color:#264052; color:#9fb0bf;}
@@ -888,8 +907,10 @@
     <div class="pliant mt lockhide" id="pliant-tragere">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-tragere')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec tragerea la sorți <span class="rar">o dată pe manșă</span></button>
       <div class="pliant-in" hidden>
-        <textarea id="trg-text" rows="6" placeholder="Lipește lista de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu&#10;2 Vasile Popescu&#10;3 Gheorghe Marin"></textarea>
-        <p class="hint">Un pescar pe linie: <b>stand, nume</b>. Sectorul iese singur din stand. Cei din listă se <b>mută</b> pe standurile manșei. Cine nu e încă în concurs poate fi adăugat, dacă vrei — butonul apare sub numele lor. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
+        <textarea id="trg-text" rows="6" placeholder="Lipește lista de pe grup, un pescar pe linie:&#10;1 7 Mihai Ionescu&#10;2 3 Vasile Popescu&#10;3 12 Gheorghe Marin"></textarea>
+        <p class="hint">Un pescar pe linie: <b>stand, cod, nume</b>. Merge și fără cod, ca până acum: <b>stand, nume</b>. Sectorul iese singur din stand.</p>
+        <p class="hint">Când foaia are coduri, le pun față în față cu baza de pescari: dacă un cod și un nume nu-s ai aceluiași om, <b>rândul acela nu se trece</b>. Nu contează în ce ordine ai scris standul și codul.</p>
+        <p class="hint">Cei din listă se <b>mută</b> pe standurile manșei. Cine nu e încă în concurs poate fi adăugat, dacă vrei — butonul apare sub numele lor. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
         <div class="row">
           <button class="btn btn-ghost" onclick="verificaTragerea()">Verifică</button>
           <button class="btn btn-ghost" onclick="treceTragerea()">Mută pe standuri</button>
@@ -1033,6 +1054,7 @@
       <a class="btn btn-ghost" style="display:block;text-align:center;text-decoration:none;" href="sezon.html"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Clasament de sezon (toate concursurile)</a>
       <p class="hint">Combină automat rezultatele din toate concursurile sincronizate și arată clasamentul pe tot sezonul.</p>
       <button class="btn btn-primary mt lockhide" onclick="amTerminatConcursul()"><svg class="ui-ico" aria-hidden="true"><use href="#i-flag"></use></svg>Am terminat concursul</button>
+      <p class="hint" id="necantarite" style="margin:8px 0 0;"></p>
       <p class="hint" id="archive-status">Apasă o singură dată, la sfârșit. Salvează concursul în clasamentul de sezon, se uită pe server că a ajuns cu adevărat, și abia apoi te întreabă dacă golește lista pentru data viitoare.</p>
     </div>
   </section>
@@ -2527,6 +2549,22 @@
     return null;
   }
   function numePescar(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
+  /* Omul din BAZĂ, după cod. Baza e a sezonului. */
+  function pescarDupaCod(cod){
+    var c=parseInt(cod,10);
+    if(isNaN(c)) return null;
+    for(var i=0;i<pescari.length;i++){ if(parseInt(pescari[i].cod,10)===c) return pescari[i]; }
+    return null;
+  }
+  /* Omul din CONCURSUL de acum, după codul lipit de el la o tragere trecută. Ăsta e
+     rostul codului: odată lipit, numele scris altfel nu mai încurcă pe nimeni. */
+  function participantDupaCod(cod){
+    var c=parseInt(cod,10);
+    if(isNaN(c)) return null;
+    var l=state.participants||[];
+    for(var i=0;i<l.length;i++){ if(parseInt(l[i].cod,10)===c) return l[i]; }
+    return null;
+  }
 
   function pescarAdauga(){
     if(guard()) return;
@@ -3613,10 +3651,47 @@
     el.textContent = n ? (catiCantariti()+" din "+n) : "0";
   }
 
+  /* Rândul de stări. Apare doar la cine n-are nicio captură în manșa asta — de-aia stă
+     în locul lui „nicio captură încă": la fel de discret, dar spune ceva. */
+  function stariHtml(p){
+    var mi=state.manche||1, st=stareaLaMansa(p,mi), L=isLocked();
+    if(!standOfM(p,mi)) return '<span class="chips-empty">n-a extras stand în manșa '+mi+'</span>';
+    if(STARI_MANSA[st]){
+      return '<span class="stari"><span class="st-pus">'+esc(STARI_MANSA[st])+
+        (L?'':'<b onclick="stergeStarea(\''+p.id+'\')" title="Șterge starea">×</b>')+'</span></span>';
+    }
+    if(L) return '<span class="chips-empty">încă necântărit</span>';
+    var h='<span class="stari"><span class="st-nec">Încă necântărit:</span>';
+    ["zero","absent","sarit"].forEach(function(k){
+      h+='<button type="button" class="st-b" onclick="puneStarea(\''+p.id+'\',\''+k+'\')">'+esc(STARI_MANSA[k])+'</button>';
+    });
+    return h+'</span>';
+  }
+  /* Starea se scrie în jurnal ca orice altceva: la o contestație, „cine a spus că n-a
+     venit, și la ce oră" e tot atât de important ca o greutate. */
+  function puneStarea(id, stare){
+    if(guard()) return;
+    if(!STARI_MANSA[stare]) return;
+    var p=state.participants.find(function(x){ return x.id===id; }); if(!p) return;
+    var mi=state.manche||1, m=mOf(p,mi), inainte=STARI_MANSA[m.stare]||"necântărit";
+    m.stare=stare;
+    scrieInJurnal(p, mi, "stare", "pus", STARI_MANSA[stare], inainte, STARI_MANSA[stare]);
+    queueSave(); renderList(); renderRank();
+    toast(nameOf(p)+": "+STARI_MANSA[stare].toLowerCase());
+  }
+  function stergeStarea(id){
+    if(guard()) return;
+    var p=state.participants.find(function(x){ return x.id===id; }); if(!p) return;
+    var mi=state.manche||1, m=mOf(p,mi), inainte=STARI_MANSA[m.stare]||"necântărit";
+    m.stare="";
+    scrieInJurnal(p, mi, "stare", "sters", "necântărit", inainte, "necântărit");
+    queueSave(); renderList(); renderRank();
+  }
+
   function chipsHtml(p){
     var m=mOf(p, state.manche||1);
     var cs=m.catches||[]; var h=""; var L=isLocked();
-    if(!cs.length){ return '<span class="chips-empty">nicio captură încă</span>'; }
+    if(!cs.length) return stariHtml(p);
     cs.forEach(function(v,idx){
       var tm=(m.catchTimes||[])[idx];
       var tt=tm?('<i class="cht">'+hhmm(tm)+'</i>'):'';
@@ -3654,6 +3729,7 @@
       var prevLeader=leaderId();
       var vr=Math.round(v*1000)/1000;
       var mi=state.manche||1, inainte=totalOfM(p, mi);
+      m.stare="";   // a cântărit: orice stare de dinainte nu mai are ce spune
       m.catches.push(vr);
       m.catchTimes.push(Date.now());
       m.catchPhotos.push(photo||null);
@@ -4445,6 +4521,12 @@
       if(!m){ sarite.push(line.trim()); return; }
       var stand=m[0], de=m.index+m[0].length;
       var rest=raw.slice(de), restCurat=curat.slice(de);
+      /* Al doilea număr, când foaia are și coduri: „12 7 Ionescu Marian". Se ia numai din
+         poziția a doua, lipit de primul — altfel „12 Ion 2 Popescu" și-ar pierde o bucată
+         din nume. Care număr e standul și care e codul se hotărăște mai jos, pe toată
+         foaia deodată, nu aici. */
+      var cod="", m2=restCurat.match(/^[\s.,;|:\-]*(\d{1,3})(?=$|[\s.,;|:\-])/);
+      if(m2){ cod=m2[1]; rest=rest.slice(m2[0].length); restCurat=restCurat.slice(m2[0].length); }
       /* Sectorul, dacă e scris pe rând („12, Ionescu Marian, B"). Se ia numai când litera
          chiar e un sector al concursului: altfel „Ionescu M" și-ar pierde inițiala,
          iar pescarul n-ar mai fi găsit. */
@@ -4460,7 +4542,7 @@
       /* Un rând cu stand dar fără nume nu poate muta pe nimeni. „12" singur, uitat pe grup,
          n-ar trebui să mute pe cine se nimerește să fie acum pe standul 12. */
       if(!nume){ sarite.push(line.trim()); return; }
-      out.push({stand:stand, nume:nume, sector:sector, rand:line.trim()});
+      out.push({stand:stand, cod:cod, nume:nume, sector:sector, rand:line.trim()});
     });
     out.sarite=sarite;
     return out;
@@ -4486,21 +4568,76 @@
     return {p:null, cum:"negasit"};
   }
 
+  /* Pe o foaie cu coduri sunt două numere pe rând. Care e standul și care e codul nu se
+     poate ști dintr-un rând singur: 7 și 12 sunt amândouă și standuri bune, și coduri
+     bune. Se socotește pe TOATĂ foaia, în amândouă felurile, câte coduri cad pe omul cu
+     numele scris lângă ele. Cum iese mai bine, așa e scrisă foaia.
+     La egalitate — și când baza e goală, deci n-are cu ce compara — rămâne cum se scria
+     până acum: standul întâi. */
+  function ordineaTragerii(citite){
+    var cuDoua=citite.filter(function(x){ return x.cod; });
+    if(!cuDoua.length || !pescari.length) return "stand-cod";
+    function cate(camp){
+      var n=0;
+      cuDoua.forEach(function(x){
+        var b=pescarDupaCod(x[camp]);
+        if(b && faraSemne(x.nume) && numeleSePotriveste(x.nume, b)) n++;
+      });
+      return n;
+    }
+    return cate("stand")>cate("cod") ? "cod-stand" : "stand-cod";
+  }
+
+  /* Numele de pe foaie e al omului din bază? Se compară cu aceeași îngăduință ca peste
+     tot la tragere: fără diacritice, în orice ordine, și e de ajuns ca toate cuvintele
+     lungi să se regăsească. Altfel „TARANU ION" ar fi strigat drept nepotrivire, iar
+     organizatorul ar învăța să treacă peste avertismente — exact ce nu trebuie. */
+  function numeleSePotriveste(nume, b){
+    var n=faraSemne(nume);
+    if(!n) return true;
+    var drept=cheiePescar(b.prenume,b.nume), intors=faraSemne((b.nume||"")+" "+(b.prenume||""));
+    if(n===drept || n===intors) return true;
+    var cuv=n.split(" ").filter(function(x){ return x.length>2; });
+    if(!cuv.length) return false;
+    var bucati=drept.split(" ");
+    return cuv.every(function(c){ return bucati.indexOf(c)>=0; });
+  }
+
   function randuriTragerii(text){
     var citite=citesteTragerea(text), r=[], laStand={}, alOmului={};
+    var ordine=ordineaTragerii(citite);
     citite.forEach(function(x){
-      var g=pescarulTragerii(x.nume);
-      var rand={stand:x.stand, nume:x.nume, sector:x.sector, rand:x.rand,
+      var stand=x.stand, cod=x.cod;
+      if(cod && ordine==="cod-stand"){ stand=x.cod; cod=x.stand; }
+      /* Codul bate numele — ăsta e tot rostul lui. Dar dacă nu-s ai aceluiași om, nu se
+         alege niciunul: rândul se OPREȘTE. Un stand pus pe cine nu trebuie nu se mai vede
+         până la premiere, iar atunci e prea târziu. */
+      var b=cod?pescarDupaCod(cod):null, nepotrivit=false, codStrain=false, g;
+      if(cod && !b) codStrain=true;
+      if(b && !numeleSePotriveste(x.nume, b)){
+        nepotrivit=true; g={p:null, cum:"nepotrivit"};
+      } else if(b){
+        /* „cod": omul poartă deja codul, lipit la o tragere trecută — nici măcar numele
+           din bază nu mai e nevoie. „baza": codul a dus la bază, iar baza la om. */
+        var pc=participantDupaCod(cod);
+        g = pc ? {p:pc, cum:"cod"} : pescarulTragerii(numePescar(b));
+        if(g.p && !pc) g.cum="baza";
+      } else {
+        g=pescarulTragerii(x.nume);
+      }
+      var rand={stand:stand, cod:cod, nume:x.nume, sector:x.sector, rand:x.rand,
+                dinBaza:b, nepotrivit:nepotrivit, codStrain:codStrain,
                 p:g.p, cum:g.cum, standDublu:false, omDublu:false};
       /* Două rânduri pe același stand, sau același om de două ori: una din ele e greșită
          și nu se poate ști care. Se opresc amândouă — un stand pus pe cine nu trebuie
          nu se mai vede până la premiere. */
-      if(laStand[x.stand]) rand.standDublu=true; else laStand[x.stand]=true;
+      if(laStand[stand]) rand.standDublu=true; else laStand[stand]=true;
       if(g.p){ if(alOmului[g.p.id]) rand.omDublu=true; else alOmului[g.p.id]=true; }
       r.push(rand);
     });
     r.sarite=citite.sarite||[];
     r.faraStand=(state.participants||[]).filter(function(p){ return !alOmului[p.id]; });
+    r.ordine=ordine;
     return r;
   }
 
@@ -4530,7 +4667,8 @@
     var ranges=intervaleleTragerii();
     var intra=r.filter(function(x){ return x.p && !x.standDublu && !x.omDublu; });
     var dubluri=r.filter(function(x){ return x.p && (x.standDublu || x.omDublu); });
-    var nu=r.filter(function(x){ return !x.p; });
+    var strambe=r.filter(function(x){ return x.nepotrivit; });
+    var nu=r.filter(function(x){ return !x.p && !x.nepotrivit; });
     var h="";
     /* Toate se arată, nu primele câteva: ăsta e rostul lui „Verifică" — omul se uită peste
        ele cum se uită peste foaia de hârtie, înainte să apese. */
@@ -4538,13 +4676,25 @@
       h+="<b>"+intra.length+"</b> "+(intra.length===1?"pescar se mută":"pescari se mută")+" în manșa "+mi+":<br>"+
         intra.map(function(x){
           var vechi=standOfM(x.p, mi), sec=sectorulTragerii(x.stand, x.sector, ranges);
-          return "• "+esc(nameOf(x.p))+" — st. <b>"+esc(x.stand)+"</b>"+(sec?" · sec "+esc(sec):"")+
+          return "• "+esc(nameOf(x.p))+(x.cod?" <i>(cod "+esc(x.cod)+")</i>":"")+
+                 " — st. <b>"+esc(x.stand)+"</b>"+(sec?" · sec "+esc(sec):"")+
                  (vechi&&vechi!==x.stand?' <i>(era pe '+esc(vechi)+")</i>":"");
         }).join("<br>");
     }
     if(dubluri.length){
       h+=(h?"<br><br>":"")+"<b>"+dubluri.length+"</b> apar de două ori — le sar:<br>"+
         dubluri.map(function(x){ return "• "+esc(x.rand)+(x.standDublu?" <i>(standul e scris de două ori)</i>":" <i>(pescarul e scris de două ori)</i>"); }).join("<br>");
+    }
+    /* Nepotrivirile se scriu ÎNAINTEA tuturor: e singurul lucru de pe foaie care
+       înseamnă că undeva s-a greșit, nu doar că aplicația n-a înțeles. */
+    if(strambe.length){
+      h+=(h?"<br><br>":"")+"⚠️ <b>"+strambe.length+"</b> "+(strambe.length===1?"rând are":"rânduri au")+
+        " codul și numele de la oameni diferiți — "+(strambe.length===1?"nu-l trec":"nu le trec")+":<br>"+
+        strambe.map(function(x){
+          return "• codul <b>"+esc(x.cod)+"</b> e <b>"+esc(numePescar(x.dinBaza))+
+                 "</b> în bază, dar pe foaie scrie <b>"+esc(x.nume)+"</b>";
+        }).join("<br>")+
+        "<br><i>Dreg foaia, sau dreg baza — până atunci nu se mută nimeni de pe rândurile astea.</i>";
     }
     if(nu.length){
       h+=(h?"<br><br>":"")+"<b>"+nu.length+"</b> nu știu cine sunt:<br>"+
@@ -4564,6 +4714,15 @@
         r.faraStand.slice(0,8).map(function(p){ return "• "+esc(nameOf(p)); }).join("<br>")+
         (r.faraStand.length>8?"<br>…":"");
     }
+    /* Un cod care nu e în bază nu oprește nimic: omul se caută după nume, ca până acum.
+       Se spune doar, ca baza să fie completată la timpul ei. */
+    var straine=r.filter(function(x){ return x.codStrain; });
+    if(straine.length){
+      h+=(h?"<br><br>":"")+"<b>"+straine.length+"</b> "+(straine.length===1?"cod nu e":"coduri nu-s")+
+        " în baza de pescari — "+(straine.length===1?"rândul merge":"rândurile merg")+" după nume:<br>"+
+        straine.slice(0,6).map(function(x){ return "• cod "+esc(x.cod)+" — "+esc(x.nume); }).join("<br>")+
+        (straine.length>6?"<br>…":"");
+    }
     if(r.sarite.length){
       h+=(h?"<br><br>":"")+"Am sărit <b>"+r.sarite.length+"</b> "+(r.sarite.length===1?"rând":"rânduri")+":<br>"+
         r.sarite.slice(0,4).map(function(l){ return "• "+esc(l); }).join("<br>")+(r.sarite.length>4?"<br>…":"");
@@ -4580,8 +4739,10 @@
     if(!intra.length){ toast("Niciun stand de mutat"); return; }
     var mi=state.manche||1;
     var dubluri=r.filter(function(x){ return x.p && (x.standDublu || x.omDublu); }).length;
-    var nu=r.filter(function(x){ return !x.p; }).length;
+    var strambe=r.filter(function(x){ return x.nepotrivit; }).length;
+    var nu=r.filter(function(x){ return !x.p && !x.nepotrivit; }).length;
     var q="Muți "+intra.length+" "+(intra.length===1?"pescar":"pescari")+" pe standurile manșei "+mi+"?";
+    if(strambe) q+="\n⚠️ "+strambe+" au codul și numele de la oameni diferiți — nu le trec.";
     if(dubluri) q+="\n"+dubluri+" apar de două ori — le sar.";
     if(nu) q+="\n"+nu+" nu știu cine sunt — rămân unde erau.";
     if(r.faraStand.length) q+="\n"+r.faraStand.length+" nu apar în listă — rămân fără stand în manșa asta.";
@@ -4590,6 +4751,9 @@
     var ranges=intervaleleTragerii();
     intra.forEach(function(x){
       var vechi=standOfM(x.p, mi);
+      /* Codul se lipește de om o dată, aici. De la tragerea următoare încolo, omul e
+         găsit după cod, deci numele scris altfel pe foaie nu mai încurcă pe nimeni. */
+      if(x.cod && !x.nepotrivit) x.p.cod=parseInt(x.cod,10);
       setStandSector(x.p, mi, x.stand, sectorulTragerii(x.stand, x.sector, ranges));
       /* Jurnalul ține minte de pe ce stand a plecat fiecare: la o contestație, aia e
          diferența dintre „așa a ieșit la bilă" și „s-a greșit la trecut". */
@@ -4620,6 +4784,7 @@
       var nm=splitName(x.nume);
       var sec=sectorulTragerii(x.stand, x.sector, ranges);
       var np={id:uid(), stand:x.stand, prenume:nm.prenume, nume:nm.nume, sector:sec, m:{}};
+      if(x.cod) np.cod=parseInt(x.cod,10);
       curataNumarul(np);
       ensureManche(np);
       setStandSector(np, mi, x.stand, sec);
@@ -5069,7 +5234,47 @@
   // clasament, cădea singur în sectorul-fantomă „Fără sector", era automat primul acolo
   // și lua 1 punct — punctajul MAXIM, pentru o manșă la care nu venise. La General putea
   // astfel să treacă peste oameni care au pescuit amândouă manșele.
-  function absentLaMansa(p, mi){ return !standOfM(p,mi) && totalOfM(p,mi)<=1e-9; }
+  /* PATRU STĂRI, NU DOUĂ.
+     Până acum „fără captură" însemna și „a venit și n-a prins nimic", și „arbitrul n-a
+     ajuns încă la el". Clasamentul le socotea la fel: zero. Un stand uitat lua tăcut
+     ultimul loc din sector, cu puncte cu tot, iar asta nu se mai vedea până la premiere.
+     Acum starea se SPUNE. Cea nespusă e „necântărit", iar ea oprește sfârșitul de concurs
+     până e lămurită.
+     Formulele NU se ating: „n-a prins nimic" se socotește exact ca zeroul de până acum,
+     iar „n-a venit" intră pe drumul absentului, care există de mult. Se schimbă doar cine
+     intră pe care drum — și numai când o spune organizatorul, apăsând. Concursurile
+     arhivate n-au starea asta scrisă nicăieri, deci niciun rezultat vechi nu se mișcă. */
+  var STARI_MANSA={ zero:"N-a prins nimic", absent:"N-a venit", sarit:"Revin la el" };
+  function stareaLaMansa(p, mi){
+    /* La General omul n-are o stare: are câte una pe fiecare manșă. */
+    if(mi==='total') return "";
+    var m=mOf(p,mi);
+    if((m.catches||[]).length || (m.extras||[]).length) return "cantarit";
+    /* Cine n-a extras stand n-a fost la manșă — asta o știe aplicația singură, de mult. */
+    if(!standOfM(p,mi)) return "absent";
+    return STARI_MANSA[m.stare] ? m.stare : "necantarit";
+  }
+  /* Nelămurit: ori nu l-a atins nimeni, ori a fost sărit dinadins. Unul e uitat, celălalt
+     e amânat — dar niciunul nu e un rezultat, deci amândoi opresc sfârșitul de concurs. */
+  function nelamurit(p, mi){
+    var st=stareaLaMansa(p,mi);
+    return st==="necantarit" || st==="sarit";
+  }
+  function standuriNecantarite(){
+    var out=[];
+    manseRange().filter(mancheDisputata).forEach(function(mi){
+      var lipsa=state.participants.filter(function(p){ return nelamurit(p,mi); });
+      if(lipsa.length) out.push({mi:mi, oameni:lipsa});
+    });
+    return out;
+  }
+  function absentLaMansa(p, mi){
+    /* Spus de organizator: n-a venit la manșa asta. Până acum se putea ști doar despre
+       cine n-avea stand deloc; cel tras la sorți care apoi n-a venit rămânea în clasament
+       cu 0 kg, pe ultimul loc din sector, luând puncte pentru o manșă la care n-a fost. */
+    if(mi!=='total' && mOf(p,mi).stare==="absent") return true;
+    return !standOfM(p,mi) && totalOfM(p,mi)<=1e-9;
+  }
   function pointsMapS(mi){
     var secs={}, absenti=[];
     state.participants.forEach(function(p){
@@ -5145,6 +5350,11 @@
       var medal='<span class="place-badge">'+(i+1)+'</span>';
       var pts = opts.pmap ? '<td class="kg num" style="width:52px;color:var(--teal-d);">'+fmtPts(opts.pmap[p.id])+'</td>' : '';
       var sub='Stand '+(esc(standOfM(p,mi))||"–")+((opts.showSector&&sectorOfM(p,mi))?' · Sec '+esc(sectorOfM(p,mi)):'');
+      /* Un 0,000 în clasament poate însemna patru lucruri. Care anume, scrie aici — altfel
+         cine se uită peste umăr la premiere nu poate deosebi omul care n-a prins nimic de
+         standul la care nu s-a ajuns încă. */
+      var st=stareaLaMansa(p,mi);
+      if(st && st!=="cantarit") sub+=' · <span class="st-mic">'+esc(st==="necantarit"?"necântărit":STARI_MANSA[st])+'</span>';
       out+='<tr class="'+cls+'">'+
         '<td class="pos">'+medal+'</td>'+
         '<td>'+esc(nameOf(p))+'<div class="small">'+sub+'</div></td>'+
@@ -5231,6 +5441,23 @@
       body.innerHTML=html;
     }
     improspateazaStatistici();
+    improspateazaNecantarite();
+  }
+
+  /* Rândul de sub „Am terminat concursul": cine a rămas nelămurit, pe standuri. Se vede
+     din vreme, nu abia la apăsat — la baltă, un stand lipsă se poate încă drege. */
+  function improspateazaNecantarite(){
+    var el=document.getElementById("necantarite"); if(!el) return;
+    var lipsa=standuriNecantarite();
+    if(!lipsa.length){ el.innerHTML=""; el.style.display="none"; return; }
+    el.style.display="";
+    el.innerHTML='⚠️ <b>Standuri nelămurite</b> — sfârșitul de concurs le cere întâi:<br>'+
+      lipsa.map(function(x){
+        return "Manșa "+x.mi+": "+x.oameni.map(function(p){
+          return "<b>"+(esc(standOfM(p,x.mi))||"fără stand")+"</b> "+esc(nameOf(p));
+        }).join(" · ");
+      }).join("<br>")+
+      '<br>Deschide <b>Cântar</b> și spune pentru fiecare: a prins ceva, n-a prins nimic, sau n-a venit.';
   }
 
   function copyRank(){
@@ -6552,6 +6779,23 @@
     // greutățile n-au fost trecute — nu că n-a prins nimeni nimic. Dus așa în sezon,
     // acoperă rezultatele adevărate, cum s-a și întâmplat pe 23 august.
     var cuCantar=state.participants.filter(function(p){ return totalOfM(p,"total")>0; }).length;
+    /* Un stand necântărit nu e un zero: e o întrebare fără răspuns. Dus așa în sezon,
+       omul ia ultimul loc din sector, cu puncte cu tot, pentru o manșă la care poate a
+       prins. Se întreabă, cu standurile scrise pe nume — nu se blochează de tot: la
+       baltă, cel mai rău lucru e un buton care nu mai merge deloc. */
+    var lipsa=standuriNecantarite();
+    if(lipsa.length){
+      var cati=lipsa.reduce(function(a,x){ return a+x.oameni.length; }, 0);
+      var listat=lipsa.map(function(x){
+        return "Manșa "+x.mi+": "+x.oameni.map(function(p){
+          return (standOfM(p,x.mi)||"fără stand")+" "+nameOf(p);
+        }).join(", ");
+      }).join("\n");
+      if(!confirm(cati+" "+(cati===1?"stand n-a fost lămurit":"standuri n-au fost lămurite")+":\n\n"+listat+
+                  "\n\nDus așa în sezon, "+(cati===1?"el intră":"ei intră")+" cu 0 kg și "+
+                  (cati===1?"ia":"iau")+" ultimul loc din sector.\n\nDeschide Cântar și spune pentru fiecare: "+
+                  "a prins ceva, n-a prins nimic, sau n-a venit.\n\nSalvezi totuși așa?")) return;
+    }
     if(!cuCantar && !confirm("Niciun pescar n-are cântar trecut — concursul ar intra în Clasamentul de sezon cu 0 kg.\n\nDe obicei asta înseamnă că greutățile n-au fost trecute încă: deschide Cântar și verifică.\n\nChiar îl salvezi gol?")) return;
     if(!syncKey){ spune("⚠ Îți trebuie cheia de scriere — Contul meu, la Clasament live pe alte telefoane.", true); return; }
     if(!ceriBalta()) return;
