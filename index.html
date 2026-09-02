@@ -888,8 +888,10 @@
     <div class="pliant mt lockhide" id="pliant-tragere">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-tragere')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec tragerea la sorți <span class="rar">o dată pe manșă</span></button>
       <div class="pliant-in" hidden>
-        <textarea id="trg-text" rows="6" placeholder="Lipește lista de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu&#10;2 Vasile Popescu&#10;3 Gheorghe Marin"></textarea>
-        <p class="hint">Un pescar pe linie: <b>stand, nume</b>. Sectorul iese singur din stand. Cei din listă se <b>mută</b> pe standurile manșei. Cine nu e încă în concurs poate fi adăugat, dacă vrei — butonul apare sub numele lor. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
+        <textarea id="trg-text" rows="6" placeholder="Lipește lista de pe grup, un pescar pe linie:&#10;1 7 Mihai Ionescu&#10;2 3 Vasile Popescu&#10;3 12 Gheorghe Marin"></textarea>
+        <p class="hint">Un pescar pe linie: <b>stand, cod, nume</b>. Merge și fără cod, ca până acum: <b>stand, nume</b>. Sectorul iese singur din stand.</p>
+        <p class="hint">Când foaia are coduri, le pun față în față cu baza de pescari: dacă un cod și un nume nu-s ai aceluiași om, <b>rândul acela nu se trece</b>. Nu contează în ce ordine ai scris standul și codul.</p>
+        <p class="hint">Cei din listă se <b>mută</b> pe standurile manșei. Cine nu e încă în concurs poate fi adăugat, dacă vrei — butonul apare sub numele lor. Apasă întâi <b>Verifică</b> — nimic nu se mișcă până nu vezi ce am înțeles.</p>
         <div class="row">
           <button class="btn btn-ghost" onclick="verificaTragerea()">Verifică</button>
           <button class="btn btn-ghost" onclick="treceTragerea()">Mută pe standuri</button>
@@ -2527,6 +2529,22 @@
     return null;
   }
   function numePescar(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
+  /* Omul din BAZĂ, după cod. Baza e a sezonului. */
+  function pescarDupaCod(cod){
+    var c=parseInt(cod,10);
+    if(isNaN(c)) return null;
+    for(var i=0;i<pescari.length;i++){ if(parseInt(pescari[i].cod,10)===c) return pescari[i]; }
+    return null;
+  }
+  /* Omul din CONCURSUL de acum, după codul lipit de el la o tragere trecută. Ăsta e
+     rostul codului: odată lipit, numele scris altfel nu mai încurcă pe nimeni. */
+  function participantDupaCod(cod){
+    var c=parseInt(cod,10);
+    if(isNaN(c)) return null;
+    var l=state.participants||[];
+    for(var i=0;i<l.length;i++){ if(parseInt(l[i].cod,10)===c) return l[i]; }
+    return null;
+  }
 
   function pescarAdauga(){
     if(guard()) return;
@@ -4445,6 +4463,12 @@
       if(!m){ sarite.push(line.trim()); return; }
       var stand=m[0], de=m.index+m[0].length;
       var rest=raw.slice(de), restCurat=curat.slice(de);
+      /* Al doilea număr, când foaia are și coduri: „12 7 Ionescu Marian". Se ia numai din
+         poziția a doua, lipit de primul — altfel „12 Ion 2 Popescu" și-ar pierde o bucată
+         din nume. Care număr e standul și care e codul se hotărăște mai jos, pe toată
+         foaia deodată, nu aici. */
+      var cod="", m2=restCurat.match(/^[\s.,;|:\-]*(\d{1,3})(?=$|[\s.,;|:\-])/);
+      if(m2){ cod=m2[1]; rest=rest.slice(m2[0].length); restCurat=restCurat.slice(m2[0].length); }
       /* Sectorul, dacă e scris pe rând („12, Ionescu Marian, B"). Se ia numai când litera
          chiar e un sector al concursului: altfel „Ionescu M" și-ar pierde inițiala,
          iar pescarul n-ar mai fi găsit. */
@@ -4460,7 +4484,7 @@
       /* Un rând cu stand dar fără nume nu poate muta pe nimeni. „12" singur, uitat pe grup,
          n-ar trebui să mute pe cine se nimerește să fie acum pe standul 12. */
       if(!nume){ sarite.push(line.trim()); return; }
-      out.push({stand:stand, nume:nume, sector:sector, rand:line.trim()});
+      out.push({stand:stand, cod:cod, nume:nume, sector:sector, rand:line.trim()});
     });
     out.sarite=sarite;
     return out;
@@ -4486,21 +4510,76 @@
     return {p:null, cum:"negasit"};
   }
 
+  /* Pe o foaie cu coduri sunt două numere pe rând. Care e standul și care e codul nu se
+     poate ști dintr-un rând singur: 7 și 12 sunt amândouă și standuri bune, și coduri
+     bune. Se socotește pe TOATĂ foaia, în amândouă felurile, câte coduri cad pe omul cu
+     numele scris lângă ele. Cum iese mai bine, așa e scrisă foaia.
+     La egalitate — și când baza e goală, deci n-are cu ce compara — rămâne cum se scria
+     până acum: standul întâi. */
+  function ordineaTragerii(citite){
+    var cuDoua=citite.filter(function(x){ return x.cod; });
+    if(!cuDoua.length || !pescari.length) return "stand-cod";
+    function cate(camp){
+      var n=0;
+      cuDoua.forEach(function(x){
+        var b=pescarDupaCod(x[camp]);
+        if(b && faraSemne(x.nume) && numeleSePotriveste(x.nume, b)) n++;
+      });
+      return n;
+    }
+    return cate("stand")>cate("cod") ? "cod-stand" : "stand-cod";
+  }
+
+  /* Numele de pe foaie e al omului din bază? Se compară cu aceeași îngăduință ca peste
+     tot la tragere: fără diacritice, în orice ordine, și e de ajuns ca toate cuvintele
+     lungi să se regăsească. Altfel „TARANU ION" ar fi strigat drept nepotrivire, iar
+     organizatorul ar învăța să treacă peste avertismente — exact ce nu trebuie. */
+  function numeleSePotriveste(nume, b){
+    var n=faraSemne(nume);
+    if(!n) return true;
+    var drept=cheiePescar(b.prenume,b.nume), intors=faraSemne((b.nume||"")+" "+(b.prenume||""));
+    if(n===drept || n===intors) return true;
+    var cuv=n.split(" ").filter(function(x){ return x.length>2; });
+    if(!cuv.length) return false;
+    var bucati=drept.split(" ");
+    return cuv.every(function(c){ return bucati.indexOf(c)>=0; });
+  }
+
   function randuriTragerii(text){
     var citite=citesteTragerea(text), r=[], laStand={}, alOmului={};
+    var ordine=ordineaTragerii(citite);
     citite.forEach(function(x){
-      var g=pescarulTragerii(x.nume);
-      var rand={stand:x.stand, nume:x.nume, sector:x.sector, rand:x.rand,
+      var stand=x.stand, cod=x.cod;
+      if(cod && ordine==="cod-stand"){ stand=x.cod; cod=x.stand; }
+      /* Codul bate numele — ăsta e tot rostul lui. Dar dacă nu-s ai aceluiași om, nu se
+         alege niciunul: rândul se OPREȘTE. Un stand pus pe cine nu trebuie nu se mai vede
+         până la premiere, iar atunci e prea târziu. */
+      var b=cod?pescarDupaCod(cod):null, nepotrivit=false, codStrain=false, g;
+      if(cod && !b) codStrain=true;
+      if(b && !numeleSePotriveste(x.nume, b)){
+        nepotrivit=true; g={p:null, cum:"nepotrivit"};
+      } else if(b){
+        /* „cod": omul poartă deja codul, lipit la o tragere trecută — nici măcar numele
+           din bază nu mai e nevoie. „baza": codul a dus la bază, iar baza la om. */
+        var pc=participantDupaCod(cod);
+        g = pc ? {p:pc, cum:"cod"} : pescarulTragerii(numePescar(b));
+        if(g.p && !pc) g.cum="baza";
+      } else {
+        g=pescarulTragerii(x.nume);
+      }
+      var rand={stand:stand, cod:cod, nume:x.nume, sector:x.sector, rand:x.rand,
+                dinBaza:b, nepotrivit:nepotrivit, codStrain:codStrain,
                 p:g.p, cum:g.cum, standDublu:false, omDublu:false};
       /* Două rânduri pe același stand, sau același om de două ori: una din ele e greșită
          și nu se poate ști care. Se opresc amândouă — un stand pus pe cine nu trebuie
          nu se mai vede până la premiere. */
-      if(laStand[x.stand]) rand.standDublu=true; else laStand[x.stand]=true;
+      if(laStand[stand]) rand.standDublu=true; else laStand[stand]=true;
       if(g.p){ if(alOmului[g.p.id]) rand.omDublu=true; else alOmului[g.p.id]=true; }
       r.push(rand);
     });
     r.sarite=citite.sarite||[];
     r.faraStand=(state.participants||[]).filter(function(p){ return !alOmului[p.id]; });
+    r.ordine=ordine;
     return r;
   }
 
@@ -4530,7 +4609,8 @@
     var ranges=intervaleleTragerii();
     var intra=r.filter(function(x){ return x.p && !x.standDublu && !x.omDublu; });
     var dubluri=r.filter(function(x){ return x.p && (x.standDublu || x.omDublu); });
-    var nu=r.filter(function(x){ return !x.p; });
+    var strambe=r.filter(function(x){ return x.nepotrivit; });
+    var nu=r.filter(function(x){ return !x.p && !x.nepotrivit; });
     var h="";
     /* Toate se arată, nu primele câteva: ăsta e rostul lui „Verifică" — omul se uită peste
        ele cum se uită peste foaia de hârtie, înainte să apese. */
@@ -4538,13 +4618,25 @@
       h+="<b>"+intra.length+"</b> "+(intra.length===1?"pescar se mută":"pescari se mută")+" în manșa "+mi+":<br>"+
         intra.map(function(x){
           var vechi=standOfM(x.p, mi), sec=sectorulTragerii(x.stand, x.sector, ranges);
-          return "• "+esc(nameOf(x.p))+" — st. <b>"+esc(x.stand)+"</b>"+(sec?" · sec "+esc(sec):"")+
+          return "• "+esc(nameOf(x.p))+(x.cod?" <i>(cod "+esc(x.cod)+")</i>":"")+
+                 " — st. <b>"+esc(x.stand)+"</b>"+(sec?" · sec "+esc(sec):"")+
                  (vechi&&vechi!==x.stand?' <i>(era pe '+esc(vechi)+")</i>":"");
         }).join("<br>");
     }
     if(dubluri.length){
       h+=(h?"<br><br>":"")+"<b>"+dubluri.length+"</b> apar de două ori — le sar:<br>"+
         dubluri.map(function(x){ return "• "+esc(x.rand)+(x.standDublu?" <i>(standul e scris de două ori)</i>":" <i>(pescarul e scris de două ori)</i>"); }).join("<br>");
+    }
+    /* Nepotrivirile se scriu ÎNAINTEA tuturor: e singurul lucru de pe foaie care
+       înseamnă că undeva s-a greșit, nu doar că aplicația n-a înțeles. */
+    if(strambe.length){
+      h+=(h?"<br><br>":"")+"⚠️ <b>"+strambe.length+"</b> "+(strambe.length===1?"rând are":"rânduri au")+
+        " codul și numele de la oameni diferiți — "+(strambe.length===1?"nu-l trec":"nu le trec")+":<br>"+
+        strambe.map(function(x){
+          return "• codul <b>"+esc(x.cod)+"</b> e <b>"+esc(numePescar(x.dinBaza))+
+                 "</b> în bază, dar pe foaie scrie <b>"+esc(x.nume)+"</b>";
+        }).join("<br>")+
+        "<br><i>Dreg foaia, sau dreg baza — până atunci nu se mută nimeni de pe rândurile astea.</i>";
     }
     if(nu.length){
       h+=(h?"<br><br>":"")+"<b>"+nu.length+"</b> nu știu cine sunt:<br>"+
@@ -4564,6 +4656,15 @@
         r.faraStand.slice(0,8).map(function(p){ return "• "+esc(nameOf(p)); }).join("<br>")+
         (r.faraStand.length>8?"<br>…":"");
     }
+    /* Un cod care nu e în bază nu oprește nimic: omul se caută după nume, ca până acum.
+       Se spune doar, ca baza să fie completată la timpul ei. */
+    var straine=r.filter(function(x){ return x.codStrain; });
+    if(straine.length){
+      h+=(h?"<br><br>":"")+"<b>"+straine.length+"</b> "+(straine.length===1?"cod nu e":"coduri nu-s")+
+        " în baza de pescari — "+(straine.length===1?"rândul merge":"rândurile merg")+" după nume:<br>"+
+        straine.slice(0,6).map(function(x){ return "• cod "+esc(x.cod)+" — "+esc(x.nume); }).join("<br>")+
+        (straine.length>6?"<br>…":"");
+    }
     if(r.sarite.length){
       h+=(h?"<br><br>":"")+"Am sărit <b>"+r.sarite.length+"</b> "+(r.sarite.length===1?"rând":"rânduri")+":<br>"+
         r.sarite.slice(0,4).map(function(l){ return "• "+esc(l); }).join("<br>")+(r.sarite.length>4?"<br>…":"");
@@ -4580,8 +4681,10 @@
     if(!intra.length){ toast("Niciun stand de mutat"); return; }
     var mi=state.manche||1;
     var dubluri=r.filter(function(x){ return x.p && (x.standDublu || x.omDublu); }).length;
-    var nu=r.filter(function(x){ return !x.p; }).length;
+    var strambe=r.filter(function(x){ return x.nepotrivit; }).length;
+    var nu=r.filter(function(x){ return !x.p && !x.nepotrivit; }).length;
     var q="Muți "+intra.length+" "+(intra.length===1?"pescar":"pescari")+" pe standurile manșei "+mi+"?";
+    if(strambe) q+="\n⚠️ "+strambe+" au codul și numele de la oameni diferiți — nu le trec.";
     if(dubluri) q+="\n"+dubluri+" apar de două ori — le sar.";
     if(nu) q+="\n"+nu+" nu știu cine sunt — rămân unde erau.";
     if(r.faraStand.length) q+="\n"+r.faraStand.length+" nu apar în listă — rămân fără stand în manșa asta.";
@@ -4590,6 +4693,9 @@
     var ranges=intervaleleTragerii();
     intra.forEach(function(x){
       var vechi=standOfM(x.p, mi);
+      /* Codul se lipește de om o dată, aici. De la tragerea următoare încolo, omul e
+         găsit după cod, deci numele scris altfel pe foaie nu mai încurcă pe nimeni. */
+      if(x.cod && !x.nepotrivit) x.p.cod=parseInt(x.cod,10);
       setStandSector(x.p, mi, x.stand, sectorulTragerii(x.stand, x.sector, ranges));
       /* Jurnalul ține minte de pe ce stand a plecat fiecare: la o contestație, aia e
          diferența dintre „așa a ieșit la bilă" și „s-a greșit la trecut". */
@@ -4620,6 +4726,7 @@
       var nm=splitName(x.nume);
       var sec=sectorulTragerii(x.stand, x.sector, ranges);
       var np={id:uid(), stand:x.stand, prenume:nm.prenume, nume:nm.nume, sector:sec, m:{}};
+      if(x.cod) np.cod=parseInt(x.cod,10);
       curataNumarul(np);
       ensureManche(np);
       setStandSector(np, mi, x.stand, sec);

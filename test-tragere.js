@@ -21,6 +21,7 @@ const FUNCTII = ["uid", "esc", "numManse", "manseRange", "emptyManche", "ensureM
   "sectorOfM", "standOfM", "setStandSector", "nameOf", "faraSemne",
   "cantOfM", "extraOfM", "totalOfM", "scrieInJurnal", "sectorRanges", "sectorForStand",
   "citesteTragerea", "pescarulTragerii", "randuriTragerii", "sectorulTragerii",
+  "ordineaTragerii", "pescarDupaCod", "participantDupaCod", "cheiePescar", "numePescar",
   "intervaleleTragerii", "verificaTragerea", "treceTragerea", "adaugaDinTragere",
   "splitName", "curataNumarul"];
 
@@ -51,6 +52,8 @@ function pornire(pescari, optiuni) {
     puneDeoParte(motiv) { ctx.copii.push(motiv); }
   };
   ctx.camp = camp; ctx.preview = preview;
+  /* baza de pescari: goală, dacă testul nu cere altfel — foile fără coduri merg ca înainte */
+  ctx.pescari = o.pescari || [];
   ctx.state = {
     name: "Probă", manche: o.mansa || 1, numManse: 2,
     sectors: o.sectors || ["A", "B", "C", "D"],
