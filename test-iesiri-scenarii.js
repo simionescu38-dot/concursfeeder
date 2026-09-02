@@ -25,7 +25,8 @@ const MOTOR = [
   "mOf", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM", "cmmcAward",
   "standKey", "byStand", "nameKey", "nameOf", "esc", "fmt", "fmtPts",
   "sectorOfM", "standOfM", "mancheDeAfisat", "manseRange", "numManse", "scalaSectoare",
-  "absentLaMansa", "pointsMapS", "mancheDisputata", "pointsCombo", "bestMancheOf",
+  "absentLaMansa", "stareaLaMansa", "nelamurit", "standuriNecantarite",
+  "improspateazaNecantarite", "pointsMapS", "mancheDisputata", "pointsCombo", "bestMancheOf",
   "sortByPointsS", "sortRankS", "currentPmap", "scopeLabel", "roDate",
   "rankRows", "rankColumnsHtml"
 ];
@@ -41,7 +42,8 @@ const IESIRI = ["renderRank", "copyRank", "printRank", "planImagine"];
  */
 function mediu() {
   const elemente = {};
-  const el = id => (elemente[id] = elemente[id] || { innerHTML: "" });
+  /* „style" e cerut de rândul cu standurile nelămurite, care se ascunde când n-are ce spune */
+  const el = id => (elemente[id] = elemente[id] || { innerHTML: "", style: {} });
   let copiat = null;
   const box = {
     console,
@@ -61,6 +63,8 @@ function mediu() {
     __copiat: function () { return copiat; }
   };
   vm.createContext(box);
+  /* numele celor patru stări se ia din fișierul livrat, nu se scrie a doua oară aici */
+  vm.runInContext(src.match(/var STARI_MANSA=\{[^}]*\};/)[0], box);
   vm.runInContext(`
     var rankMode="sec", finMethod="kg", rankScope=1;
     function ensureManche(p){

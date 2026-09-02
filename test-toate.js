@@ -36,6 +36,7 @@ const TESTE = [
   ["Adrese date mai departe", "test-adrese.js"],
   ["Cronometru sincronizat", "test-cronometru.js"],
   ["Ceasul concursului", "test-ceas.js"],
+  ["Cele patru stări ale pescarului", "test-patru-stari.js"],
   ["Pornirea și oprirea manșei", "test-mansa.js"],
   ["Sector automat din stand", "test-sector-automat.js"],
   ["Nume fără numerotare de mână", "test-nume-curat.js"],
