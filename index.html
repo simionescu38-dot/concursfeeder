@@ -427,6 +427,8 @@
              font-weight:900; font-size:15px;}
   .pesc .nm{flex:1; min-width:0; font-weight:800; font-size:15px;
             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  /* scrierile vechi stau sub nume, mărunt: rândul crește cu ele, nu le taie */
+  .pesc .nm div{white-space:normal;}
   /* butoanele obișnuite se întind cât rândul; pe rândul unei versiuni trebuie să stea
      lângă dată, nu sub ea */
   .pesc .mic{flex:0 0 auto; width:auto; min-height:34px; padding:0 12px;
@@ -1363,7 +1365,7 @@
       <p class="hint" style="margin-top:16px;">Sau din <b>concursurile de peste sezon</b>, de pe server — acolo sunt toți oamenii care au pescuit anul ăsta, nu doar cei de pe telefon acum. Îi caut întâi și îți spun câți sunt; nimeni nu intră până nu vezi.</p>
       <button class="btn btn-ghost" onclick="pescariCautaSezonul()">Caută în concursurile din sezon</button>
       <p class="hint" id="pescari-sezon" style="margin-top:10px;"></p>
-      <p class="hint">Cine e deja în bază nu se pune a doua oară. Numele se caută fără diacritice, ca peste tot în aplicație.</p>
+      <p class="hint">Cine e deja în bază nu se pune a doua oară. Numele se caută fără diacritice, ca peste tot în aplicație. Tot atunci se țin minte și felurile în care i s-a scris numele pe foile vechi („Ciufi Man" și „Ciufy Man" duc amândouă la Dragoș Carâmb), ca la etapa următoare codul lui să se lipească singur de rând.</p>
     </div>
     <div class="card lockhide">
       <div class="sec-title">Adaugă un pescar</div>
@@ -2576,13 +2578,32 @@
      „Petrica Cazacu" sunt același om, iar asta o vede aplicația singură. Ce nu poate
      vedea singură („Ciufi Man" = „Dragoș Carâmb") se rezolvă tocmai prin cod. */
   function cheiePescar(prenume, nume){ return faraSemne(((prenume||"")+" "+(nume||"")).trim()); }
+  /* Toate felurile în care i se scrie numele unui om din bază: cel de acum, plus
+     scrierile vechi strânse din concursuri. „Ciufi Man" și „Ciufy Man" sunt scrieri ale
+     lui Dragoș Carâmb — iar aplicația trebuie să-l găsească după oricare dintre ele,
+     altfel codul lui nu se lipește de rândul din foaie. */
+  function scrierileLui(p){
+    var out=[cheiePescar(p.prenume, p.nume)];
+    (p.scrieri||[]).forEach(function(x){ var k=faraSemne(x); if(k && out.indexOf(k)<0) out.push(k); });
+    return out.filter(function(x){ return !!x; });
+  }
   function pescarCauta(prenume, nume){
     var k=cheiePescar(prenume, nume);
     if(!k) return null;
     for(var i=0;i<pescari.length;i++){
-      if(cheiePescar(pescari[i].prenume, pescari[i].nume)===k) return pescari[i];
+      if(scrierileLui(pescari[i]).indexOf(k)>=0) return pescari[i];
     }
     return null;
+  }
+  /* O scriere nouă se ține minte pe omul ei. Numele de acum nu se trece a doua oară în
+     listă: el e deja acolo, ca nume. */
+  function tineMinteScrierea(p, nume){
+    var k=faraSemne(nume);
+    if(!k || k===cheiePescar(p.prenume,p.nume)) return false;
+    if(!Array.isArray(p.scrieri)) p.scrieri=[];
+    for(var i=0;i<p.scrieri.length;i++){ if(faraSemne(p.scrieri[i])===k) return false; }
+    p.scrieri.push((""+nume).trim());
+    return true;
   }
   function numePescar(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
   /* Omul din BAZĂ, după cod. Baza e a sezonului. */
@@ -2661,22 +2682,28 @@
   function pescariDinArhive(arhive){
     var eInBaza={};
     pescari.forEach(function(p){ eInBaza[cheiaSezon(numePescar(p))]=1; });
-    var vazut={}, noi=[], erau=0, concursuri=0, oameni=0;
+    var vazut={}, noi=[], erau=0, concursuri=0, oameni=0, scrieriNoi=0;
     (arhive||[]).forEach(function(a){
       var lista=((a && a.data && a.data.participants)||[]);
       if(!lista.length) return;
       concursuri++;
       lista.forEach(function(p){
-        var nm=numeleDinSezon(nameOf(p));
+        var scrisAcolo=nameOf(p);
+        var nm=numeleDinSezon(scrisAcolo);
         var k=faraSemne(nm);
         if(!k || k==="—") return;
+        /* Scrierea de pe foaia veche se ține minte pe omul din bază, chiar dacă el e
+           deja acolo: de-aia se face înainte de ieșirile de mai jos. Așa, la etapa
+           următoare, „Ciufi Man" duce la codul lui Dragoș Carâmb. */
+        var alLui=pescarCauta(splitName(nm).prenume, splitName(nm).nume);
+        if(alLui && tineMinteScrierea(alLui, scrisAcolo)) scrieriNoi++;
         if(vazut[k]) return;          // același om, la mai multe etape: un singur cod
         vazut[k]=1; oameni++;
         if(eInBaza[k]){ erau++; return; }
         noi.push(splitName(nm));
       });
     });
-    return {noi:noi, erau:erau, concursuri:concursuri, oameni:oameni};
+    return {noi:noi, erau:erau, concursuri:concursuri, oameni:oameni, scrieriNoi:scrieriNoi};
   }
 
   function pescariCautaSezonul(){
@@ -2691,14 +2718,21 @@
         var arh=(j && j.ok && j.archives) ? j.archives : [];
         var g=pescariDinArhive(arh);
         if(!g.concursuri){ if(el) el.innerHTML="N-am găsit niciun concurs arhivat în sezon."; return; }
+        /* Scrierile strânse de pe foile vechi se pun pe loc deoparte, chiar dacă omul nu
+           mai adaugă pe nimeni: altfel s-ar pierde la următoarea deschidere, iar munca
+           asta se face o dată. */
+        if(g.scrieriNoi){ pescariSalveaza(); renderPescari(); }
         var cap="În <b>"+g.concursuri+"</b> "+(g.concursuri===1?"concurs":"concursuri")+
                 " din sezon sunt <b>"+g.oameni+"</b> pescari";
-        if(!g.noi.length){ if(el) el.innerHTML=cap+", și sunt toți în bază."; return; }
+        var scr=g.scrieriNoi
+          ? "<br><b>"+g.scrieriNoi+"</b> "+(g.scrieriNoi===1?"fel nou de a scrie un nume s-a ținut minte":"feluri noi de a scrie numele s-au ținut minte")+"."
+          : "";
+        if(!g.noi.length){ if(el) el.innerHTML=cap+", și sunt toți în bază."+scr; return; }
         sezonGasit=g.noi;
         if(el) el.innerHTML=cap+", dintre care <b>"+g.noi.length+"</b> nu-s încă în bază"+
           (g.erau?" ("+g.erau+" sunt deja)":"")+":<br>"+
           g.noi.slice(0,10).map(function(x){ return "• "+esc((x.prenume+" "+x.nume).trim()); }).join("<br>")+
-          (g.noi.length>10?"<br>…":"")+
+          (g.noi.length>10?"<br>…":"")+scr+
           /* ghost, nu primary: pe ecran e deja un buton scos în față („Adaugă în bază").
              Două albastre și niciunul nu mai e cel important. Ca la tragere. */
           '<br><button class="btn btn-ghost mt" onclick="pescariAdaugaSezonul()">Adaugă-i pe cei '+
@@ -2790,8 +2824,11 @@
     }
     var L=isLocked();
     cutie.innerHTML = lista.map(function(p){
+      var alte=(p.scrieri||[]).length;
       return '<div class="pesc"><div class="cod">'+esc(String(p.cod))+'</div>'+
-        '<div class="nm">'+esc(numePescar(p))+'</div>'+
+        '<div class="nm">'+esc(numePescar(p))+
+          (alte?'<div style="font-weight:600; font-size:11px; opacity:.75;">i se mai scrie: '+
+                esc(p.scrieri.join(", "))+'</div>':'')+'</div>'+
         (L?'':'<button class="del" aria-label="Scoate pescarul din bază" onclick="pescarSterge(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg></button>')+
       '</div>';
     }).join("");
@@ -5472,7 +5509,10 @@
     pescari.forEach(function(p){
       var c=parseInt(p.cod,10);
       if(!isNaN(c)) codLuat[c]=p;
-      numeStiut[cheiePescar(p.prenume,p.nume)]=p;
+      /* după oricare scriere a lui: dacă fișierul îl aduce sub „Ciufi Man" iar aici
+         el e Dragoș Carâmb cu scrierea asta, e tot el — și n-are ce căuta a doua oară
+         în bază, cu al doilea cod. */
+      scrierileLui(p).forEach(function(k){ numeStiut[k]=p; });
     });
     var noi=[], erau=0, ciocniri=[];
     (lista||[]).forEach(function(x){
@@ -5487,6 +5527,9 @@
          una, ori alta ar face doi oameni cu același cod în sezon. Se spune. */
       if(codLuat[c]){ ciocniri.push({nume:(pr+" "+nm).trim(), de:"codul "+c+" e la "+numePescar(codLuat[c])}); return; }
       var nou={id:x.id||uid(), cod:c, prenume:pr, nume:nm, adaugat:x.adaugat||Date.now()};
+      /* scrierile numelui lui vin cu el: altfel, pe telefonul celălalt, foaia veche n-ar
+         mai duce la codul lui și munca de strâns s-ar face din nou */
+      (Array.isArray(x.scrieri)?x.scrieri:[]).forEach(function(sc){ tineMinteScrierea(nou, sc); });
       codLuat[c]=nou; numeStiut[k]=nou;
       noi.push(nou);
     });

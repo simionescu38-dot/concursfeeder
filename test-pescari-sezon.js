@@ -18,7 +18,8 @@ const src = H.citeste("index.html");
 const t = H.creeazaVerificator();
 
 const FUNCTII = ["uid", "esc", "faraSemne", "nameOf", "splitName", "numePescar",
-  "cheiePescar", "pescarCauta", "pescarCodNou", "pescarNou", "pescariSalveaza",
+  "cheiePescar", "scrierileLui", "pescarCauta", "tineMinteScrierea",
+  "pescarCodNou", "pescarNou", "pescariSalveaza",
   "numeleDinSezon", "cheiaSezon", "pescariDinArhive"];
 
 /** o lume în care baza există și arhivele se pot inventa */

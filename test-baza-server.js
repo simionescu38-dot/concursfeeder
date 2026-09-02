@@ -21,7 +21,7 @@ const H = require("./test-helpers.js");
 const src = H.citeste("index.html");
 const t = H.creeazaVerificator();
 
-const FUNCTII = ["uid", "faraSemne", "cheiePescar", "numePescar", "pescarCodNou", "pescarNou",
+const FUNCTII = ["uid", "faraSemne", "cheiePescar", "scrierileLui", "tineMinteScrierea", "numePescar", "pescarCodNou", "pescarNou",
   "bazaDinFisier", "potrivesteBaza", "cameraBazei", "bazaPoateLaServer", "bazaIncarcaRev",
   "bazaSalveazaRev", "bazaStare", "improspateazaStareaBazei", "bazaScrieLocal",
   "bazaAdunaDe", "bazaSpreServer", "trimiteBaza", "aduBazaDeLaServer", "pescariSalveaza"];
