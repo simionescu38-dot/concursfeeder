@@ -26,7 +26,7 @@ const src = citeste(path.join(RADACINA, "index.html"));
    ================================================================ */
 const NUME = [
   "pescariIncarca", "pescariSalveaza", "pescarCodNou", "cheiePescar", "pescarCauta",
-  "numePescar", "pescarNou", "pescarAdauga", "pescarSterge", "pescariDinConcurs", "renderPescari",
+  "numePescar", "scrierileLui", "pescarNou", "pescarAdauga", "pescarSterge", "pescariDinConcurs", "renderPescari",
   "faraSemne", "esc", "uid"
 ];
 
