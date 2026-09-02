@@ -400,6 +400,14 @@
   .hb{flex:1; height:14px; background:#dce6f0; border-radius:7px; overflow:hidden;}
   .hb-f{height:100%; background:var(--teal); border-radius:7px;}
   .hb-v{flex:0 0 auto; font-size:12px; font-weight:800;}
+  /* Rândurile de la Statistici au etichete din CUVINTE, nu litere de sector: în
+     caseta îngustă a lui .hb-l, „Cea mai mare" se rupea pe trei rânduri. */
+  .stat-rand{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+             padding:7px 0; border-bottom:1px solid var(--line);}
+  .stat-rand:last-of-type{border-bottom:none;}
+  .stat-rand .et{font-size:13px; font-weight:800; color:var(--muted); flex:0 0 auto;}
+  .stat-rand .vl{font-size:13px; font-weight:800; text-align:right;}
+  .hb-row .hb-l.lat{flex:0 0 42%;}
 
   /* statistici – grafic pe coloane (ore, distribuție) */
   .vb-wrap{display:flex; align-items:flex-end; gap:2px; height:124px; margin:4px 0 0; padding:0 2px;}
@@ -5475,6 +5483,142 @@
   }
   function kgShort(n){ return (Math.round((+n||0)*10)/10).toString().replace(".",","); }
 
+  /* ---------- detaliile din Statistici ----------
+     Fiecare bucată e o funcție a ei, ca să poată fi probată singură. Toate se uită la
+     TOT concursul, ca restul statisticilor — nu la manșa aleasă în clasamente. */
+
+  /* durata dintre prima și ultima cântărire, scrisă pe limba omului */
+  /* În fișier sunt două funcții „hhmm", cu argumente diferite — una ia o dată, alta un
+     număr. Care câștigă depinde de ordinea în care sunt scrise, și asta e o capcană.
+     Aici se scrie ora pe loc, ca să nu atârne de nimic. */
+  function ceas(t){ var d=new Date(t); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2); }
+  function cateOreSiMinute(ms){
+    var m=Math.round(ms/60000), h=Math.floor(m/60); m=m-h*60;
+    if(h && m) return h+" h "+m+" min";
+    if(h) return h+" h";
+    return m+" min";
+  }
+
+  /* „Cel mai mare pește" e peștele extra, cântărit unul câte unul. Juvelnicul e altceva:
+     o cântărire poate avea în ea mai mulți pești. De-aia se numește altfel. */
+  function statDesprePesti(all, allEx){
+    if(!all.length && !allEx.length) return "";
+    var mare=null, mic=null, suma=0;
+    all.forEach(function(c){
+      if(c.v<=0) return;
+      suma+=c.v;
+      if(!mare||c.v>mare.v) mare=c;
+      if(!mic||c.v<mic.v) mic=c;
+    });
+    var cuCaptura=0;
+    state.participants.forEach(function(p){ if(totalOfM(p,"total")>1e-9) cuCaptura++; });
+    var fara=state.participants.length-cuCaptura;
+    var nrCant=all.filter(function(c){ return c.v>0; }).length;
+
+    var h='<div class="card"><div class="sec-title">Despre capturi</div>'+
+      '<div class="summary">'+
+        '<div class="stat"><div class="n num">'+nrCant+'</div><div class="l">Cântăriri</div></div>'+
+        '<div class="stat"><div class="n num">'+fmt(nrCant?suma/nrCant:0)+'</div><div class="l">Medie pe cântărire (kg)</div></div>'+
+      '</div>';
+    if(mare) h+='<div class="stat-rand"><span class="et">Cea mai mare</span><span class="vl num">'+
+      fmt(mare.v)+' kg — '+esc(nameOf(mare.p))+'</span></div>';
+    if(mic && mare && mic!==mare) h+='<div class="stat-rand"><span class="et">Cea mai mică</span><span class="vl num">'+
+      fmt(mic.v)+' kg — '+esc(nameOf(mic.p))+'</span></div>';
+    h+='<div class="stat-rand"><span class="et">Au prins</span><span class="vl num">'+
+      cuCaptura+' din '+state.participants.length+(fara?' · '+fara+' fără captură':'')+'</span></div>';
+    h+='<p class="hint" style="margin:8px 0 0;">„Cea mai mare" e cea mai grea <b>cântărire</b> de juvelnic — poate avea mai mulți pești în ea. Cel mai mare <b>pește</b> e cel de mai sus, dintre peștii extra.</p></div>';
+    return h;
+  }
+
+  /* primii trei, cât e între primul și ultimul, și cine a mers la fel în amândouă manșele */
+  function statDespreOameni(){
+    var cu=state.participants.filter(function(p){ return totalOfM(p,"total")>1e-9; });
+    if(cu.length<2) return "";
+    var top=cu.slice().sort(function(a,b){ return totalOfM(b,"total")-totalOfM(a,"total"); });
+    var h='<div class="card"><div class="sec-title">Despre pescari</div>';
+    var mx=totalOfM(top[0],"total");
+    top.slice(0,3).forEach(function(p,i){
+      var v=totalOfM(p,"total"), w=mx?Math.max(4,Math.round(v/mx*100)):4;
+      h+='<div class="hb-row"><span class="hb-l lat">'+(i+1)+'. '+esc(nameOf(p))+'</span>'+
+         '<div class="hb"><div class="hb-f" style="width:'+w+'%;"></div></div>'+
+         '<span class="hb-v num">'+fmt(v)+' kg</span></div>';
+    });
+    var ultim=top[top.length-1];
+    h+='<p class="hint" style="margin:8px 0 0;">Între primul și ultimul care a prins: <b>'+
+       fmt(mx-totalOfM(ultim,"total"))+' kg</b>.</p>';
+
+    /* Cel mai egal: are captură în TOATE manșele disputate, iar între ele e cea mai mică
+       diferență. La o singură manșă n-are ce compara, deci nu se arată. */
+    var disputate=manseRange().filter(mancheDisputata);
+    if(disputate.length>=2){
+      var egal=null;
+      cu.forEach(function(p){
+        var v=disputate.map(function(mi){ return totalOfM(p,mi); });
+        if(v.some(function(x){ return x<=1e-9; })) return;
+        var dif=Math.max.apply(null,v)-Math.min.apply(null,v);
+        if(!egal||dif<egal.dif) egal={p:p,dif:dif,v:v};
+      });
+      if(egal) h+='<p class="hint" style="margin:6px 0 0;">Cel mai egal pe manșe: <b>'+esc(nameOf(egal.p))+
+        '</b> — '+egal.v.map(function(x){ return fmt(x); }).join(' și ')+' kg, adică '+fmt(egal.dif)+' kg diferență.</p>';
+    }
+    return h+'</div>';
+  }
+
+  /* fiecare manșă cu totalul ei, cine a fost cel mai bun și ce sector a mers */
+  function statPeManse(){
+    var disputate=manseRange().filter(mancheDisputata);
+    if(disputate.length<2) return "";
+    var randuri=disputate.map(function(mi){
+      var total=0, cati=0, best=null, secs={};
+      state.participants.forEach(function(p){
+        var v=totalOfM(p,mi);
+        if(v<=1e-9) return;
+        total+=v; cati++;
+        if(!best||v>totalOfM(best,mi)) best=p;
+        var k=sectorOfM(p,mi)||"Fără sector"; secs[k]=(secs[k]||0)+v;
+      });
+      var secBun=null;
+      Object.keys(secs).forEach(function(k){ if(!secBun||secs[k]>secs[secBun]) secBun=k; });
+      return {mi:mi,total:total,cati:cati,best:best,secBun:secBun,secKg:secBun?secs[secBun]:0};
+    });
+    var mx=0; randuri.forEach(function(r){ if(r.total>mx) mx=r.total; });
+    var h='<div class="card"><div class="sec-title">Pe manșe</div>';
+    randuri.forEach(function(r){
+      var w=mx?Math.max(4,Math.round(r.total/mx*100)):4;
+      h+='<div class="hb-row"><span class="hb-l">Manșa '+r.mi+'</span>'+
+         '<div class="hb"><div class="hb-f" style="width:'+w+'%;"></div></div>'+
+         '<span class="hb-v num">'+fmt(r.total)+' kg</span></div>'+
+         '<p class="hint" style="margin:2px 0 10px;">'+r.cati+' au cântărit'+
+         (r.best?' · cel mai bun: <b>'+esc(nameOf(r.best))+'</b> cu '+fmt(totalOfM(r.best,r.mi))+' kg':'')+
+         (r.secBun?' · sectorul '+esc(r.secBun)+' a strâns cel mai mult ('+fmt(r.secKg)+' kg)':'')+'</p>';
+    });
+    var dif=Math.abs(randuri[0].total-randuri[randuri.length-1].total);
+    h+='<p class="hint" style="margin:8px 0 0;">Între manșa cu cel mai mult și cea cu cel mai puțin: <b>'+fmt(dif)+' kg</b>.</p>';
+    return h+'</div>';
+  }
+
+  /* de când până când s-a cântărit, și cât de des */
+  function statDespreTimp(timed){
+    if(timed.length<2) return "";
+    var t0=null, t1=null;
+    timed.forEach(function(c){ if(t0===null||c.t<t0) t0=c.t; if(t1===null||c.t>t1) t1=c.t; });
+    var durata=t1-t0;
+    if(durata<60000) return "";
+    var ore=durata/3600000;
+    var byH={};
+    timed.forEach(function(c){ var h=new Date(c.t).getHours(); byH[h]=(byH[h]||0)+1; });
+    var oraVarf=null;
+    Object.keys(byH).forEach(function(h){ if(oraVarf===null||byH[h]>byH[oraVarf]) oraVarf=h; });
+    return '<div class="card"><div class="sec-title">Despre timp</div>'+
+      '<div class="summary">'+
+        '<div class="stat"><div class="n num">'+cateOreSiMinute(durata)+'</div><div class="l">De la prima la ultima</div></div>'+
+        '<div class="stat"><div class="n num">'+(Math.round(timed.length/ore*10)/10).toString().replace(".",",")+'</div><div class="l">Cântăriri pe oră</div></div>'+
+      '</div>'+
+      '<p class="hint" style="margin:8px 0 0;">Prima la <b>'+ceas(t0)+'</b>, ultima la <b>'+ceas(t1)+'</b>'+
+      (oraVarf!==null?'. Cele mai multe într-o oră: <b>'+byH[oraVarf]+'</b>, între '+oraVarf+' și '+(+oraVarf+1)+'.':'.')+
+      ' Se numără doar cântăririle cu oră salvată.</p></div>';
+  }
+
   function statsHtml(){
     var all=[];
     var allEx=[];
@@ -5501,7 +5645,9 @@
     '<div class="summary">'+
       '<div class="stat"><div class="n num">'+fmt(totalC/Math.max(1,state.participants.length))+'</div><div class="l">Medie kg / participant</div></div>'+
     '</div>'+
-    '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>';
+    '<div class="card"><div class="sec-title">CMMC — cel mai mare pește</div>'+(cmmcBig?('<div style="font-weight:800;font-size:16px;">'+fmt(cmmcBig.v)+' kg — '+esc(nameOf(cmmcBig.p))+'</div>'):'<div class="hint" style="margin:0;">Niciun pește extra înregistrat încă.</div>')+'</div>'+
+    statDesprePesti(all, allEx)+
+    statDespreOameni();
     var secs={};
     state.participants.forEach(function(p){ var k=sectorOfM(p,toate)||"Fără sector"; secs[k]=(secs[k]||0)+totalOfM(p,toate); });
     var sk=Object.keys(secs).sort(function(a,b){return a.localeCompare(b,"ro");});
@@ -5532,6 +5678,8 @@
     }
 
     // Când a mușcat peștele — ora e salvată la fiecare cântărire (m.catchTimes)
+    html+=statPeManse();
+
     /* Juvelnicele se cântăresc toate la final, deci cad într-o singură oră: singurul
        lucru care spune CÂND a venit peștele e peștele extra, cântărit pe loc. De când
        și el are oră, graficul îl numără — altfel arăta o coloană și atât. */
@@ -5554,6 +5702,8 @@
         (faraOra?' (din '+timed.length+' cu oră salvată, '+faraOra+' fără)':'')+
         '. <b>Juvelnicele se cântăresc la final</b>, deci cad toate în aceeași oră; peștii extra arată când au venit.</p></div>';
     }
+
+    html+=statDespreTimp(timed);
 
     // Distribuția cântăririlor
     var vs=[]; all.forEach(function(c){ if(c.v>0) vs.push(c.v); });
