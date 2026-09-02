@@ -400,6 +400,16 @@
   .hb{flex:1; height:14px; background:#dce6f0; border-radius:7px; overflow:hidden;}
   .hb-f{height:100%; background:var(--teal); border-radius:7px;}
   .hb-v{flex:0 0 auto; font-size:12px; font-weight:800;}
+  /* Baza de pescari: 44 de rânduri pe un ecran de telefon. Rândul e scund înadins —
+     cu cardul obișnuit (.p, 14px jur împrejur) lista ar ține cinci ecrane de derulat. */
+  .pesc{display:flex; align-items:center; gap:10px; padding:9px 12px; margin-bottom:8px;
+        background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-sm);}
+  .pesc .cod{flex:0 0 auto; min-width:40px; height:32px; padding:0 8px; border-radius:9px;
+             background:var(--teal); color:#fff; display:grid; place-items:center;
+             font-weight:900; font-size:15px;}
+  .pesc .nm{flex:1; min-width:0; font-weight:800; font-size:15px;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
   /* Rândurile de la Statistici au etichete din CUVINTE, nu litere de sector: în
      caseta îngustă a lui .hb-l, „Cea mai mare" se rupea pe trei rânduri. */
   .stat-rand{display:flex; align-items:baseline; justify-content:space-between; gap:12px;
@@ -636,6 +646,8 @@
   .btn-danger{background:#28191c; color:#ff9d97; border-color:#573036;}
   .btn-amber{color:#211503; background:linear-gradient(135deg,#f6c35c,#d99a2d);}
   .catch-add{background:var(--teal); color:#031011;}
+  /* pe fundal închis, teal-ul e deschis: scrisul alb din tema luminoasă ar da 1,9:1 */
+  .pesc .cod{color:#031011;}
   .catch-add:active{background:#62e7e0;}
 
   .stand{background:#142a39; color:var(--teal); border:1px solid #285063;}
@@ -1172,6 +1184,12 @@
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-odata')">⚙️ Setat o dată, și gata</button>
       <div class="pliant-in" hidden>
     <div class="card">
+      <div class="sec-title">Baza de pescari</div>
+      <button class="btn btn-ghost" onclick="showView('pescari')">Deschide baza de pescari</button>
+      <p class="hint" id="pescari-scurt">Fiecare pescar cu codul lui, o dată, pentru tot sezonul.</p>
+    </div>
+
+    <div class="card">
       <div class="sec-title">Notificări live (doar Android/Chrome)</div>
       <button class="btn btn-ghost" id="btn-push" onclick="togglePush()">🔕 Oprite – apasă ca să pornești</button>
       <p class="hint">Primești un pop-up cu sunet pe telefon când apare un nou lider în concurs — chiar dacă aplicația e închisă. Are nevoie de un cod de cameră setat mai sus (sincronizare live).</p>
@@ -1299,6 +1317,33 @@
       <button class="btn btn-primary mt" onclick="saveReg()">Salvează regulamentul</button>
       <p class="hint">Textul intră în datele concursului, deci îl văd toți cei care deschid clasamentul live al camerei tale.</p>
     </div>
+  </section>
+
+  <!-- BAZA DE PESCARI -->
+  <section class="view" id="view-pescari">
+    <button class="btn-link" onclick="showView('set')">‹ Înapoi la Contul meu</button>
+    <div class="card">
+      <div class="sec-title">Baza de pescari</div>
+      <p class="hint" style="margin:0 0 10px;">Fiecare pescar are un cod, dat de aplicație. Codul rămâne al lui tot sezonul, oricum i-ar fi scris numele pe foaie. Se completează o dată.</p>
+      <div id="pescari-numar" class="hint" style="margin:0;"></div>
+    </div>
+    <div class="card lockhide" id="card-pescari-din-concurs">
+      <div class="sec-title">Ia-i din concursul de acum</div>
+      <p class="hint" style="margin:0 0 10px;" id="pescari-din-concurs-cati"></p>
+      <button class="btn btn-ghost" onclick="pescariDinConcurs()">Adaugă-i pe cei care nu-s în bază</button>
+      <p class="hint">Cine e deja în bază nu se pune a doua oară. Numele se caută fără diacritice, ca peste tot în aplicație.</p>
+    </div>
+    <div class="card lockhide">
+      <div class="sec-title">Adaugă un pescar</div>
+      <div class="row">
+        <div><label class="f">Prenume</label><input id="pb-prenume" placeholder="ex: Mihai"></div>
+        <div><label class="f">Nume</label><input id="pb-nume" placeholder="ex: Ionescu"></div>
+      </div>
+      <button class="btn btn-primary mt" onclick="pescarAdauga()">Adaugă în bază</button>
+      <p class="hint">Codul îl dă aplicația, pe rând. Doi oameni nu pot avea același cod.</p>
+    </div>
+    <input id="pescari-cauta" placeholder="Caută după nume sau cod" oninput="renderPescari()">
+    <div id="pescari-lista"></div>
   </section>
 
   <!-- SPONSORI -->
@@ -2433,6 +2478,148 @@
       }).join("");
   }
 
+  // ---------- baza de pescari ----------
+  /* Clasamentul de sezon leagă oamenii DUPĂ NUME. De-aia „Ciufi Man" și „Ciufy Man" au
+     ieșit doi pescari, fiecare cu un concurs, amândoi sub pragul de clasare — deși omul
+     fusese la două etape. Cu un cod, omul E codul: cum îi scrie numele pe foaie nu mai
+     schimbă nimic.
+     Baza NU e a concursului, e a sezonului: stă în cheia ei, separat de "state", care se
+     golește la fiecare concurs nou. */
+  var PESCARI_KEY="concurs-pescari-v1";
+  var pescari=[];
+  /* Cel mai mare cod dat vreodată. Se ține deoparte, fiindcă nu se poate socoti din
+     listă: dacă scoți tocmai omul cu codul cel mai mare, socoteala ar da înapoi și
+     următorul venit ar primi un cod deja folosit într-un concurs trecut. */
+  var pescariUltimCod=0;
+
+  function pescariIncarca(){
+    var d=null;
+    try{ d=JSON.parse(localStorage.getItem(PESCARI_KEY)||"null"); }catch(e){}
+    pescari = (d && Array.isArray(d.lista)) ? d.lista : [];
+    pescariUltimCod = (d && parseInt(d.ultimulCod,10)) || 0;
+    /* plasă de siguranță: dacă numărătoarea s-a pierdut, se ia din listă */
+    pescari.forEach(function(p){ var c=parseInt(p.cod,10); if(c>pescariUltimCod) pescariUltimCod=c; });
+  }
+  function pescariSalveaza(){
+    try{ localStorage.setItem(PESCARI_KEY, JSON.stringify({ultimulCod:pescariUltimCod, lista:pescari})); }
+    catch(e){ toast("Stocare plină – nu am putut salva baza"); }
+  }
+
+  /* Codul următor: cel mai mare dat vreodată, plus unu. Un cod scos din bază NU se mai
+     dă nimănui altcuiva — altfel doi oameni din concursuri diferite ar sfârși cu același
+     cod, adică exact greșeala pe care baza asta trebuie s-o repare. */
+  function pescarCodNou(){ return pescariUltimCod+1; }
+  function pescarNou(prenume, nume){
+    pescariUltimCod=pescarCodNou();
+    return {id:uid(), cod:pescariUltimCod, prenume:prenume, nume:nume, adaugat:Date.now()};
+  }
+  /* Căutarea merge pe "faraSemne", cea folosită deja la lista lipită și la tragerea la
+     sorți: fără diacritice, fără majuscule, fără spații în plus. „Petrică Cazacu" și
+     „Petrica Cazacu" sunt același om, iar asta o vede aplicația singură. Ce nu poate
+     vedea singură („Ciufi Man" = „Dragoș Carâmb") se rezolvă tocmai prin cod. */
+  function cheiePescar(prenume, nume){ return faraSemne(((prenume||"")+" "+(nume||"")).trim()); }
+  function pescarCauta(prenume, nume){
+    var k=cheiePescar(prenume, nume);
+    if(!k) return null;
+    for(var i=0;i<pescari.length;i++){
+      if(cheiePescar(pescari[i].prenume, pescari[i].nume)===k) return pescari[i];
+    }
+    return null;
+  }
+  function numePescar(p){ return ((p.prenume||"")+" "+(p.nume||"")).trim() || "—"; }
+
+  function pescarAdauga(){
+    if(guard()) return;
+    var pr=(document.getElementById("pb-prenume").value||"").trim();
+    var nm=(document.getElementById("pb-nume").value||"").trim();
+    if(!pr && !nm){ toast("Scrie măcar un nume"); return; }
+    var gasit=pescarCauta(pr, nm);
+    if(gasit){ toast(numePescar(gasit)+" e deja în bază, cu codul "+gasit.cod); return; }
+    var nou=pescarNou(pr, nm);
+    pescari.push(nou);
+    pescariSalveaza();
+    document.getElementById("pb-prenume").value="";
+    document.getElementById("pb-nume").value="";
+    document.getElementById("pb-prenume").focus();
+    renderPescari();
+    toast(numePescar(nou)+" — codul "+nou.cod);
+  }
+
+  function pescarSterge(id){
+    if(guard()) return;
+    var p=null; pescari.forEach(function(x){ if(x.id===id) p=x; });
+    if(!p) return;
+    if(!confirm("Scoți pe "+numePescar(p)+" din bază?\n\nCodul "+p.cod+" nu se mai dă nimănui altcuiva.")) return;
+    pescari=pescari.filter(function(x){ return x.id!==id; });
+    pescariSalveaza(); renderPescari();
+  }
+
+  /* Baza se umple cel mai repede din concursul care e chiar acum pe telefon: 44 de oameni
+     scriși de mână ar însemna o seară pierdută. Cine e deja în bază nu se pune iar. */
+  function pescariDinConcurs(){
+    if(guard()) return;
+    /* Cine era în bază ÎNAINTE de apăsare. Fără poza asta, un om scris de două ori pe
+       aceeași foaie ar fi numărat drept „era deja în bază" — deși tocmai intrase. */
+    var inainte={};
+    pescari.forEach(function(p){ inainte[cheiePescar(p.prenume,p.nume)]=1; });
+    var noi=0, sarite=0;
+    (state.participants||[]).forEach(function(p){
+      var pr=(p.prenume||"").trim(), nm=(p.nume||"").trim();
+      if(!pr && !nm) return;
+      if(pescarCauta(pr, nm)){ if(inainte[cheiePescar(pr,nm)]) sarite++; return; }
+      pescari.push(pescarNou(pr, nm));
+      noi++;
+    });
+    if(noi) pescariSalveaza();
+    renderPescari();
+    toast(noi ? ("Adăugați "+noi+(sarite?" · "+sarite+" erau deja în bază":"")) : "Toți erau deja în bază");
+  }
+
+  function renderPescari(){
+    var nr=document.getElementById("pescari-numar");
+    if(nr) nr.innerHTML = pescari.length
+      ? "<b>"+pescari.length+"</b> pescari în bază · codurile merg până la <b>"+pescariUltimCod+"</b>"
+      : "Baza e goală. Adaugă-i mai jos, sau ia-i dintr-un concurs.";
+
+    var caz=document.getElementById("pescari-din-concurs-cati"),
+        card=document.getElementById("card-pescari-din-concurs");
+    if(caz && card){
+      var toti=0, afara=0;
+      (state.participants||[]).forEach(function(p){
+        if(!((p.prenume||"").trim() || (p.nume||"").trim())) return;
+        toti++;
+        if(!pescarCauta(p.prenume, p.nume)) afara++;
+      });
+      card.style.display = toti ? "" : "none";
+      caz.innerHTML = "Pe telefon e concursul <b>"+esc(state.name||"fără nume")+"</b>, cu <b>"+
+        toti+"</b> pescari, dintre care <b>"+afara+"</b> nu-s încă în bază.";
+    }
+
+    var cutie=document.getElementById("pescari-lista");
+    if(!cutie) return;
+    if(!pescari.length){
+      cutie.innerHTML='<div class="empty"><div class="big">🎣</div>Niciun pescar în bază.</div>';
+      return;
+    }
+    var q=((document.getElementById("pescari-cauta")||{}).value||"").trim();
+    var qk=faraSemne(q);
+    var lista=pescari.slice().sort(function(a,b){ return a.cod-b.cod; });
+    if(qk) lista=lista.filter(function(p){
+      return String(p.cod)===qk || cheiePescar(p.prenume,p.nume).indexOf(qk)>=0;
+    });
+    if(!lista.length){
+      cutie.innerHTML='<div class="empty"><div class="big">🔎</div>Niciun pescar găsit.</div>';
+      return;
+    }
+    var L=isLocked();
+    cutie.innerHTML = lista.map(function(p){
+      return '<div class="pesc"><div class="cod">'+esc(String(p.cod))+'</div>'+
+        '<div class="nm">'+esc(numePescar(p))+'</div>'+
+        (L?'':'<button class="del" aria-label="Scoate pescarul din bază" onclick="pescarSterge(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg></button>')+
+      '</div>';
+    }).join("");
+  }
+
   // ---------- meteo (Open-Meteo) + solunar ----------
   // Open-Meteo nu cere cheie și acceptă cereri direct din browser, deci merge din
   // pagina asta fără să atingem Worker-ul și fără niciun secret în cod public.
@@ -3319,7 +3506,7 @@
   // ---------- views ----------
   // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
   // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
-  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar"};
+  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set"};
   /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
      în browserul de probă, iar ce nu se poate proba nu se livrează. */
   function plianteaza(id){
@@ -3352,6 +3539,7 @@
     if(v==="strat"){ renderStrat(); loadPasPicheti(); }
     if(v==="reg") renderReg();
     if(v==="spons") renderSpons();
+    if(v==="pescari") renderPescari();
     window.scrollTo(0,0);
   }
   function setManche(mi){
@@ -6399,6 +6587,7 @@
   // ---------- init ----------
   (function(){
     load();
+    pescariIncarca();
     loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
     wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
     stratLoad();

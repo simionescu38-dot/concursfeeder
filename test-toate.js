@@ -42,7 +42,8 @@ const TESTE = [
   ["Aducerea variantei noi", "test-actualizare.js"],
   ["Poza pentru WhatsApp", "test-imagine.js"],
   ["Arhivarea în sezon", "test-arhivare.js"],
-  ["Același om, scris în două feluri", "test-acelasi-om.js"]
+  ["Același om, scris în două feluri", "test-acelasi-om.js"],
+  ["Baza de pescari, cu codul fiecăruia", "test-pescari.js"]
   ,["Pagina publică a concursului", "test-rezultat-public.js"]
 ];
 
