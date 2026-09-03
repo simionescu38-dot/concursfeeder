@@ -314,6 +314,56 @@
     return (ACELASI[k] && ACELASI[k].nume) || nm;
   }
 
+  /* ---------- codul, adevărata identitate a unui om ----------
+     Un nume se scrie în trei feluri; un cod nu. De când există baza de pescari, fiecare
+     om are un cod dat o dată pe sezon, iar aplicația îl scrie pe rândul lui la fiecare
+     concurs. De aici încolo sezonul leagă după el: doi oameni cu același nume nu se mai
+     topesc într-unul, iar unul singur scris în două feluri nu se mai rupe în doi.
+     Concursurile arhivate înainte de coduri n-au niciunul pe foaie. De-aia codul se
+     caută și în bază, după oricare dintre felurile în care i s-a scris numele omului —
+     baza le ține minte pe toate. Așa, o foaie veche care spune „Ciufi Man" ajunge tot
+     la codul lui Dragoș Carâmb, fără să umble nimeni prin arhive.
+     Fără server, sau fără bază, sezonul leagă după nume, exact ca înainte. */
+  var BAZA = {};       // cheia unei scrieri -> codul omului
+  var BAZA_NUME = {};  // cod -> numele lui de acum
+  async function incarcaBaza(){
+    try{
+      var camere = await aduCamerele();
+      var ale = camere.filter(function(r){ return r && r.code && r.code.indexOf("baza:")===0; });
+      var stari = await Promise.all(ale.map(function(r){
+        return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code))
+          .then(function(x){ return x.json(); }).catch(function(){ return null; });
+      }));
+      stari.forEach(function(st){
+        var lista = (st && st.ok && st.data && Array.isArray(st.data.pescari)) ? st.data.pescari : [];
+        lista.forEach(function(p){
+          var cod = parseInt(p && p.cod, 10);
+          if(!(cod > 0)) return;
+          var nume = (((p.prenume||"")+" "+(p.nume||"")).trim());
+          if(!nume) return;
+          if(!BAZA_NUME[cod]) BAZA_NUME[cod] = nume;
+          [nume].concat(Array.isArray(p.scrieri) ? p.scrieri : []).forEach(function(sc){
+            var k = normKey(""+(sc||""));
+            /* Prima scriere care aduce un cod rămâne stăpână. Dacă două baze se bat pe
+               același nume, nu de aici se limpezește — mai bine rămâne cum era decât să
+               se schimbe pe tăcute cui i se pun kilogramele. */
+            if(k && !BAZA[k]) BAZA[k] = cod;
+          });
+        });
+      });
+    }catch(e){ /* fără bază, sezonul leagă după nume, ca până acum */ }
+  }
+  /* Codul unui rând: cel scris pe el la concurs; dacă foaia e dinainte de coduri, cel
+     din bază, după cum i s-a scris numele acolo. */
+  function codulOmului(p, nm){
+    var c = parseInt(p && p.cod, 10);
+    if(c > 0) return c;
+    return BAZA[normKey(nm)] || 0;
+  }
+  function numeleAfisat(cod, nm){
+    return (cod && BAZA_NUME[cod]) || numeleOmului(nm);
+  }
+
   function mOf(p, mi){
     if(p.m && p.m[mi]) return p.m[mi];
     if(mi===1 && !p.m){ return {catches:Array.isArray(p.catches)?p.catches:[], extras:Array.isArray(p.extras)?p.extras:[]}; }
@@ -387,9 +437,20 @@
     return "Concurs fără nume" + (d && !isNaN(d.getTime()) ? " · " + d.toLocaleDateString("ro-RO") : "");
   }
 
+  /* Lista camerelor o vor două lucruri: concursurile live și baza de pescari. Se cere
+     o dată și se ține, ca telefonul de la baltă să nu facă două drumuri la server. */
+  var _camere = null;
+  function aduCamerele(){
+    if(!_camere){
+      _camere = fetch(API_BASE+"/api/rooms").then(function(r){ return r.json(); })
+        .then(function(j){ return (j && j.ok && j.rooms) ? j.rooms : []; })
+        .catch(function(){ return []; });
+    }
+    return _camere;
+  }
+
   async function fetchLiveSources(){
-    var roomsRes = await fetch(API_BASE+"/api/rooms").then(function(r){return r.json();}).catch(function(){ return null; });
-    var rooms = (roomsRes && roomsRes.ok && roomsRes.rooms) ? roomsRes.rooms : [];
+    var rooms = await aduCamerele();
     var states = await Promise.all(rooms.map(function(r){
       return fetch(API_BASE+"/api/state?room="+encodeURIComponent(r.code))
         .then(function(res){ return res.json(); })
@@ -527,6 +588,7 @@
 
   async function loadSeason(){
     await incarcaAcelasiOm();
+    await incarcaBaza();
     var liveSources = await fetchLiveSources();
     var archiveSources = await fetchArchiveSources();
     // Arhivele primele: au nume și dată stabile, camera live e doar o copie de moment.
@@ -556,8 +618,22 @@
         return {p:p, kg:totalKg(p), fish:bestFish(p)};
       }).sort(function(a,b){ return b.kg - a.kg; });
 
+      /* Doi oameni de pe ACEEAȘI foaie care duc la același cod: ori s-a scris greșit,
+         ori o scriere veche s-a lipit de omul celălalt. Nu se poate ști care e cel
+         adevărat, iar topirea lor într-unul ar face din doi pescari unul, tăcut. La
+         concursul ăsta rămân amândoi după nume, ca înainte de coduri. */
+      var deCateOri = {};
+      ranked.forEach(function(row){
+        var c = codulOmului(row.p, nameOf(row.p));
+        if(c) deCateOri[c] = (deCateOri[c]||0) + 1;
+      });
+      function codBun(row){
+        var c = codulOmului(row.p, nameOf(row.p));
+        return (c && deCateOri[c] === 1) ? c : 0;
+      }
+
       var top3 = ranked.filter(function(row){ return nameOf(row.p); }).slice(0,3).map(function(row){
-        return {name:numeleOmului(nameOf(row.p)), kg:row.kg};
+        return {name:numeleAfisat(codBun(row), nameOf(row.p)), kg:row.kg};
       });
       comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length, top3:top3});
 
@@ -566,10 +642,11 @@
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
         if(!nm) return;
-        var key = cheiaOmului(nm);
+        var cod = codBun(row);
+        var key = cod ? ("cod:"+cod) : cheiaOmului(nm);
         if(!key) return;
         if(!byKey[key]){
-          byKey[key] = {name:numeleOmului(nm), totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
+          byKey[key] = {name:numeleAfisat(cod, nm), cod:cod, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
         }
         var rec = byKey[key];
         var place = places[idx];
@@ -579,7 +656,7 @@
         rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish});
         if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = src.compName; }
         if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
-          seasonFish = {v:row.fish, name:numeleOmului(nm), comp:src.compName};
+          seasonFish = {v:row.fish, name:numeleAfisat(cod, nm), comp:src.compName};
         }
 
         var stand = (row.p.stand || "").toString().trim();
