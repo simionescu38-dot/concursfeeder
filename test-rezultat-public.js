@@ -30,6 +30,20 @@ t("sunt găsiți câștigătorii sectoarelor",ctx.dateCampioni().sectoare.length
 t("câștigătorii sunt grupați pe sector și manșă",/sectoare\.push\(\{mi:mi,sector:s/.test(html),true);
 t("imaginea campionilor este PNG",html.includes("campionii-concursului.png"),true);
 
+/* Regulamentul scris de organizator călătorește în datele concursului, deci ajunge și în
+   arhivă. Cine deschide linkul din QR trebuie să-l vadă întocmai — la baltă, o vorbă
+   schimbată din drum e o contestație. */
+ctx.state.rules="Start 08:00, stop 14:00.\nDouă lansete de om.\n<b>fără</b> nadă vie & sfoară";
+t("regulamentul se arată pe pagina publică",/Regulamentul concursului/.test(ctx.regulamentHtml()),true);
+t("textul ajunge întreg",ctx.regulamentHtml().indexOf("Start 08:00, stop 14:00.")>0,true);
+t("rândurile organizatorului rămân rânduri",/white-space:pre-wrap/.test(html),true);
+t("semnele din text nu devin cod",/&lt;b&gt;fără&lt;\/b&gt; nadă vie &amp; sfoară/.test(ctx.regulamentHtml()),true);
+ctx.state.rules="   \n  ";
+t("fără regulament scris nu se pune card gol",ctx.regulamentHtml(),"");
+ctx.state.rules=undefined;
+t("nici la o arhivă veche, fără câmpul ăsta",ctx.regulamentHtml(),"");
+t("stă la coada paginii, sub clasament",/mancheHtml\(scope\)\)\+regulamentHtml\(\)/.test(html),true);
+
 /* Adresa nu se face aici, ci în sezon.html — și tocmai de-aia se strica fără să bage nimeni
    de seamă: pagina asta era verificată, butonul care duce la ea nu. Se ia funcția
    ADEVĂRATĂ din fișierul livrat și i se cere să scoată o adresă pe care chiar o primește
