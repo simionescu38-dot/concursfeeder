@@ -156,6 +156,9 @@ console.log("\n=== 2c. Ce nu intră în bază ===");
 console.log("\n=== 3. Legarea în clasament ===");
 const SEZON = ["normKey", "nameOf", "cheiaOmului", "numeleOmului", "codulOmului", "numeleAfisat",
   "mOf", "catchesSum", "extrasSum", "extrasMax", "totalKg", "bestFish", "placesOfComp",
+  "manseleDin", "totalLaMansa", "sectorLaMansa", "standLaMansa", "lipsaLaMansa",
+  "mansaDisputata", "puncteleMansei", "ceaMaiBunaMansa", "totalLaScop", "cmmcLaScop",
+  "standNr", "sorteazaOficial", "clasamentOficial",
   "pragSezon", "semnatura", "cheiaLocatiei", "faraDubluri", "numeConcurs", "loadSeason",
   "incarcaAcelasiOm", "aduCamerele", "incarcaBaza"];
 

@@ -53,7 +53,8 @@ const TESTE = [
   ["Baza ținută pe server", "test-baza-server.js"],
   ["Versiunile bazei și întoarcerea", "test-versiuni-baza.js"],
   ["Scrierile vechi ale numelor", "test-scrieri-baza.js"],
-  ["Sezonul legat după cod", "test-sezon-cod.js"]
+  ["Sezonul legat după cod", "test-sezon-cod.js"],
+  ["Cartea personală a pescarului", "test-carte-pescar.js"]
   ,["Pagina publică a concursului", "test-rezultat-public.js"]
 ];
 
