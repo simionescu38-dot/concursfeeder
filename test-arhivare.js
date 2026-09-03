@@ -61,7 +61,7 @@ function aplicatie(opt) {
     console,
     toast() {}, nowHM: () => "12:00", guard: () => false,
     puneDeoParte() {}, save() {}, renderSectors() {}, renderList() {}, renderRank() {},
-    updateUndoUI() {}, updateManseButtons() {}, improspateazaBalta() {}, ceriBalta: () => true,
+    updateUndoUI() {}, updateManseButtons() {}, improspateazaBalta() {}, ceriBalta: () => true, ceriCoduri: () => true,
     confirm: () => true,
     document: pagina(),
     encodeURIComponent

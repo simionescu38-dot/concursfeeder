@@ -429,6 +429,13 @@
             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   /* scrierile vechi stau sub nume, mărunt: rândul crește cu ele, nu le taie */
   .pesc .nm div{white-space:normal;}
+  /* rândurile probei de server */
+  .sv{display:flex; gap:9px; align-items:baseline; padding:7px 0; border-top:1px solid var(--line);
+      font-size:13px;}
+  .sv:first-child{border-top:0;}
+  .sv .s{flex:0 0 auto; font-size:14px;}
+  .sv .n{flex:1; min-width:0; font-weight:700;}
+  .sv .d{flex:0 0 auto; color:var(--muted); font-size:11px; font-weight:700; white-space:nowrap;}
   /* butoanele obișnuite se întind cât rândul; pe rândul unei versiuni trebuie să stea
      lângă dată, nu sub ea */
   .pesc .mic{flex:0 0 auto; width:auto; min-height:34px; padding:0 12px;
@@ -1264,6 +1271,13 @@
       <div class="sec-title">Adu înapoi ce era</div>
       <p class="hint" id="undo-info" style="margin:0 0 10px;"></p>
       <button class="btn btn-ghost" id="btn-undo" style="display:none;" onclick="aduInapoi()">↩ Adu înapoi copia dinainte</button>
+    </div>
+
+    <div class="card">
+      <div class="sec-title">Serverul răspunde?</div>
+      <p class="hint" style="margin:0 0 10px;">Încerc pe rând tot ce-i trebuie aplicației de pe server și îți spun ce răspunde. Nu scrie și nu schimbă nimic — doar se uită. De apăsat când ceva pare că nu mai merge, sau o dată pe sezon.</p>
+      <button class="btn btn-ghost" onclick="verificaServerul()">Verifică serverul</button>
+      <div id="server-proba" style="margin-top:10px;"></div>
     </div>
 
     <div class="card lockhide">
@@ -3368,6 +3382,58 @@
       return d.getDate()+"."+(d.getMonth()+1)+"."+d.getFullYear()+" "+pad2(d.getHours())+":"+pad2(d.getMinutes());
     }catch(e){ return ""; }
   }
+  /* ---------- proba serverului ----------
+     Worker-ul din Cloudflare nu vine din depozit: se lipește de mână. Dacă vreodată se
+     desincronizează — o bucată lipsă dintr-o lipire grăbită, o adresă schimbată — nimic
+     nu bagă de seamă până nu se strică ceva la baltă, în manșă.
+     Butonul ăsta încearcă pe rând fiecare drum de care are nevoie aplicația și spune ce
+     răspunde. NU scrie nimic: o probă care lasă urme pe server ar fi o probă care poate
+     strica tocmai ce verifică. Cheia de scriere se dovedește oricum singură, la prima
+     salvare, prin banda galbenă de sus. */
+  function probaServer(nume, url, bun){
+    var t0 = Date.now();
+    return fetch(url)
+      .then(function(r){
+        if(!r.ok) return {nume:nume, ok:false, de:"răspunde "+r.status, ms:Date.now()-t0};
+        return r.json().then(function(j){
+          return {nume:nume, ok:!!bun(j), de:bun(j) ? "" : "răspunde, dar nu ce trebuie", ms:Date.now()-t0};
+        });
+      })
+      .catch(function(){ return {nume:nume, ok:false, de:"nu răspunde", ms:Date.now()-t0}; });
+  }
+  function verificaServerul(){
+    var cutie = document.getElementById("server-proba");
+    if(cutie) cutie.innerHTML='<p class="hint" style="margin:0;">Mă uit…</p>';
+    var cam = syncRoom || "";
+    var probe = [
+      probaServer("Lista camerelor", API_BASE+"/api/rooms", function(j){ return j && j.ok && j.rooms; }),
+      probaServer("Arhivele sezonului", API_BASE+"/api/archive", function(j){ return j && j.ok && j.archives; }),
+      probaServer("Calendarul", API_BASE+"/api/events", function(j){ return j && j.ok && j.events; }),
+      probaServer("Scrierile vechi ale numelor", "arhiva/acelasi-om.json?cb="+Date.now(), function(j){ return j && Array.isArray(j.acelasi); })
+    ];
+    /* Camera și versiunile ei se pot încerca doar dacă ai un cod de cameră. */
+    if(cam){
+      probe.push(probaServer("Camera „"+cam+"\"", API_BASE+"/api/state?room="+encodeURIComponent(cam), function(j){ return j && j.ok; }));
+      probe.push(probaServer("Versiunile camerei", API_BASE+"/api/history?room="+encodeURIComponent(cam), function(j){ return j && j.ok && j.versions; }));
+    }
+    Promise.all(probe).then(function(rez){
+      if(!cutie) return;
+      var rele = rez.filter(function(x){ return !x.ok; }).length;
+      var randuri = rez.map(function(x){
+        return '<div class="sv"><span class="s">'+(x.ok?"✅":"❌")+'</span>'+
+               '<span class="n">'+esc(x.nume)+(x.ok?'':' <span style="font-weight:600;">· '+esc(x.de)+'</span>')+'</span>'+
+               '<span class="d">'+x.ms+' ms</span></div>';
+      }).join("");
+      var cap = rele
+        ? '<p class="hint" style="margin:0 0 8px;"><b>'+rele+'</b> '+(rele===1?"drum nu răspunde":"drumuri nu răspund")+
+          '. Dacă sunt toate, e semnalul sau serverul e oprit; dacă e doar unul, worker-ul de pe Cloudflare are nevoie de lipirea cea nouă.</p>'
+        : '<p class="hint" style="margin:0 0 8px;">Serverul răspunde la tot ce-i trebuie aplicației.</p>';
+      var fara = cam ? "" : '<p class="hint" style="margin:8px 0 0;">N-ai cod de cameră pe telefonul ăsta, deci camera și versiunile ei n-au fost încercate.</p>';
+      cutie.innerHTML = cap + randuri +
+        '<p class="hint" style="margin:8px 0 0;">Adresa serverului: <b style="word-break:break-all;">'+esc(API_BASE)+'</b></p>' + fara;
+    });
+  }
+
   // ---------- curățarea arhivei de sezon ----------
   // Arhivele intră direct în Clasamentul de sezon, deci o simulare uitată acolo
   // strică punctajul tuturor. Ștergerea cere cheia de scriere, care stă doar pe
@@ -7426,6 +7492,31 @@
      două clasamente de standuri — s-a întâmplat cu Remus Lake pe 19 august, și se repară
      pe urmă arhivă cu arhivă, de pe telefon. Aici se cere o dată, în clipa în care contează.
      Nu blochează arhivarea: se poate lăsa gol și merge mai departe. Doar Renunță o oprește. */
+  /* Codul e temelia sezonului: după el se leagă omul de la o etapă la alta, oricum
+     i-ar fi scris numele pe foaie. Dacă un concurs pleacă în arhivă fără niciun cod, el
+     se leagă înapoi după nume — adică exact greșeala pe care baza a venit s-o repare, și
+     nu se mai poate drege: arhivele nu se modifică.
+     Se întreabă o dată, la ultima răscruce, și nu se pune nimic de la sine: poate
+     concursul chiar are numai oameni din afara bazei. Dacă măcar unul are cod, nu se mai
+     insistă — înseamnă că butonul a fost apăsat și restul sunt oameni noi. */
+  function ceriCoduri(){
+    if(!pescari.length) return true;                    // baza e goală: n-are de unde lua
+    var lista = state.participants||[];
+    if(!lista.length) return true;
+    var cuCod = 0;
+    lista.forEach(function(p){
+      var c = codParticipant(p.cod);
+      if(c!==null && !isNaN(c)) cuCod++;
+    });
+    if(cuCod) return true;
+    return confirm(
+      "Niciunul dintre cei "+lista.length+" pescari n-are cod, deși în bază ai "+pescari.length+".\n\n"+
+      "Fără coduri, etapa asta se leagă de sezon după nume — adică tocmai greșeala pe care "+
+      "baza vine s-o repare. Odată arhivată, nu se mai poate drege.\n\n"+
+      "Anulează = ies, ca să apăs «Pune codurile» la Cântar.\n"+
+      "OK = arhivez și așa."
+    );
+  }
   function ceriBalta(){
     if((state.balta||"").trim()) return true;
     var b = prompt(
@@ -7445,6 +7536,8 @@
     if(willArchive){
       if(!ceriBalta()) return;
       improspateazaBalta();
+      /* ultima răscruce înainte ca etapa să plece în arhivă pentru totdeauna */
+      if(!ceriCoduri()) return;
     }
     var msg = willArchive
       ? "Ștergi toți participanții și datele? Concursul curent se arhivează automat în sezon înainte, deci rezultatele rămân. Nu se poate reveni."
@@ -7513,6 +7606,7 @@
     }
     if(!cuCantar && !confirm("Niciun pescar n-are cântar trecut — concursul ar intra în Clasamentul de sezon cu 0 kg.\n\nDe obicei asta înseamnă că greutățile n-au fost trecute încă: deschide Cântar și verifică.\n\nChiar îl salvezi gol?")) return;
     if(!syncKey){ spune("⚠ Îți trebuie cheia de scriere — Contul meu, la Clasament live pe alte telefoane.", true); return; }
+    if(!ceriCoduri()) return;
     if(!ceriBalta()) return;
     improspateazaBalta();
 
