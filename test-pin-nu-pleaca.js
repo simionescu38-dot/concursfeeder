@@ -73,7 +73,7 @@ function aplicatia(stare) {
   ctx.window.state = stare;
   vm.createContext(ctx);
   vm.runInContext(
-    ["faraSecrete", "stareFaraPoze", "pushState", "archiveToSeason", "exportData"]
+    ["faraSecrete", "stareFaraPoze", "scrieStarea", "archiveToSeason", "exportData"]
       .map(n => H.grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
@@ -107,7 +107,10 @@ console.log("\n=== 1. Ce scoate și ce lasă ===");
 console.log("\n=== 2. Ce pleacă spre camera live ===");
 {
   const c = aplicatia(stareCuPin());
-  vm.runInContext("pushState()", c);
+  /* Trimiterea propriu-zisă e `scrieStarea`. Deasupra ei stă `pushState`, care trece
+     întâi prin paza camerei — aia umblă la server ca să se uite, nu ca să scrie, iar
+     aici ne interesează numai ce PLEACĂ de pe telefon. */
+  vm.runInContext("scrieStarea()", c);
   const cerere = c.iesiri.retea[0];
   t("a plecat o singură cerere", c.iesiri.retea.length, 1);
   t("…spre camera live", /\/api\/state\?room=cupa/.test(cerere.url), true);

@@ -2142,6 +2142,96 @@
   }
   function loadSyncCfg(){
     try{ syncRoom=(localStorage.getItem(SYNC_ROOM_KEY)||"").trim(); syncKey=localStorage.getItem(SYNC_WKEY_KEY)||""; }catch(e){}
+    syncRevIncarca();
+  }
+
+  /* ---------- paza împotriva a două telefoane ----------
+     Telefonul nu trimite ce s-a schimbat, ci TOT concursul. Deci dacă între două salvări
+     ale lui a scris altcineva în cameră — laptopul lăsat deschis acasă, telefonul celui
+     care ține cântarul la ponton — scrierea noastră se pune peste, iar cântăririle
+     celuilalt se duc. Tăcut, în manșă.
+     Paza ține minte revizia făcută de NOI. Dacă serverul a mers mai departe de-atât,
+     se uită CE are în plus: cântăriri pe care noi nu le avem înseamnă că a lucrat
+     altcineva, și atunci se întreabă înainte de a scrie peste.
+     Nu se face la fiecare salvare. În toiul cântăririi salvările vin la câteva secunde
+     una după alta, iar încă un drum la server la fiecare ar face, pe semnalul de la
+     baltă, o aplicație care se târăște. Se face la prima salvare după o pauză — adică
+     exact atunci când celălalt a avut când să scrie. */
+  var SYNC_REV_KEY = "concurs-sync-rev";
+  var syncRevCunoscut = 0;      // ultima revizie despre care știm că e a noastră
+  var syncUltimaScriere = 0;    // când am scris ultima oară cu succes
+  var PAUZA_PAZA = 30000;       // după atâta liniște, se verifică din nou camera
+  function syncRevIncarca(){
+    syncRevCunoscut = 0;
+    try{
+      var j = JSON.parse(localStorage.getItem(SYNC_REV_KEY)||"{}");
+      if(j && syncRoom && j[syncRoom]) syncRevCunoscut = parseInt(j[syncRoom],10) || 0;
+    }catch(e){}
+  }
+  function syncRevSalveaza(rev){
+    syncRevCunoscut = parseInt(rev,10) || 0;
+    if(!syncRoom) return;
+    try{
+      var j = JSON.parse(localStorage.getItem(SYNC_REV_KEY)||"{}");
+      if(!j || typeof j!=="object") j={};
+      j[syncRoom] = syncRevCunoscut;
+      localStorage.setItem(SYNC_REV_KEY, JSON.stringify(j));
+    }catch(e){}
+  }
+  /* Câte cântăriri are camera și noi nu. Se numără INTRĂRILE, nu kilogramele: dacă el a
+     trecut trei capturi la standul 12 și noi n-avem niciuna, sunt trei de pierdut.
+     Se numără doar ce e în plus acolo. Ce am șters noi de pe telefon (o greutate trecută
+     greșit) nu intră la socoteală: după ștergere telefonul salvează pe loc, deci revizia
+     de pe server e tot a noastră și paza nici nu se uită. */
+  /* Se citește direct din participant, fără mOf: acela pregătește manșele lipsă pe
+     participantul de care se atinge, iar aici se numără și pe cel venit de pe server,
+     care n-are ce căuta modificat. Formatul vechi, fără p.m, e tot manșa 1. */
+  function cateIntrari(p, mi){
+    if(!p) return 0;
+    var m = (p.m && p.m[mi]) ? p.m[mi] : ((mi===1 && !p.m) ? p : null);
+    if(!m) return 0;
+    return ((m.catches||[]).length) + ((m.extras||[]).length);
+  }
+  function cantaririInPlus(dinCamera){
+    var aleMele = {};
+    (state.participants||[]).forEach(function(p){
+      for(var mi=1; mi<=3; mi++) aleMele[p.id+"|"+mi] = cateIntrari(p, mi);
+    });
+    var inPlus = 0;
+    (((dinCamera||{}).participants)||[]).forEach(function(p){
+      for(var mi=1; mi<=3; mi++){
+        var acolo = cateIntrari(p, mi), aici = aleMele[p.id+"|"+mi] || 0;
+        if(acolo > aici) inPlus += (acolo - aici);
+      }
+    });
+    return inPlus;
+  }
+  /* Întoarce o promisiune: adevărat = se poate scrie peste. */
+  function pazaCamerei(){
+    if(!syncRoom || !syncKey) return Promise.resolve(true);
+    return fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j || !j.ok || !j.data) return true;
+        var rev = parseInt(j.rev,10) || 0;
+        if(rev <= syncRevCunoscut) return true;      // n-a scris nimeni după noi
+        var n = cantaririInPlus(j.data);
+        /* Revizia a mers mai departe, dar fără nicio cântărire în plus: cel mai adesea
+           tot noi am scris, dintr-o încercare al cărei răspuns nu l-am mai apucat. */
+        if(!n){ syncRevSalveaza(rev); return true; }
+        var q = "În camera „"+syncRoom+"\" sunt "+n+" "+(n===1?"cântărire pusă":"cântăriri puse")+
+                " de pe alt telefon, pe care telefonul ăsta nu "+(n===1?"o are":"le are")+".\n\n"+
+                "Dacă salvezi acum, se pierd.\n\n"+
+                "OK = salvez oricum, cu ce am eu pe telefon.\n"+
+                "Anulează = opresc sincronizarea, ca să nu se piardă nimic.";
+        if(confirm(q)){ syncRevSalveaza(rev); return true; }
+        syncPaused = true;
+        setSyncStatus("Sincronizare oprită — în cameră sunt cântăriri de pe alt telefon. Lasă-l pe acela să termine, apoi atinge banda de sus.", true);
+        updateUploadBar();
+        return false;
+      })
+      /* Fără semnal nu se poate ști — și n-are voie să oprească cântărirea. */
+      .catch(function(){ return true; });
   }
   // Sincronizarea a stat moartă zile întregi fără să observe nimeni: în Setări scria
   // „rev 12", ceea ce nu spune nimănui dacă datele au plecat de pe telefon. Banda din
@@ -2201,6 +2291,8 @@
     if(el && el.value!==curat) el.value=curat; // arată pe loc ce s-a păstrat
     syncRoom=curat;
     try{ localStorage.setItem(SYNC_ROOM_KEY, syncRoom); }catch(e){}
+    /* altă cameră, altă numărătoare: revizia ținută minte e a camerei, nu a telefonului */
+    syncRevIncarca(); syncUltimaScriere=0;
     syncPaused=false; syncProblem=""; updateLiveQr(); updateUploadBar(); updateRoomInfo();
   }
   // Câmpul e de tip parolă, deci o cheie cu o literă lipsă sau cu un spațiu lipit la
@@ -3477,6 +3569,14 @@
   }
   function pushState(){
     if(!syncRoom || !syncKey) return;
+    if(Date.now() - syncUltimaScriere > PAUZA_PAZA){
+      pazaCamerei().then(function(sePoate){ if(sePoate) scrieStarea(); });
+      return;
+    }
+    scrieStarea();
+  }
+  function scrieStarea(){
+    if(!syncRoom || !syncKey) return;
     clearTimeout(syncRetryT);
     syncBusy=true; syncProblem=""; updateUploadBar();
     setSyncStatus("Se sincronizează…", true);
@@ -3488,6 +3588,7 @@
     }).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       syncBusy=false;
       if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM();
+        syncRevSalveaza(j.rev); syncUltimaScriere=Date.now();
         try{ localStorage.setItem(SYNC_ROOM_KEY+"-ultima", syncRoom); }catch(e){}
         updateRoomInfo(); setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
       else {
