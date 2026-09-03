@@ -52,7 +52,8 @@ const TESTE = [
   ["Copie de siguranță a bazei", "test-copie-baza.js"],
   ["Baza ținută pe server", "test-baza-server.js"],
   ["Versiunile bazei și întoarcerea", "test-versiuni-baza.js"],
-  ["Scrierile vechi ale numelor", "test-scrieri-baza.js"]
+  ["Scrierile vechi ale numelor", "test-scrieri-baza.js"],
+  ["Sezonul legat după cod", "test-sezon-cod.js"]
   ,["Pagina publică a concursului", "test-rezultat-public.js"]
 ];
 
