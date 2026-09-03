@@ -149,6 +149,28 @@
   .place-badge.silver{background:linear-gradient(145deg,#eef5fa,#91a3b2); color:#17212a; border-color:#c5d1db;}
   .place-badge.bronze{background:linear-gradient(145deg,#efb188,#b7653f); color:#29140b; border-color:#dc946d;}
   .podium-badge{width:23px; height:23px; margin-right:7px; border-radius:8px; background:#14303d; color:var(--teal); font-size:11px;}
+  /* cartea unui om, deschisă sub rândul lui */
+  .carte{padding:12px 11px; background:#0c1621;}
+  .carte-cifre{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin:0 0 11px;}
+  .carte-cifra{background:var(--card); border:1px solid var(--line); border-radius:12px;
+               padding:9px 7px; min-width:0; text-align:center;}
+  .carte-cifra .v{font-size:19px; font-weight:900; font-variant-numeric:tabular-nums; line-height:1.1;}
+  .carte-cifra .l{font-size:9.5px; text-transform:uppercase; letter-spacing:.04em;
+                  color:var(--muted); font-weight:800; margin-top:3px; line-height:1.25;}
+  .carte-cifra .z{font-size:19px; font-weight:900; color:var(--muted);}
+  .carte-medalii{display:inline-flex; gap:4px; justify-content:center; font-size:13px; font-weight:900;}
+  .carte-medalii i{font-style:normal; display:inline-grid; place-items:center; width:23px; height:23px;
+                   border-radius:50%; font-size:11px;}
+  .carte-medalii .g{background:linear-gradient(145deg,#ffe58d,#d99a2d); color:#281b03;}
+  .carte-medalii .a{background:linear-gradient(145deg,#eef5fa,#91a3b2); color:#17212a;}
+  .carte-medalii .b{background:linear-gradient(145deg,#efb188,#b7653f); color:#29140b;}
+  .carte-rec{display:flex; gap:9px; align-items:baseline; padding:8px 10px; margin:0 0 7px;
+             background:var(--card); border:1px solid var(--line); border-radius:12px;}
+  .carte-rec .l{font-size:10px; text-transform:uppercase; letter-spacing:.05em;
+                color:var(--muted); font-weight:800; flex:0 0 auto;}
+  .carte-rec .v{font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .carte-rec .u{font-size:11px; color:var(--muted); font-weight:700; margin-left:auto;
+                text-align:right; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .comp-card{margin:0 0 9px; padding:11px 12px; border:1px solid var(--line); border-radius:13px; background:#0d1823;}
   .comp-card:first-child{border-top:1px solid var(--line);}
   .comp-card-h{align-items:flex-start;}
@@ -386,6 +408,137 @@
   // Pragul de participări pentru a fi clasat pe puncte: jumătate din etapele ținute,
   // rotunjit în sus, minim 2 — dar niciodată mai mult decât s-a ținut, altfel într-un sezon
   // cu o singură etapă nimeni n-ar fi clasat.
+  /* ---------- clasamentul OFICIAL al unui concurs ----------
+     Sezonul își face socoteala lui, pe kilograme: acolo contează cât ai prins peste an,
+     nu în ce sector ai nimerit la o etapă. Dar PODIUMUL și VICTORIA DE SECTOR sunt ale
+     concursului, iar acolo se numără punctele pe sectoare — exact cifrele care se strigă
+     la premiere.
+     De-aia socoteala de la cântar se face și aici, pe fiecare concurs în parte. Ea
+     trebuie să spună cuvânt cu cuvânt ce spune pagina de rezultate a concursului: altfel
+     omul citește în cartea lui că are trei podiumuri, iar pe diplomă are două. Cele două
+     sunt ținute la fel printr-o probă care le pune pe amândouă pe aceleași date. */
+  function manseleDin(parts){
+    var n = 0;
+    (parts||[]).forEach(function(p){
+      var chei = p.m ? Object.keys(p.m) : ((Array.isArray(p.catches)||Array.isArray(p.extras)) ? [1] : []);
+      chei.forEach(function(k){ var i = parseInt(k,10); if(i>n) n = i; });
+    });
+    return n;
+  }
+  function totalLaMansa(p, mi){ return catchesSum(p,mi)+extrasSum(p,mi); }
+  function sectorLaMansa(p, mi){
+    var m = mOf(p,mi);
+    return (m.sector!==undefined && m.sector!==null) ? m.sector : (p.sector||"");
+  }
+  function standLaMansa(p, mi){
+    var m = mOf(p,mi);
+    return (m.stand!==undefined && m.stand!==null) ? m.stand : (p.stand||"");
+  }
+  /* „Absent", spus de organizator pe telefon, călătorește în datele concursului. Cine
+     lipsește de la o manșă nu intră în niciun sector al ei, ca să nu schimbe locurile
+     celorlalți — la fel ca în aplicație și pe pagina publică. */
+  function lipsaLaMansa(p, mi){
+    if(mOf(p,mi).stare==="absent") return true;
+    return !standLaMansa(p,mi) && totalLaMansa(p,mi)<=1e-9;
+  }
+  function mansaDisputata(parts, mi){
+    return (parts||[]).some(function(p){ return totalLaMansa(p,mi) > 1e-9; });
+  }
+  function puncteleMansei(parts, mi, scala){
+    var secs = {}, absenti = [];
+    (parts||[]).forEach(function(p){
+      if(lipsaLaMansa(p,mi)){ absenti.push(p); return; }
+      var k = sectorLaMansa(p,mi) || "Fără sector";
+      (secs[k] = secs[k] || []).push(p);
+    });
+    var nMax = 0;
+    Object.keys(secs).forEach(function(k){ if(secs[k].length>nMax) nMax = secs[k].length; });
+    var map = {};
+    Object.keys(secs).forEach(function(k){
+      var arr = secs[k], n = arr.length;
+      var factor = scala ? (n>1 ? (nMax-1)/(n-1) : 0) : 1;
+      var mijloc = scala ? (nMax+1)/2 : (n+1)/2;
+      arr.forEach(function(p){
+        var w = totalLaMansa(p,mi);
+        var better = arr.filter(function(o){ return totalLaMansa(o,mi) > w+1e-9; }).length;
+        var tied = arr.filter(function(o){ return Math.abs(totalLaMansa(o,mi)-w) <= 1e-9; }).length;
+        var loc = better + (tied+1)/2;
+        map[p.id] = (loc-(n+1)/2)*factor + mijloc;
+      });
+    });
+    absenti.forEach(function(p){ map[p.id] = nMax+1; });
+    return map;
+  }
+  function ceaMaiBunaMansa(p, nManse){
+    var mx = 0;
+    for(var i=1;i<=nManse;i++){ var t = totalLaMansa(p,i); if(t>mx) mx = t; }
+    return mx;
+  }
+  function totalLaScop(p, mi, nManse){ return mi==="total" ? totalKg(p) : totalLaMansa(p,mi); }
+  function cmmcLaScop(p, mi, nManse){ return mi==="total" ? bestFish(p) : extrasMax(p,mi); }
+  function standNr(p, mi){
+    var m = (""+(standLaMansa(p,mi)||"")).match(/\d+/);
+    return m ? parseInt(m[0],10) : 999999;
+  }
+  function sorteazaOficial(arr, pmap, mi, nManse){
+    return arr.slice().sort(function(a,b){
+      var d = (pmap[a.id]||0)-(pmap[b.id]||0); if(Math.abs(d)>1e-9) return d;
+      var t = totalLaScop(b,mi,nManse)-totalLaScop(a,mi,nManse); if(Math.abs(t)>1e-9) return t;
+      if(mi==="total"){
+        var m = ceaMaiBunaMansa(b,nManse)-ceaMaiBunaMansa(a,nManse); if(Math.abs(m)>1e-9) return m;
+      }
+      var f = cmmcLaScop(b,mi,nManse)-cmmcLaScop(a,mi,nManse); if(Math.abs(f)>1e-9) return f;
+      return standNr(a,mi)-standNr(b,mi) || nameOf(a).localeCompare(nameOf(b),"ro");
+    });
+  }
+  /* Ce a făcut fiecare om la UN concurs, în cifrele concursului:
+     locul oficial la general, câte sectoare a câștigat, dacă a luat cel mai mare pește
+     al zilei, și cea mai bună manșă a lui. */
+  function clasamentOficial(src){
+    var parts = src.parts || [];
+    var nManse = manseleDin(parts);
+    var scala = src.scala === true;
+    var disputate = [];
+    for(var i=1;i<=nManse;i++) if(mansaDisputata(parts,i)) disputate.push(i);
+    var harti = {};
+    disputate.forEach(function(mi){ harti[mi] = puncteleMansei(parts, mi, scala); });
+    var general = {};
+    parts.forEach(function(p){
+      var sum = 0;
+      disputate.forEach(function(mi){ sum += (harti[mi][p.id]||0); });
+      general[p.id] = sum;
+    });
+    var out = {};
+    sorteazaOficial(parts, general, "total", nManse).forEach(function(p, i){
+      out[p.id] = {loc:i+1, sectoare:0, cmmc:false, mansaKg:0, mansaNr:0};
+    });
+    /* victoriile de sector: primul din sectorul lui, la fiecare manșă disputată */
+    disputate.forEach(function(mi){
+      var grupe = {};
+      parts.forEach(function(p){
+        if(lipsaLaMansa(p,mi)) return;
+        var k = sectorLaMansa(p,mi) || "Fără sector";
+        (grupe[k] = grupe[k] || []).push(p);
+      });
+      Object.keys(grupe).forEach(function(k){
+        var castigator = sorteazaOficial(grupe[k], harti[mi], mi, nManse)[0];
+        if(castigator && out[castigator.id]) out[castigator.id].sectoare++;
+      });
+    });
+    /* cel mai mare pește al concursului: la egalitate îl au amândoi, nu se trage la sorți */
+    var celMaiMare = 0;
+    parts.forEach(function(p){ var v = bestFish(p); if(v>celMaiMare) celMaiMare = v; });
+    parts.forEach(function(p){
+      var o = out[p.id]; if(!o) return;
+      for(var mi=1; mi<=nManse; mi++){
+        var t = totalLaMansa(p,mi);
+        if(t > o.mansaKg){ o.mansaKg = t; o.mansaNr = mi; }
+      }
+      o.cmmc = celMaiMare > 1e-9 && bestFish(p) >= celMaiMare-1e-9;
+    });
+    return out;
+  }
+
   function pragSezon(nrEtape){ return Math.min(nrEtape, Math.max(2, Math.ceil(nrEtape/2))); }
 
   // Locurile unui concurs, întinse pe scala sezonului (`nMax` = cel mai numeros concurs).
@@ -476,6 +629,7 @@
         startAt: data.startAt || null,
         updatedAt: (r.updated_at && Date.parse(r.updated_at)) || null,
         balta: (data.balta||"").trim(),
+        scala: data.scalaSectoare === true,
         code: r.code,
         parts: parts
       });
@@ -520,6 +674,7 @@
         startAt: data.startAt || null,
         updatedAt: (exp.exportedAt && Date.parse(exp.exportedAt)) || null,
         balta: (data.balta||"").trim(),
+        scala: data.scalaSectoare === true,
         code: "arhiva:"+paths[i],
         parts: parts
       });
@@ -541,6 +696,7 @@
         startAt: data.startAt || null,
         updatedAt: (a.archived_at && Date.parse(a.archived_at)) || null,
         balta: (data.balta||"").trim(),
+        scala: data.scalaSectoare === true,
         code: "arhiva-api:"+a.id,
         parts: parts
       });
@@ -638,6 +794,7 @@
       comps.push({name:src.compName, date:src.compDate, code:src.code, n:ranked.length, top3:top3});
 
       var places = placesOfComp(ranked, nMaxSezon);
+      var oficial = clasamentOficial(src);
 
       ranked.forEach(function(row, idx){
         var nm = nameOf(row.p);
@@ -653,7 +810,10 @@
         rec.totalKg += row.kg;
         rec.totalPoints += place;
         rec.competitions += 1;
-        rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish});
+        var of = oficial[row.p.id] || {loc:0, sectoare:0, cmmc:false, mansaKg:0, mansaNr:0};
+        rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish,
+                       loc:of.loc, sectoare:of.sectoare, cmmc:of.cmmc,
+                       mansaKg:of.mansaKg, mansaNr:of.mansaNr});
         if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = src.compName; }
         if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
           seasonFish = {v:row.fish, name:numeleAfisat(cod, nm), comp:src.compName};
@@ -695,29 +855,85 @@
             mostLoyal:mostLoyal, prag:prag};
   }
 
+  /* ---------- cartea personală a pescarului ----------
+     Tot ce scrie aici se socotește din rândurile lui, care vin din arhive. Nicio cifră
+     nu se inventează și niciuna nu se ține deoparte pe server: dacă mâine se corectează
+     o greutate într-o arhivă, cartea se schimbă odată cu ea. */
+  function cartea(rec){
+    var randuri = (rec && rec.rows) || [];
+    var podium = [0,0,0], sectoare = 0, cmmcuri = 0;
+    var record = null, mansa = null;
+    randuri.forEach(function(r){
+      if(r.loc>=1 && r.loc<=3) podium[r.loc-1]++;
+      sectoare += (r.sectoare||0);
+      if(r.cmmc) cmmcuri++;
+      if(r.kg > 1e-9 && (!record || r.kg > record.kg)) record = {kg:r.kg, comp:r.comp, date:r.date};
+      if(r.mansaKg > 1e-9 && (!mansa || r.mansaKg > mansa.kg)) mansa = {kg:r.mansaKg, nr:r.mansaNr, comp:r.comp, date:r.date};
+    });
+    return {concursuri:randuri.length, podium:podium, podiumuri:podium[0]+podium[1]+podium[2],
+            sectoare:sectoare, cmmcuri:cmmcuri, record:record, mansa:mansa,
+            pesteRecord:randuri.reduce(function(mx,r){ return r.fish>mx ? r.fish : mx; }, 0)};
+  }
+
   function renderTable(){
     var rows = "";
     pozitiiSezon(currentSeasonSorted()).forEach(function(p, i){
       var rec=p.rec, loc=p.loc;
       var cls = p.clasat && loc===1?"p1":p.clasat && loc===2?"p2":p.clasat && loc===3?"p3":"";
       var medal = !p.clasat ? "–" : '<span class="place-badge '+(loc===1?'gold':loc===2?'silver':loc===3?'bronze':'')+'">'+loc+'</span>';
-      var subsol = rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+
-        (p.clasat ? '' : ' · sub pragul de '+season.prag+', neclasat')+' · atinge pentru istoric';
+      /* Codul e scris pe rând: cartea e a codului, nu a numelui, iar omul trebuie să
+         vadă că se deschide atingând. Cine n-are cod (foaie veche, om care nu-i în bază)
+         are tot carte — doar că legată după nume, ca până acum. */
+      var subsol = (rec.cod ? 'cod '+rec.cod+' · ' : '')+
+        rec.competitions+' concurs'+(rec.competitions===1?'':'uri')+
+        (p.clasat ? '' : ' · sub pragul de '+season.prag+', neclasat')+' · atinge pentru cartea lui';
       rows += '<tr class="'+cls+' pclick" onclick="toggleHist('+i+')">'+
         '<td class="pos">'+medal+'</td>'+
         '<td>'+esc(rec.name)+'<div class="small" style="color:var(--muted);font-size:12px;">'+subsol+'</div></td>'+
         '<td class="kg num">'+fmtPts(ptsAfisat(rec))+'</td>'+
         '<td class="kg num">'+fmt(rec.totalKg)+'</td>'+
       '</tr>';
+      /* Coloana „Loc" ține acum LOCUL OFICIAL din concursul acela — cifra de pe diplomă,
+         socotită pe sectoare. Punctul de sezon, care e o medie și arată ca „2,1", a trecut
+         sub numele concursului, unde se citește ca ce este. O coloană numită „Loc" nu are
+         voie să arate o fracție. */
       var histRows = rec.rows.slice().sort(function(a,b){ return (b.date||0)-(a.date||0); }).map(function(r){
-        return '<tr><td>'+esc(r.comp)+'<div class="small" style="color:var(--muted);font-size:11px;">'+(r.date?dateLabel(r.date):'fără dată')+'</div></td>'+
-          '<td class="pos">'+fmtPts(r.place)+'</td>'+
+        var med = r.loc===1?'gold':r.loc===2?'silver':r.loc===3?'bronze':'';
+        return '<tr><td>'+esc(r.comp)+'<div class="small" style="color:var(--muted);font-size:11px;">'+
+            (r.date?dateLabel(r.date):'fără dată')+' · '+fmtPts(r.place)+' pct'+
+            (r.sectoare?' · '+r.sectoare+(r.sectoare===1?' sector':' sectoare'):'')+
+            (r.cmmc?' · CMMC':'')+'</div></td>'+
+          '<td class="pos">'+(r.loc?'<span class="place-badge '+med+'">'+r.loc+'</span>':'–')+'</td>'+
           '<td class="kg num">'+fmt(r.kg)+'</td>'+
           '<td class="kg num">'+(r.fish>0?fmt(r.fish):'–')+'</td></tr>';
       }).join("");
-      rows += '<tr id="hist-'+i+'" class="histrow" style="display:none;"><td colspan="4" style="padding:0;border-top:0;">'+
-        '<table style="margin:0;border-radius:0;box-shadow:none;"><thead><tr><th>Concurs</th><th class="pos">Loc</th><th class="kg">Kg</th><th class="kg">Pește</th></tr></thead><tbody>'+
-        histRows+'</tbody></table></td></tr>';
+      var C = cartea(rec);
+      var cifra = function(v, l){ return '<div class="carte-cifra"><div class="'+(v?'v':'z')+'">'+v+'</div><div class="l">'+l+'</div></div>'; };
+      var medalii = C.podiumuri
+        ? '<div class="carte-medalii">'+
+            (C.podium[0]?'<i class="g">'+C.podium[0]+'</i>':'')+
+            (C.podium[1]?'<i class="a">'+C.podium[1]+'</i>':'')+
+            (C.podium[2]?'<i class="b">'+C.podium[2]+'</i>':'')+
+          '</div>'
+        : '<div class="z">0</div>';
+      var rand = function(l, v, u){ return '<div class="carte-rec"><span class="l">'+l+'</span><span class="v">'+v+'</span><span class="u">'+esc(u||'')+'</span></div>'; };
+      var carteHtml =
+        '<div class="carte-cifre">'+
+          cifra(C.concursuri, 'Concursuri')+
+          '<div class="carte-cifra">'+medalii+'<div class="l">Podiumuri</div></div>'+
+          cifra(C.sectoare, 'Sectoare câștigate')+
+        '</div>'+
+        '<div class="carte-cifre">'+
+          cifra(C.cmmcuri, 'CMMC-uri')+
+          '<div class="carte-cifra"><div class="'+(C.pesteRecord?'v':'z')+'">'+(C.pesteRecord?fmt(C.pesteRecord):'0')+'</div><div class="l">Cel mai mare pește</div></div>'+
+          cifra(rec.competitions?fmtPts(ptsAfisat(rec)):0, 'Media locurilor')+
+        '</div>'+
+        (C.record ? rand('Record', fmt(C.record.kg)+' kg', C.record.comp) : '')+
+        (C.mansa ? rand('Cea mai bună manșă', fmt(C.mansa.kg)+' kg', 'Manșa '+C.mansa.nr+' · '+C.mansa.comp) : '')+
+        '<table style="margin:7px 0 0;border-radius:12px;box-shadow:none;"><thead><tr><th>Concurs</th><th class="pos">Loc</th><th class="kg">Kg</th><th class="kg">Pește</th></tr></thead><tbody>'+
+        histRows+'</tbody></table>';
+      rows += '<tr id="hist-'+i+'" class="histrow" style="display:none;"><td colspan="4" class="carte" style="border-top:0;">'+
+        carteHtml+'</td></tr>';
     });
     var body = document.getElementById("content");
     var cmmcHtml = "";
