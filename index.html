@@ -2693,13 +2693,44 @@
     (p.scrieri||[]).forEach(function(x){ var k=faraSemne(x); if(k && out.indexOf(k)<0) out.push(k); });
     return out.filter(function(x){ return !!x; });
   }
+  /* Aceleași cuvinte, altă ordine. Pe foaia de la baltă numele se scriu adesea cu
+     numele de familie primul — „Muscalu Andrei" — iar în bază omul a intrat din arhivele
+     sezonului, unde e scris invers, „Andrei Muscalu". Din 24 de pescari se găseau 10.
+     Nu e o ghicire, ca la „Paul Selig" și „Paul Pelin": sunt EXACT aceleași cuvinte,
+     întoarse. Doi oameni diferiți n-au cum să aibă aceleași cuvinte în nume.
+     Cuvintele se pun în ordine alfabetică, deci merge la fel de bine și la numele din
+     trei bucăți. Un singur cuvânt nu se întoarce nicicum: acolo n-are ce potrivi. */
+  function cheieCuvinte(nm){
+    var k=faraSemne(nm);
+    if(!k) return "";
+    var c=k.split(" ").filter(function(x){ return !!x; });
+    if(c.length<2) return "";
+    return c.sort().join(" ");
+  }
   function pescarCauta(prenume, nume){
     var k=cheiePescar(prenume, nume);
     if(!k) return null;
     for(var i=0;i<pescari.length;i++){
       if(scrierileLui(pescari[i]).indexOf(k)>=0) return pescari[i];
     }
-    return null;
+    /* Abia după ce potrivirea întocmai n-a găsit pe nimeni. Dacă baza îi are pe amândoi,
+       scriși în cele două feluri, fiecare rămâne al lui. */
+    var c=cheieCuvinte(k);
+    if(!c) return null;
+    var gasit=null;
+    for(var j=0;j<pescari.length;j++){
+      var ale=scrierileLui(pescari[j]);
+      for(var q=0;q<ale.length;q++){
+        if(cheieCuvinte(ale[q])!==c) continue;
+        /* Doi oameni din bază cu aceleași cuvinte: nu se poate ști care e cel adevărat,
+           iar un cod pus pe cine nu trebuie strică tocmai clasamentul de sezon. Mai bine
+           niciunul — rămâne „fără cod", se vede, și se pune de mână. */
+        if(gasit && gasit!==pescari[j]) return null;
+        gasit=pescari[j];
+        break;
+      }
+    }
+    return gasit;
   }
   /* O scriere nouă se ține minte pe omul ei. Numele de acum nu se trece a doua oară în
      listă: el e deja acolo, ca nume. */

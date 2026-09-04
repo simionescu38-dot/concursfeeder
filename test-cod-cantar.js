@@ -73,7 +73,7 @@ console.log("\n=== 3. Avertismentul prinde lipsurile și duplicatele vechi ===")
   };
   ctx.nameOf = p => ((p.prenume || "") + " " + (p.nume || "")).trim();
   vm.createContext(ctx);
-  vm.runInContext(["codParticipant", "esc", "faraSemne", "cheiePescar", "pescarCauta",
+  vm.runInContext(["codParticipant", "esc", "faraSemne", "cheiePescar", "cheieCuvinte", "pescarCauta",
                    "potrivesteCodurile", "updateWarnCod"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
   vm.runInContext("updateWarnCod()", ctx);
