@@ -17,7 +17,7 @@ const H = require("./test-helpers.js");
 const src = H.citeste("index.html");
 const t = H.creeazaVerificator();
 
-const FUNCTII = ["uid", "faraSemne", "cheiePescar", "scrierileLui", "tineMinteScrierea", "numePescar", "pescarCauta",
+const FUNCTII = ["uid", "faraSemne", "cheiePescar", "cheieCuvinte", "scrierileLui", "tineMinteScrierea", "numePescar", "pescarCauta",
   "pescarCodNou", "pescarNou", "pescariSalveaza", "salveazaBaza",
   "bazaDinFisier", "potrivesteBaza", "aduBaza"];
 

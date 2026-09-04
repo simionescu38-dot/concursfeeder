@@ -20,7 +20,7 @@ const src = H.citeste("index.html");
 const t = H.creeazaVerificator();
 
 const FUNCTII = ["uid", "esc", "faraSemne", "nameOf", "splitName", "numePescar",
-  "cheiePescar", "scrierileLui", "pescarCauta", "tineMinteScrierea",
+  "cheiePescar", "cheieCuvinte", "scrierileLui", "pescarCauta", "tineMinteScrierea",
   "pescarCodNou", "pescarNou", "pescariSalveaza", "pescariIncarca",
   "numeleDinSezon", "cheiaSezon", "pescariDinArhive",
   "codParticipant", "potrivesteCodurile"];

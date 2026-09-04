@@ -20,7 +20,7 @@ const t = H.creeazaVerificator();
 
 const FUNCTII = ["uid", "esc", "faraSemne", "nameOf", "numManse", "manseRange",
   "emptyManche", "ensureManche", "mOf", "sectorOfM", "standOfM", "splitName",
-  "codParticipant", "cheiePescar", "scrierileLui", "pescarCauta", "numePescar", "pescarCodNou",
+  "codParticipant", "cheiePescar", "cheieCuvinte", "scrierileLui", "pescarCauta", "numePescar", "pescarCodNou",
   "pescarNou", "scrieInJurnal", "potrivesteCodurile", "puneCodurile", "updateWarnCod"];
 
 /** un concurs pe telefon plus baza sezonului */
