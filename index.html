@@ -834,7 +834,13 @@
 
     <div class="hero">
       <div class="mg-wrap" id="meniu-grila" style="width:100%;"></div>
-      <div class="summary" id="hero-stats" style="width:100%; max-width:340px;"></div>
+      <!-- Cifrele astea vorbesc despre ALTE concursuri, nu despre dalele de deasupra.
+           Poartă însă același stil de card ca dalele, așa că fără eticheta lor se citeau
+           ca un al treilea rând din „De citit". Stau ascunse până vin datele. -->
+      <div id="hero-regional" hidden style="width:100%;">
+        <div class="mg-lbl">În comunitate</div>
+        <div class="summary" id="hero-stats"></div>
+      </div>
       <div id="hero-spotlight" style="width:100%; max-width:340px;"></div>
       <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
     </div>
@@ -1821,6 +1827,7 @@
       '<div class="stat"><div class="n num">'+stats.upcoming+'</div><div class="l">Programate</div></div>'+
       '<div class="stat"><div class="n num">'+stats.live+'</div><div class="l">Live acum</div></div>'+
       '<div class="stat"><div class="n num">'+stats.organizers+'</div><div class="l">Organizatori</div></div>';
+    var wrap=document.getElementById("hero-regional"); if(wrap) wrap.hidden=false;
   }
   function renderHeroSpotlight(fish){
     var el=document.getElementById("hero-spotlight"); if(!el) return;
