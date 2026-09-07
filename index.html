@@ -44,6 +44,7 @@
     position:sticky; top:0; z-index:20;
     box-shadow:0 4px 20px -6px rgba(15,49,98,.35);
   }
+  header .kicker,header h1,header .comp{padding-left:46px;}
   header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
   header h1{margin:2px 0 0; font-size:20px; font-weight:800; letter-spacing:-.01em;}
   header .comp{font-size:13px; opacity:.85; margin-top:2px; min-height:16px;}
@@ -195,14 +196,12 @@
   /* Padding-ul era 12vh sus, adică aproape o sută de pixeli de gol. Cu grila de 9
      în hero, al treilea rând cădea sub marginea ecranului — iar un meniu pe care
      trebuie să-l cauți derulând e exact ce am vrut să evităm. */
-  .hero{text-align:center; padding:12px 8px 10px; display:flex; flex-direction:column; align-items:center;}
-  .hero-emoji{font-size:36px; margin-bottom:4px;}
-  .hero-logo{display:block; width:88px; height:88px; margin:0 auto 8px; border-radius:21px;
-    box-shadow:0 16px 34px -22px rgba(25,211,209,.72);}
-  .hero-title{margin:0; font-size:24px; font-weight:800; letter-spacing:-.01em; color:var(--pine);}
-  .hero-tag{margin:2px 0 0; font-size:12.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--teal-d);}
-  .hero-desc{margin:8px 0 11px; font-size:13.5px; line-height:1.4; color:var(--muted); max-width:340px;}
-  .hero-cta{max-width:340px;}
+  .hero{text-align:center; padding:4px 8px 10px; display:flex; flex-direction:column; align-items:center;}
+  .hdr-logo{position:absolute; left:16px; top:14px; width:36px; height:36px; border-radius:9px;}
+  /* eticheta care spune la ce folosesc dalele de sub ea */
+  .mg-lbl{margin:12px 2px 6px; font-size:10.5px; font-weight:800; letter-spacing:.09em;
+    text-transform:uppercase; color:var(--muted); text-align:left;}
+  .mg-lbl:first-child{margin-top:2px;}
   .btn-link{border:0; background:none; margin-top:14px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--muted); cursor:pointer; font-family:inherit; text-decoration:underline; text-underline-offset:3px;}
 
   /* Contul meu – aceeași ierarhie vizuală ca restul aplicației, fără să atingă setările. */
@@ -638,8 +637,7 @@
   }
   .card,.p,.stat{box-shadow:var(--shadow-sm);}
   .sec-title{color:#88a0b4;}
-  .hero-title,.mg button,.fisa-v{color:var(--pine);}
-  .hero-tag{color:var(--teal);}
+  .mg button,.fisa-v{color:var(--pine);}
   .account-head{background:linear-gradient(135deg,#102d37,#0d1823); border-color:#294656;}
   .account-mark{color:var(--teal); background:#12303a; border-color:#28515a; box-shadow:0 0 22px rgba(25,211,209,.09);}
   #view-set .card{background:linear-gradient(145deg,#101d29,#0b141e);}
@@ -813,6 +811,7 @@
 </svg>
 
 <header>
+  <img class="hdr-logo" src="icon-192.png" alt="" width="36" height="36">
   <div class="kicker">Clasament concurs</div>
   <h1>Cântar &amp; Clasament</h1>
   <div class="comp" id="compName"></div>
@@ -827,22 +826,18 @@
 <main>
   <!-- ACASĂ -->
   <section class="view active" id="view-part">
-    <div class="hero">
-      <img class="hero-logo" src="icon-192.png" alt="Sigla Feeder Moldova Iași" width="88" height="88">
-      <h2 class="hero-title">Feeder Moldova Iași</h2>
-      <p class="hero-tag">Cântar &amp; Clasament live</p>
-      <p class="hero-desc">Urmărește în timp real clasamentul concursurilor de pescuit, direct din telefon.</p>
-      <div class="summary" id="hero-stats" style="width:100%; max-width:340px;"></div>
-      <div id="hero-spotlight" style="width:100%; max-width:340px;"></div>
-      <!-- Grila stă ÎN hero, deasupra liniei de îndoire: la baltă vrei uneltele
-           dintr-o privire, nu după ce derulezi. „Vezi clasamentele" a fost scos —
-           Clasament e primul buton din grilă, nu are rost de două ori. -->
-      <div class="mg" id="meniu-grila" style="width:100%;"></div>
-      <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
-    </div>
-
+    <!-- Ordinea e dictată de ce cauți când deschizi telefonul la baltă: întâi cum stă
+         concursul chiar acum, apoi uneltele, iar la urmă cifrele despre alte concursuri.
+         Titlul mare și fraza de prezentare au fost scoase — cine a deschis aplicația știe
+         ce e; numele stă oricum în bara de sus. -->
     <div id="status-live"></div>
 
+    <div class="hero">
+      <div class="mg-wrap" id="meniu-grila" style="width:100%;"></div>
+      <div class="summary" id="hero-stats" style="width:100%; max-width:340px;"></div>
+      <div id="hero-spotlight" style="width:100%; max-width:340px;"></div>
+      <button class="btn-link" onclick="showView('set')">Sunt organizator</button>
+    </div>
   </section>
 
   <!-- CÂNTAR -->
@@ -2362,31 +2357,40 @@
   function renderMeniu(){
     var g=document.getElementById("meniu-grila");
     if(!g) return;
+    // Dalele NU repetă bara de jos. Cântar, Calendar și Clasament sunt deja acolo, iar
+    // același drum în două locuri pe același ecran nu ajută pe nimeni — e chiar motivul
+    // pentru care „Vezi clasamentele" a fost scos mai demult. Ce rămâne e grupat pe rost,
+    // ca ochiul să nu caute printr-un bloc de nouă dale la fel de grele.
     var org=[
-      ["scale","Cântărire","meniuGo('cantar')"],
-      ["trophy","Clasament","meniuGo('rank')"],
-      ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
-      ["timer","Cronometru","meniuGo('set','card-cronometru')"],
-      ["calendar","Calendar","meniuGo('cal')"],
-      ["notebook","Strategie","meniuGo('strat')"],
-      ["rules","Regulament","meniuGo('reg')"],
-      ["users","Sponsori","meniuGo('spons')"],
-      ["medal","Sezon","meniuLink('sezon.html')"]
+      ["Desfășurare și rezultate", [
+        ["timer","Cronometru","meniuGo('set','card-cronometru')"],
+        ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
+        ["medal","Sezon","meniuLink('sezon.html')"]
+      ]],
+      ["De citit", [
+        ["rules","Regulament","meniuGo('reg')"],
+        ["notebook","Strategie","meniuGo('strat')"],
+        ["users","Sponsori","meniuGo('spons')"]
+      ]]
     ];
     var pescar=[
-      ["trophy","Clasament","meniuGo('rank')"],
-      ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
-      ["notebook","Strategie","meniuGo('strat')"],
-      ["weather","Vremea","meniuGo('part','card-meteo')"],
-      ["rules","Regulament","meniuGo('reg')"],
-      ["calendar","Calendar","meniuGo('cal')"],
-      ["users","Sponsori","meniuGo('spons')"],
-      ["medal","Sezon","meniuLink('sezon.html')"],
-      ["live","Concursuri live","meniuLink('concursuri.html')"]
+      ["Rezultate", [
+        ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
+        ["medal","Sezon","meniuLink('sezon.html')"],
+        ["live","Concursuri live","meniuLink('concursuri.html')"]
+      ]],
+      ["De citit", [
+        ["rules","Regulament","meniuGo('reg')"],
+        ["notebook","Strategie","meniuGo('strat')"],
+        ["users","Sponsori","meniuGo('spons')"]
+      ]]
     ];
-    var items = isLocked() ? pescar : org;
-    g.innerHTML = items.map(function(it){
-      return '<button type="button" onclick="'+it[2]+'"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-'+it[0]+'"></use></svg></span>'+esc(it[1])+'</button>';
+    var grupuri = isLocked() ? pescar : org;
+    g.innerHTML = grupuri.map(function(gr){
+      return '<div class="mg-lbl">'+esc(gr[0])+'</div><div class="mg">'+
+        gr[1].map(function(it){
+          return '<button type="button" onclick="'+it[2]+'"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-'+it[0]+'"></use></svg></span>'+esc(it[1])+'</button>';
+        }).join("")+'</div>';
     }).join("");
   }
 
