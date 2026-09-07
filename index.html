@@ -473,22 +473,10 @@
   .mg button:active{background:var(--teal-soft); border-color:var(--teal);}
 
   /* meteo + solunar */
-  .wx-top{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
-  .wx-em{font-size:36px; line-height:1;}
-  .wx-temp{font-size:32px; font-weight:900; line-height:1.05; color:var(--pine);}
-  .wx-desc{font-size:13px; font-weight:700; color:var(--muted);}
-  .wx-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
-  .wx-cell{background:var(--teal-soft); border-radius:10px; padding:8px 10px; min-width:0;}
-  .wx-k{font-size:10px; font-weight:800; color:var(--teal-d); text-transform:uppercase; letter-spacing:.06em;}
-  .wx-v{font-size:15px; font-weight:800; color:var(--pine); word-break:break-word;}
-  .sol-row{display:flex; align-items:center; gap:8px; padding:8px 6px; border-top:1px solid var(--line);}
-  .sol-b{flex:0 0 auto; font-size:10px; font-weight:900; padding:3px 8px; border-radius:999px; letter-spacing:.04em;}
-  .sol-major{background:var(--teal); color:#fff;}
-  .sol-minor{background:var(--teal-soft); color:var(--teal-d);}
-  .sol-t{flex:0 0 auto; font-size:14px; font-weight:800; color:var(--pine);}
-  .sol-l{flex:1; min-width:0; font-size:12px; font-weight:600; color:var(--muted); text-align:right;}
-  .sol-now{background:var(--amber-soft); border-radius:10px; border-top-color:transparent;}
-  .sol-now .sol-l{color:#7a4a06;}
+  .fisa-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
+  .fisa-cell{background:var(--teal-soft); border-radius:10px; padding:8px 10px; min-width:0;}
+  .fisa-k{font-size:10px; font-weight:800; color:var(--teal-d); text-transform:uppercase; letter-spacing:.06em;}
+  .fisa-v{font-size:15px; font-weight:800; color:var(--pine); word-break:break-word;}
 
   /* NOU LIDER + confetti */
   #leader{position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;
@@ -524,7 +512,7 @@
 
     /* rândurile de text lungi obosesc ochiul — le ținem la lățime de citit */
     #view-rank.active, #view-part.active{max-width:780px; margin:0 auto;}
-    .wx-grid{grid-template-columns:repeat(3,1fr);}
+    .fisa-grid{grid-template-columns:repeat(3,1fr);}
     .vb-wrap{height:170px;}
   }
   @media (min-width:1300px){
@@ -650,7 +638,7 @@
   }
   .card,.p,.stat{box-shadow:var(--shadow-sm);}
   .sec-title{color:#88a0b4;}
-  .hero-title,.mg button,.wx-temp,.wx-v,.sol-t{color:var(--pine);}
+  .hero-title,.mg button,.fisa-v{color:var(--pine);}
   .hero-tag{color:var(--teal);}
   .account-head{background:linear-gradient(135deg,#102d37,#0d1823); border-color:#294656;}
   .account-mark{color:var(--teal); background:#12303a; border-color:#28515a; box-shadow:0 0 22px rgba(25,211,209,.09);}
@@ -686,16 +674,16 @@
   .del{background:#2b1b1e; color:#ff9d97;}
   .chip,.cmmc,.stari .st-pus{background:var(--amber-soft); color:#f4cc77; border-color:#69501d;}
   .st-mic{color:#f4cc77;}
-  .chip-c,.metric .ro,.wx-cell,.sec-chip{background:#102431; border-color:#264052;}
+  .chip-c,.metric .ro,.fisa-cell,.sec-chip{background:#102431; border-color:#264052;}
   .chip-c b,.sec-chip button{background:#1b3b49; color:var(--teal);}
   .p-sub span{background:#102431; border-color:#264052; color:#9fb0bf;}
   .catchbox{background:#09131d; border-color:#1c3040;}
   .p-total{background:linear-gradient(135deg,#103039,#102431); border-color:#28515a;}
-  .p-total .lbl,.chip-sum,.wx-k{color:var(--teal);}
+  .p-total .lbl,.chip-sum,.fisa-k{color:var(--teal);}
   .p-total .val{color:#f3fbff;}
   .p.has-catch{border-color:#28515a; box-shadow:0 12px 34px -24px rgba(25,211,209,.65);}
 
-  .sched,.evt,.sol-row{border-color:var(--line);}
+  .sched,.evt{border-color:var(--line);}
   .sched{background:linear-gradient(145deg,#101d29,#0b141e);}
   .sched .dt,.evt .go,.sched .tag{color:var(--teal);}
   .sched .dt{background:#12303a; border-color:#24515a;}
@@ -799,7 +787,6 @@
   <symbol id="i-rules" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6V3Z"/><path d="M15 3v5h4M9 12h7M9 16h7M9 8h2"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c.4-4 2.4-6 6-6s5.6 2 6 6M15 15c3.4-.6 5.4 1 6 4"/></symbol>
   <symbol id="i-medal" viewBox="0 0 24 24"><path d="m7 3 5 7 5-7M9 3l3 4 3-4"/><circle cx="12" cy="15" r="5"/><path d="m12 12 1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L9 14.3l2-.3 1-2Z"/></symbol>
-  <symbol id="i-weather" viewBox="0 0 24 24"><path d="M7 17H5a4 4 0 0 1 0-8h.4A6 6 0 0 1 17 8a4.5 4.5 0 0 1 1 9h-3"/><path d="M9 20h.01M13 20h.01"/></symbol>
   <symbol id="i-live" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.7-5 3.3-7 8-7s7.3 2 8 7"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
@@ -856,15 +843,6 @@
 
     <div id="status-live"></div>
 
-    <div class="pliant" id="pliant-vreme">
-      <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideVremea()"><svg class="ui-ico" aria-hidden="true"><use href="#i-weather"></use></svg>Vremea la baltă și solunarul</button>
-      <div class="pliant-in" hidden>
-        <div class="card" style="text-align:left; margin:0;" id="card-meteo">
-          <div id="wx-body"></div>
-          <button class="btn btn-ghost" style="margin-top:10px;" onclick="loadWeather(true)"><svg class="ui-ico" aria-hidden="true"><use href="#i-location"></use></svg>Folosește locația mea</button>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- CÂNTAR -->
@@ -2545,7 +2523,7 @@
       if(r.momeala) linii.push(["Momeală", r.momeala]);
       var cap=(r.balta?esc(r.balta):"Baltă nescrisă")+(r.stand?" · standul "+esc(r.stand):"");
       return '<div class="card"><div class="sec-title">'+cap+'</div>'+
-        (linii.length?'<div class="wx-grid">'+linii.map(function(l){ return wxCell(l[0],l[1]); }).join("")+'</div>':'')+
+        (linii.length?'<div class="fisa-grid">'+linii.map(function(l){ return fisaCell(l[0],l[1]); }).join("")+'</div>':'')+
         (r.struct?'<p class="hint" style="margin:8px 0 0;"><b>Pe fund:</b> '+esc(r.struct)+'</p>':'')+
         (r.ore&&r.ore.length?'<p class="hint" style="margin:6px 0 0;"><b>A mușcat la:</b> '+esc(r.ore.join(", "))+'</p>':'')+
         (r.note?'<p class="hint" style="margin:6px 0 0;">'+esc(r.note)+'</p>':'')+
@@ -2971,268 +2949,14 @@
     }).join("");
   }
 
-  // ---------- meteo (Open-Meteo) + solunar ----------
-  // Open-Meteo nu cere cheie și acceptă cereri direct din browser, deci merge din
-  // pagina asta fără să atingem Worker-ul și fără niciun secret în cod public.
-  var WX_KEY="concurs-meteo-v1";
-  var wxState=null;
-
-  function wxLoad(){ try{ var s=localStorage.getItem(WX_KEY); if(s) wxState=JSON.parse(s); }catch(e){} }
-  function wxSave(){ try{ localStorage.setItem(WX_KEY, JSON.stringify(wxState)); }catch(e){} }
+  // ---------- ajutoare de formatare ----------
+  // Au stat în blocul de meteo până când acesta a fost scos: p2 și hhmm se
+  // folosesc peste tot (ore de captură, nume de fișiere), iar fisaCell desenează
+  // celulele fișelor din Strategie.
   function p2(n){ return (n<10?"0":"")+n; }
   function hhmm(dt){ return p2(dt.getHours())+":"+p2(dt.getMinutes()); }
-  function unaZec(n){ return (Math.round((+n||0)*10)/10).toString().replace(".",","); }
-  function busola(g){
-    var d=["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSV","SV","VSV","V","VNV","NV","NNV"];
-    return d[Math.round((((+g||0)%360)+360)%360/22.5)%16];
-  }
-  // codurile meteo standard WMO, traduse
-  function wxCod(c){
-    var m={0:["☀️","senin"],1:["🌤️","aproape senin"],2:["⛅","parțial noros"],3:["☁️","acoperit"],
-      45:["🌫️","ceață"],48:["🌫️","ceață cu chiciură"],
-      51:["🌦️","burniță slabă"],53:["🌦️","burniță"],55:["🌦️","burniță deasă"],
-      56:["🌧️","burniță înghețată"],57:["🌧️","burniță înghețată deasă"],
-      61:["🌧️","ploaie slabă"],63:["🌧️","ploaie"],65:["🌧️","ploaie puternică"],
-      66:["🌧️","ploaie înghețată"],67:["🌧️","ploaie înghețată puternică"],
-      71:["🌨️","ninsoare slabă"],73:["🌨️","ninsoare"],75:["🌨️","ninsoare abundentă"],77:["🌨️","măzăriche"],
-      80:["🌦️","averse slabe"],81:["🌦️","averse"],82:["⛈️","averse puternice"],
-      85:["🌨️","averse de ninsoare"],86:["🌨️","averse puternice de ninsoare"],
-      95:["⛈️","furtună"],96:["⛈️","furtună cu grindină"],99:["⛈️","furtună cu grindină mare"]};
-    return m[c] ? {emoji:m[c][0], text:m[c][1]} : {emoji:"🌡️", text:"vreme"};
-  }
-  function wxUrl(lat,lon){
-    return "https://api.open-meteo.com/v1/forecast?latitude="+lat.toFixed(4)+"&longitude="+lon.toFixed(4)+
-      "&current=temperature_2m,relative_humidity_2m,apparent_temperature,surface_pressure,"+
-      "wind_speed_10m,wind_direction_10m,cloud_cover,precipitation,weather_code"+
-      "&hourly=surface_pressure&past_days=1&forecast_days=1&timezone=auto";
-  }
-  // tendința presiunii pe ultimele 3 ore — la feeder contează mai mult decât temperatura
-  function wxTrend(j){
-    var ht=(j.hourly&&j.hourly.time)||[], hp=(j.hourly&&j.hourly.surface_pressure)||[];
-    var acum=((j.current&&j.current.time)||"").slice(0,13), i=-1;
-    for(var k=0;k<ht.length;k++){ if((ht[k]||"").slice(0,13)===acum){ i=k; break; } }
-    if(i<3 || hp[i]==null || hp[i-3]==null) return null;
-    return hp[i]-hp[i-3];
-  }
-  function wxCell(k,v){ return '<div class="wx-cell"><div class="wx-k">'+esc(k)+'</div><div class="wx-v">'+esc(v)+'</div></div>'; }
+  function fisaCell(k,v){ return '<div class="fisa-cell"><div class="fisa-k">'+esc(k)+'</div><div class="fisa-v">'+esc(v)+'</div></div>'; }
 
-  function wxMeteoHtml(){
-    var c=wxState&&wxState.current;
-    if(!c) return '<p class="hint" style="margin:0 0 4px;">Vremea nu s-a putut descărca (probabil fără net). Solunarul de mai jos se calculează în telefon, deci apare oricum.</p>';
-    var v=wxCod(c.weather_code), tr=wxState.trend;
-    var trTxt = (tr===null||tr===undefined) ? "necunoscută"
-      : (Math.abs(tr)<0.7 ? "stabilă" : (tr>0 ? "în creștere" : "în scădere"))+" · "+(tr>0?"+":"")+unaZec(tr)+" hPa";
-    return '<div class="wx-top"><div class="wx-em">'+v.emoji+'</div><div>'+
-        '<div class="wx-temp">'+Math.round(c.temperature_2m)+'°C</div>'+
-        '<div class="wx-desc">'+esc(v.text)+' · resimțit '+Math.round(c.apparent_temperature)+'°</div></div></div>'+
-      '<div class="wx-grid">'+
-        wxCell("Presiune", Math.round(c.surface_pressure)+" hPa")+
-        wxCell("Tendință 3h", trTxt)+
-        wxCell("Vânt", Math.round(c.wind_speed_10m)+" km/h din "+busola(c.wind_direction_10m))+
-        wxCell("Umiditate", Math.round(c.relative_humidity_2m)+"%")+
-        wxCell("Nori", Math.round(c.cloud_cover)+"%")+
-        wxCell("Precipitații", unaZec(c.precipitation)+" mm")+
-      '</div>'+
-      '<p class="hint" style="margin:8px 0 0;">Citit la '+esc(wxState.cand||"—")+
-      (wxState.vechi?' — <b>e ultima citire salvată</b>, acum telefonul nu are net':'')+'.</p>';
-  }
-
-  function wxSolunarHtml(){
-    var lat=wxState.coords.lat, lon=wxState.coords.lon, acum=new Date();
-    var f=Astro.faza(acum), ev=Astro.events(acum,lat,lon), per=Astro.perioade(acum,lat,lon);
-    var ora=function(j){ return j===null ? "—" : hhmm(Astro.jdToDate(j)); };
-    var h='<div class="sec-title" style="margin:16px 0 10px;">Solunar · '+esc(f.emoji+" "+f.nume)+'</div>'+
-      '<div class="wx-grid">'+
-        wxCell("Lună iluminată", Math.round(f.iluminat*100)+"%")+
-        wxCell("Soare", ora(ev.rasaritSoare)+" – "+ora(ev.apusSoare))+
-      '</div>';
-    if(per.length){
-      h+='<div style="margin-top:10px;">';
-      per.forEach(function(p){
-        var activ = acum>=p.start && acum<=p.sfarsit;
-        h+='<div class="sol-row'+(activ?' sol-now':'')+'">'+
-             '<span class="sol-b '+(p.tip==="major"?"sol-major":"sol-minor")+'">'+(p.tip==="major"?"MAJOR":"MINOR")+'</span>'+
-             '<span class="sol-t">'+hhmm(p.start)+'–'+hhmm(p.sfarsit)+'</span>'+
-             '<span class="sol-l">'+(activ?'<b>acum</b> · ':'')+esc(p.eticheta)+'</span></div>';
-      });
-      h+='</div>';
-    }
-    h+='<p class="hint" style="margin:10px 0 0;">Perioadele <b>majore</b> sunt când luna e deasupra capului sau exact sub picioare, cele <b>minore</b> la răsăritul și apusul lunii. Teoria solunară (John Alden Knight, 1926) e folosită de mulți pescari, dar <b>nu e demonstrată științific</b> — folosește-o ca reper, nu ca pe o garanție.</p>';
-    return h;
-  }
-
-  function renderWx(){
-    var box=document.getElementById("wx-body");
-    if(!box) return;
-    if(!wxState || !wxState.coords){
-      box.innerHTML='<p class="hint" style="margin:0;">Apasă butonul de mai jos ca să iau locația telefonului. Vremea vine de la Open-Meteo (fără cont și fără cheie), iar solunarul se calculează chiar în telefon — deci apare și când nu ai semnal la baltă.</p>';
-      return;
-    }
-    box.innerHTML = wxMeteoHtml() + wxSolunarHtml();
-  }
-
-  function wxRefresh(){
-    if(!wxState || !wxState.coords) return;
-    fetch(wxUrl(wxState.coords.lat, wxState.coords.lon))
-      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
-      .then(function(j){
-        wxState.current=j.current; wxState.trend=wxTrend(j); wxState.vechi=false;
-        wxState.cand=new Date().toLocaleString("ro-RO",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-        wxSave(); renderWx();
-      })
-      .catch(function(){ if(wxState.current) wxState.vechi=true; renderWx(); });
-  }
-
-  function loadWeather(cerLocatie){
-    var box=document.getElementById("wx-body");
-    if(cerLocatie){
-      if(!navigator.geolocation){
-        if(box) box.innerHTML='<p class="hint" style="margin:0;">Telefonul ăsta nu oferă locația în browser.</p>';
-        return;
-      }
-      if(box) box.innerHTML='<p class="hint" style="margin:0;">Caut locația…</p>';
-      navigator.geolocation.getCurrentPosition(function(pos){
-        wxState=wxState||{};
-        wxState.coords={lat:pos.coords.latitude, lon:pos.coords.longitude};
-        wxSave(); renderWx(); wxRefresh();
-      }, function(err){
-        if(wxState && wxState.coords){ renderWx(); wxRefresh(); }
-        else if(box) box.innerHTML='<p class="hint" style="margin:0;">Nu am putut lua locația ('+esc(err&&err.message||"acces refuzat")+'). Pornește GPS-ul, permite accesul la locație și apasă din nou.</p>';
-      }, {enableHighAccuracy:false, timeout:10000, maximumAge:600000});
-      return;
-    }
-    renderWx(); wxRefresh();
-  }
-
-  // ---------- astronomie: soare și lună, calculate local ----------
-  // Solunarul NU se descarcă de nicăieri — se calculează din latitudine, longitudine
-  // și dată, deci merge și fără semnal, exact cum e la baltă. Precizia (sub un minut
-  // pentru răsărit/apus) e mult peste ce cere o „perioadă favorabilă" de două ore.
-  var Astro = (function(){
-    var RAD=Math.PI/180, DEG=180/Math.PI;
-    function norm360(x){ x=x%360; return x<0?x+360:x; }
-    function dateToJd(dt){ return dt.getTime()/86400000 + 2440587.5; }
-    function jdToDate(j){ return new Date((j-2440587.5)*86400000); }
-    // d = zile de la J2000.0
-    function dOf(jd){ return jd-2451545.0; }
-
-    function sunPos(d){
-      var L=norm360(280.460+0.9856474*d), g=norm360(357.528+0.9856003*d)*RAD;
-      var lam=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g));
-      var eps=(23.439-0.0000004*d)*RAD, lr=lam*RAD;
-      return { ra:norm360(Math.atan2(Math.cos(eps)*Math.sin(lr), Math.cos(lr))*DEG),
-               dec:Math.asin(Math.sin(eps)*Math.sin(lr))*DEG,
-               lam:norm360(lam) };
-    }
-    // serie trunchiată (Meeus) — eroare de câteva minute de arc, suficient aici
-    function moonPos(d){
-      var T=d/36525;
-      var Lp=norm360(218.3164477+481267.88123421*T);
-      var D =norm360(297.8501921+445267.1114034*T)*RAD;
-      var M =norm360(357.5291092+35999.0502909*T)*RAD;
-      var Mp=norm360(134.9633964+477198.8675055*T)*RAD;
-      var F =norm360(93.2720950+483202.0175233*T)*RAD;
-      var lam = Lp
-        + 6.289*Math.sin(Mp)      + 1.274*Math.sin(2*D-Mp)
-        + 0.658*Math.sin(2*D)     + 0.214*Math.sin(2*Mp)
-        - 0.186*Math.sin(M)       - 0.114*Math.sin(2*F)
-        + 0.059*Math.sin(2*D-2*Mp)+ 0.057*Math.sin(2*D-M-Mp)
-        + 0.053*Math.sin(2*D+Mp)  + 0.046*Math.sin(2*D-M)
-        - 0.041*Math.sin(M-Mp)    - 0.035*Math.sin(D)
-        - 0.031*Math.sin(M+Mp);
-      var bet = 5.128*Math.sin(F)
-        + 0.281*Math.sin(Mp+F)    + 0.278*Math.sin(Mp-F)
-        + 0.173*Math.sin(2*D-F)   + 0.055*Math.sin(2*D-Mp+F)
-        + 0.046*Math.sin(2*D-Mp-F)+ 0.033*Math.sin(2*D+F)
-        + 0.017*Math.sin(2*Mp+F);
-      var eps=(23.439-0.0000004*d)*RAD, lr=lam*RAD, br=bet*RAD;
-      return { ra:norm360(Math.atan2(Math.sin(lr)*Math.cos(eps)-Math.tan(br)*Math.sin(eps), Math.cos(lr))*DEG),
-               dec:Math.asin(Math.sin(br)*Math.cos(eps)+Math.cos(br)*Math.sin(eps)*Math.sin(lr))*DEG,
-               lam:norm360(lam) };
-    }
-    function gmst(d){ return norm360(280.46061837+360.98564736629*d); }
-    function altOf(pos,d,lat,lon){
-      var ha=(gmst(d)+lon-pos.ra)*RAD, la=lat*RAD, de=pos.dec*RAD;
-      return Math.asin(Math.sin(la)*Math.sin(de)+Math.cos(la)*Math.cos(de)*Math.cos(ha))*DEG;
-    }
-    function haOf(pos,d,lon){ return norm360(gmst(d)+lon-pos.ra); }
-
-    // caută trecerile prin zero eșantionând din 10 în 10 minute, apoi rafinează prin
-    // înjumătățire — mai simplu și mai robust decât o formulă închisă
-    function crossings(f, jd0, jd1){
-      var step=10/1440, out=[], prevT=jd0, prevV=f(jd0);
-      for(var t=jd0+step; t<=jd1; t+=step){
-        var v=f(t);
-        if(prevV<0 && v>=0) out.push({t:refine(f,prevT,t), sus:true});
-        else if(prevV>0 && v<=0) out.push({t:refine(f,prevT,t), sus:false});
-        prevT=t; prevV=v;
-      }
-      return out;
-    }
-    function refine(f,a,b){
-      var na=f(a)<0;
-      for(var i=0;i<30;i++){ var m=(a+b)/2; if((f(m)<0)===na) a=m; else b=m; }
-      return (a+b)/2;
-    }
-
-    // ziua locală [00:00, 24:00) a datei primite
-    function dayBounds(dt){
-      var s=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),0,0,0,0);
-      var e=new Date(s.getTime()+86400000);
-      return [dateToJd(s), dateToJd(e)];
-    }
-
-    function events(dt, lat, lon){
-      var b=dayBounds(dt), jd0=b[0], jd1=b[1];
-      var H0_SOARE=-0.833, H0_LUNA=0.125; // refracție; la lună și paralaxa/semidiametrul
-      var rsSoare=crossings(function(t){ return altOf(sunPos(dOf(t)),dOf(t),lat,lon)-H0_SOARE; }, jd0, jd1);
-      var rsLuna =crossings(function(t){ return altOf(moonPos(dOf(t)),dOf(t),lat,lon)-H0_LUNA; }, jd0, jd1);
-      // trecerea la meridian (lună sus) și la nadir (lună dedesubt): unghi orar 0 și 180
-      var trec=crossings(function(t){ return Math.sin(haOf(moonPos(dOf(t)),dOf(t),lon)*RAD); }, jd0, jd1);
-      var sus=[], jos=[];
-      trec.forEach(function(c){ (c.sus?sus:jos).push(c.t); });
-      var pick=function(arr,vrea){ var r=null; arr.forEach(function(c){ if(c.sus===vrea && r===null) r=c.t; }); return r; };
-      return {
-        rasaritSoare: pick(rsSoare,true),  apusSoare: pick(rsSoare,false),
-        rasaritLuna:  pick(rsLuna,true),   apusLuna:  pick(rsLuna,false),
-        lunaSus: sus.length?sus[0]:null,   lunaJos: jos.length?jos[0]:null
-      };
-    }
-
-    function faza(dt){
-      var d=dOf(dateToJd(dt));
-      var el=norm360(moonPos(d).lam - sunPos(d).lam);
-      var nume=["Lună nouă","Seceră crescătoare","Primul pătrar","Aproape plină (crește)",
-                "Lună plină","Aproape plină (scade)","Ultimul pătrar","Seceră descrescătoare"];
-      var em=["🌑","🌒","🌓","🌔","🌕","🌖","🌗","🌘"];
-      var k=Math.floor((norm360(el+22.5))/45)%8;
-      return { unghi:el, iluminat:(1-Math.cos(el*RAD))/2, nume:nume[k], emoji:em[k] };
-    }
-
-    // perioadele solunare: „majore" în jurul trecerii lunii la meridian și la nadir,
-    // „minore" în jurul răsăritului și apusului lunar
-    function perioade(dt, lat, lon){
-      var e=events(dt,lat,lon), out=[];
-      function add(centru, tip, eticheta){
-        if(centru===null) return;
-        var lat2=(tip==="major"?60:30)/1440;
-        out.push({ tip:tip, eticheta:eticheta,
-                   start:jdToDate(centru-lat2), sfarsit:jdToDate(centru+lat2),
-                   centru:jdToDate(centru) });
-      }
-      add(e.lunaSus,"major","luna sus, deasupra capului");
-      add(e.lunaJos,"major","luna jos, sub orizont");
-      add(e.rasaritLuna,"minor","răsărit de lună");
-      add(e.apusLuna,"minor","apus de lună");
-      out.sort(function(a,b){ return a.start-b.start; });
-      return out;
-    }
-
-    return { events:events, faza:faza, perioade:perioade, jdToDate:jdToDate,
-             sunPos:sunPos, moonPos:moonPos, altOf:altOf, dOf:dOf, dateToJd:dateToJd };
-  })();
-
-;
 
   function liveLink(){ return location.origin+location.pathname+"?room="+encodeURIComponent(syncRoom); }
   function updateLiveQr(){
@@ -3941,7 +3665,7 @@
     if(v==="rank") renderRank();
     if(v==="cantar") renderList(); // standul se scrie din formularul fiecărui participant
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
-    if(v==="part"){ loadAcasaRegional(); renderWx(); renderMeniu(); improspateazaStatus(); }
+    if(v==="part"){ renderMeniu(); improspateazaStatus(); }
     /* Versiunea se citea o singură dată, la pornire — adică ÎNAINTE ca service worker-ul
        să apuce să salveze aplicația. Cardul rămânea apoi pe „Încă nu s-a salvat nimic"
        cât ținea aplicația deschisă, deși memoria era deja acolo. Cel mai rău cădea exact
@@ -6666,7 +6390,6 @@
     state.endAt=nowSync();
     queueSave(); startTimerLoop(); improspateazaStatus();
   }
-  function deschideVremea(){ plianteaza("pliant-vreme"); }
   function leaderId(){
     var best=null, bt=0;
     state.participants.forEach(function(q){ var t=totalOf(q); if(t>bt+1e-9){ bt=t; best=q.id; } });
@@ -7673,7 +7396,6 @@
     load();
     pescariIncarca(); bazaIncarcaRev();
     loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
-    wxLoad(); loadWeather(false); // fără a cere locația: doar dacă a fost deja permisă
     stratLoad();
     document.getElementById("set-name").value = state.name||"";
     improspateazaBalta();

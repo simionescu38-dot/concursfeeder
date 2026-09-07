@@ -32,8 +32,6 @@ const TESTE = [
   ["PIN-ul nu pleacă de pe telefon", "test-pin-nu-pleaca.js"],
   ["Coduri QR", "test-qr.js"],
   ["Codul QR la Sponsori", "test-qr-sponsori.js"],
-  ["Soare / lună (solunar)", "test-astro.js"],
-  ["Meteo", "test-meteo.js"],
   ["Adrese date mai departe", "test-adrese.js"],
   ["Cronometru sincronizat", "test-cronometru.js"],
   ["Ceasul concursului", "test-ceas.js"],
