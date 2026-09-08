@@ -1489,7 +1489,7 @@
   function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
   // ---------- manșe (concurs pe 2 sau 3 zile) ----------
-  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], extras:[], extraTimes:[], extraPhotos:[], stand:"", sector:""}; }
+  function emptyManche(){ return {catches:[], catchTimes:[], catchPhotos:[], catchIds:[], extras:[], extraTimes:[], extraPhotos:[], extraIds:[], stand:"", sector:""}; }
   function numManse(){ return state.numManse||2; }
   // Implicit: locurile din sector, curat. „Locul 3 ia 3 puncte" e ce scrie în
   // regulamentele de aici, iar punctele fracționare la premiere nu se pot explica.
@@ -1506,6 +1506,23 @@
   function ensureManche(p){
     if(!p.m) p.m={};
     manseRange().forEach(function(i){ if(!p.m[i]) p.m[i]=emptyManche(); });
+  }
+  /* Fiecare captură și fiecare pește extra capătă o identitate proprie. Fără ea, serverul
+     nu poate deosebi „peștele ăsta lipsește pentru că l-a șters cineva" de „lipsește
+     pentru că telefonul ăsta nu-l știa încă" — și doi arbitri care cântăresc în același
+     minut se șteargeau unul pe altul. Se completează aici, într-un singur loc, ca orice
+     cale de adăugare (mână, WhatsApp, poza foii) să fie acoperită fără s-o atingem. */
+  function idCantaririlor(){
+    (state.participants||[]).forEach(function(p){
+      var mm = p && p.m; if(!mm) return;
+      Object.keys(mm).forEach(function(i){
+        var m=mm[i]; if(!m) return;
+        if(!Array.isArray(m.catchIds)) m.catchIds=[];
+        if(!Array.isArray(m.extraIds)) m.extraIds=[];
+        while(m.catchIds.length < (m.catches||[]).length) m.catchIds.push(uid());
+        while(m.extraIds.length < (m.extras||[]).length) m.extraIds.push(uid());
+      });
+    });
   }
   function mOf(p, mi){ ensureManche(p); return p.m[mi]; }
   // Standul și sectorul aparțin MANȘEI, nu pescarului: între manșe se trage din nou
@@ -1683,7 +1700,9 @@
   }
 
   // ---------- persistence (localStorage) ----------
-  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast("Stocare plină – șterge câteva poze"); } }
+  /* Identitățile se pun la salvarea locală (200 ms), nu la trimitere (900 ms): salvarea
+     câștigă mereu cursa, deci orice pește pleacă spre server cu identitatea lui. */
+  function save(){ idCantaririlor(); try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast("Stocare plină – șterge câteva poze"); } }
   function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); queueSync(); updateUploadBar(); }
   function load(){ try{ var v=localStorage.getItem(KEY); if(v){ var d=JSON.parse(v); if(d&&typeof d==="object"){ state=Object.assign(state,d); } } }catch(e){} normalize(); }
 
@@ -2151,6 +2170,9 @@
      una după alta, iar încă un drum la server la fiecare ar face, pe semnalul de la
      baltă, o aplicație care se târăște. Se face la prima salvare după o pauză — adică
      exact atunci când celălalt a avut când să scrie. */
+  /* Ce a șters organizatorul de la ultima sincronizare reușită. Pleacă odată cu starea,
+     ca serverul să nu pună la loc un pește șters intenționat atunci când contopește. */
+  var sterseSync = [];
   var SYNC_REV_KEY = "concurs-sync-rev";
   var syncRevCunoscut = 0;      // ultima revizie despre care știm că e a noastră
   var syncUltimaScriere = 0;    // când am scris ultima oară cu succes
@@ -3416,11 +3438,16 @@
     fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom), {
       method:"PUT",
       headers:{"Content-Type":"application/json","x-write-key":syncKey},
-      body: JSON.stringify({data: faraSecrete(stareFaraPoze(state))})
+      /* `baseRev` spune serverului ce revizie știa telefonul ăsta. Dacă între timp a scris
+         altcineva, serverul contopește cântăririle în loc să le suprascrie. `sterse` sunt
+         peștii scoși intenționat, ca să nu-i pună la loc. */
+      body: JSON.stringify({data: faraSecrete(stareFaraPoze(state)),
+                            baseRev: syncRevCunoscut, sterse: sterseSync.slice()})
     }).then(function(r){ adoptServerClock(t0, r); return r.json(); }).then(function(j){
       syncBusy=false;
       if(j && j.ok){ syncRetryDelay=3000; syncProblem=""; syncLastOk=nowHM();
         syncRevSalveaza(j.rev); syncUltimaScriere=Date.now();
+        sterseSync=[];   // au ajuns la server; de-acum contopirea le știe
         try{ localStorage.setItem(SYNC_ROOM_KEY+"-ultima", syncRoom); }catch(e){}
         updateRoomInfo(); setSyncStatus("Sincronizat • rev "+j.rev+" • "+nowHM(), true); }
       else {
@@ -3897,9 +3924,11 @@
     var v=m.catches[idx];
     if(!confirm("Ștergi captura de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
     var mi=state.manche||1, inainte=totalOfM(p, mi);
+    if(Array.isArray(m.catchIds) && m.catchIds[idx]) sterseSync.push(m.catchIds[idx]);
     m.catches.splice(idx,1);
     m.catchTimes.splice(idx,1);
     m.catchPhotos.splice(idx,1);
+    if(Array.isArray(m.catchIds)) m.catchIds.splice(idx,1);
     scrieInJurnal(p, mi, "captura", "sters", v, inainte, totalOfM(p, mi));
     queueSave(); refreshCard(id);
   }
@@ -3997,9 +4026,11 @@
     var v=m.extras[idx];
     if(!confirm("Ștergi peștele extra de "+fmt(v)+" kg a lui "+nameOf(p)+"?")) return;
     var mi=state.manche||1, inainte=totalOfM(p, mi);
+    if(Array.isArray(m.extraIds) && m.extraIds[idx]) sterseSync.push(m.extraIds[idx]);
     m.extras.splice(idx,1);
     if(Array.isArray(m.extraTimes)) m.extraTimes.splice(idx,1);
     if(Array.isArray(m.extraPhotos)) m.extraPhotos.splice(idx,1);
+    if(Array.isArray(m.extraIds)) m.extraIds.splice(idx,1);
     scrieInJurnal(p, mi, "extra", "sters", v, inainte, totalOfM(p, mi));
     queueSave(); refreshCard(id);
   }

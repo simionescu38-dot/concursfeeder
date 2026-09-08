@@ -52,6 +52,7 @@ function aplicatia(stare) {
     API_BASE: "https://exemplu.workers.dev",
     syncRoom: "cupa", syncKey: "cheie-de-scriere", viewerMode: false,
     syncBusy: false, syncProblem: "", syncRetryT: 0, syncRetryDelay: 3000, syncLastOk: "",
+    syncRevCunoscut: 0, sterseSync: [],   // pleacă odată cu starea, ca serverul să poată contopi
     lastRev: 0, currentArchiveId: "",
     localStorage: { setItem() {}, getItem() { return null; }, removeItem() {} },
     document: { getElementById: () => null },
@@ -172,7 +173,12 @@ console.log("\n=== 4. Ce scrie în fișierul de backup ===");
 console.log("\n=== 5. Toate cele trei plecări trec prin ea ===");
 {
   t("camera live",
-    /body: JSON\.stringify\(\{data: faraSecrete\(stareFaraPoze\(state\)\)\}\)/.test(src), true);
+    /data: faraSecrete\(stareFaraPoze\(state\)\)/.test(src), true);
+  /* Odată cu starea pleacă acum și revizia știută, și lista peștilor șterși. Nici una nu
+     poartă secrete — sunt un număr și niște identificatori — dar testul le fixează, ca o
+     a patra plecare să nu se strecoare printre ele nebăgată în seamă. */
+  t("…plus revizia și ștergerile, nimic altceva",
+    /body: JSON\.stringify\(\{data: faraSecrete\(stareFaraPoze\(state\)\),\s*baseRev: syncRevCunoscut, sterse: sterseSync\.slice\(\)\}\)/.test(src), true);
   t("arhiva de sezon",
     /var deTrimis = faraSecrete\(JSON\.parse\(JSON\.stringify\(state\)\)\)/.test(src), true);
   t("fișierul de backup", /data:faraSecrete\(state\)/.test(src), true);
