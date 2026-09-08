@@ -328,13 +328,13 @@ async function backupArchiveToGit(env, name, data, now) {
  * înapoi. Așa, cântărirea făcută între timp de celălalt telefon supraviețuiește, iar o
  * ștergere adevărată rămâne ștearsă.
  *
- * Se contopesc doar pescarii care există în ambele stări. Un pescar adăugat între timp pe
- * alt telefon tot se poate pierde — aia e o problemă separată, de rezolvat altă dată.
+ * Aceeași regulă se aplică și pescarilor înșiși: unul înscris între timp pe alt telefon se
+ * pune înapoi, ca doi organizatori care completează lista în paralel să nu se șteargă.
  *
  * Fără identități (telefon vechi, dinaintea schimbării) se întoarce ce a venit, neatins:
  * serverul nou nu strică nimic pentru un telefon vechi.
  */
-function contopesteCantariri(dinBaza, venit, sterse) {
+function contopesteStarea(dinBaza, venit, sterse) {
   if (!dinBaza || !venit || !Array.isArray(dinBaza.participants) || !Array.isArray(venit.participants))
     return venit;
   const gropi = new Set((Array.isArray(sterse) ? sterse : []).map(String));
@@ -379,6 +379,17 @@ function contopesteCantariri(dinBaza, venit, sterse) {
       }
     }
   }
+  /* Pescarii adăugați între timp pe alt telefon. Aceeași regulă ca la cântăriri: ce e în
+     bază dar lipsește din ce vine, și nu e trecut la ștergeri, se pune înapoi. Fără asta,
+     doi organizatori care înscriu în paralel se ștergeau unul pe altul — la fel ca arbitrii
+     care cântăreau simultan. Se pun la coadă, ca ordinea celor veniți să nu se schimbe. */
+  const idVenite = new Set(venit.participants.map((p) => p && p.id));
+  for (const v of dinBaza.participants) {
+    if (!v || !v.id) continue;
+    if (idVenite.has(v.id) || gropi.has(String(v.id))) continue;
+    venit.participants.push(v);
+  }
+
   return venit;
 }
 
@@ -525,7 +536,7 @@ export default {
         const baseRev = Number(body && body.baseRev);
         if (prevRow && Number.isFinite(baseRev) && prevRow.rev > baseRev) {
           try {
-            contopesteCantariri(JSON.parse(prevRow.data), data, body && body.sterse);
+            contopesteStarea(JSON.parse(prevRow.data), data, body && body.sterse);
           } catch (e) { /* o stare veche stricată nu trebuie să blocheze scrierea */ }
         }
         const prevLeader = prevRow ? computeLeader(JSON.parse(prevRow.data)) : null;

@@ -3798,6 +3798,7 @@
     if(guard()) return;
     var p=state.participants.find(function(x){return x.id===id;});
     if(p && !confirm("Ștergi participantul "+nameOf(p)+" împreună cu toate cântăririle lui?")) return;
+    sterseSync.push(id);   // ca serverul să nu-l pună la loc când contopește
     state.participants = state.participants.filter(function(x){return x.id!==id;});
     queueSave(); renderList();
   }
