@@ -314,6 +314,74 @@ async function backupArchiveToGit(env, name, data, now) {
   return path;
 }
 
+/**
+ * Contopește cântăririle venite de pe un telefon cu cele din bază, când altcineva a scris
+ * între timp.
+ *
+ * Până acum telefonul trimitea TOATĂ starea concursului, iar serverul o scria peste ce era.
+ * Doi arbitri care cântăreau în același minut, de pe telefoane diferite, se ștergeau unul
+ * pe altul: al doilea care salva îl acoperea pe primul, iar peștele primului dispărea din
+ * clasament.
+ *
+ * Fiecare captură și fiecare pește extra are acum identitate proprie (catchIds / extraIds).
+ * Regula: ce există în bază dar lipsește din ce vine, și NU e trecut la ștergeri, se pune
+ * înapoi. Așa, cântărirea făcută între timp de celălalt telefon supraviețuiește, iar o
+ * ștergere adevărată rămâne ștearsă.
+ *
+ * Se contopesc doar pescarii care există în ambele stări. Un pescar adăugat între timp pe
+ * alt telefon tot se poate pierde — aia e o problemă separată, de rezolvat altă dată.
+ *
+ * Fără identități (telefon vechi, dinaintea schimbării) se întoarce ce a venit, neatins:
+ * serverul nou nu strică nimic pentru un telefon vechi.
+ */
+function contopesteCantariri(dinBaza, venit, sterse) {
+  if (!dinBaza || !venit || !Array.isArray(dinBaza.participants) || !Array.isArray(venit.participants))
+    return venit;
+  const gropi = new Set((Array.isArray(sterse) ? sterse : []).map(String));
+  const vechi = new Map(dinBaza.participants.map((p) => [p && p.id, p]));
+
+  for (const p of venit.participants) {
+    const v = vechi.get(p && p.id);
+    if (!v || !v.m || !p.m) continue;
+
+    for (const mi of Object.keys(v.m)) {
+      const mVeche = v.m[mi];
+      const mNoua = p.m[mi];
+      if (!mVeche || !mNoua) continue;
+
+      for (const fel of ["catch", "extra"]) {
+        const lista = fel === "catch" ? "catches" : "extras";
+        const idsN = fel === "catch" ? "catchIds" : "extraIds";
+        const ore = fel === "catch" ? "catchTimes" : "extraTimes";
+        const poze = fel === "catch" ? "catchPhotos" : "extraPhotos";
+
+        const idVechi = Array.isArray(mVeche[idsN]) ? mVeche[idsN] : null;
+        const idNoi = Array.isArray(mNoua[idsN]) ? mNoua[idsN] : null;
+        if (!idVechi || !idNoi) continue;          // fără identități nu se poate contopi
+
+        const are = new Set(idNoi.map(String));
+        for (let i = 0; i < idVechi.length; i++) {
+          const id = String(idVechi[i]);
+          if (are.has(id) || gropi.has(id)) continue;
+          if (!Array.isArray(mNoua[lista])) mNoua[lista] = [];
+          if (!Array.isArray(mNoua[idsN])) mNoua[idsN] = [];
+          mNoua[lista].push(Array.isArray(mVeche[lista]) ? mVeche[lista][i] : 0);
+          mNoua[idsN].push(idVechi[i]);
+          if (Array.isArray(mVeche[ore])) {
+            if (!Array.isArray(mNoua[ore])) mNoua[ore] = [];
+            mNoua[ore].push(mVeche[ore][i]);
+          }
+          if (Array.isArray(mVeche[poze])) {
+            if (!Array.isArray(mNoua[poze])) mNoua[poze] = [];
+            mNoua[poze].push(mVeche[poze][i]);
+          }
+        }
+      }
+    }
+  }
+  return venit;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
@@ -451,6 +519,15 @@ export default {
         const now = new Date().toISOString();
 
         const prevRow = await env.DB.prepare("SELECT data, rev FROM rooms WHERE code=?").bind(room).first();
+        /* Dacă altcineva a scris în cameră de când a citit telefonul ăsta ultima dată,
+           nu-i mai suprascriem cântăririle — le contopim. `baseRev` lipsește la
+           telefoanele vechi, caz în care rămâne comportamentul de până acum. */
+        const baseRev = Number(body && body.baseRev);
+        if (prevRow && Number.isFinite(baseRev) && prevRow.rev > baseRev) {
+          try {
+            contopesteCantariri(JSON.parse(prevRow.data), data, body && body.sterse);
+          } catch (e) { /* o stare veche stricată nu trebuie să blocheze scrierea */ }
+        }
         const prevLeader = prevRow ? computeLeader(JSON.parse(prevRow.data)) : null;
 
         if (prevRow) {

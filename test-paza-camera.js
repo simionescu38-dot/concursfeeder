@@ -59,7 +59,7 @@ function lume(optiuni) {
   };
   vm.createContext(ctx);
   vm.runInContext("var SYNC_REV_KEY='concurs-sync-rev'; var syncRevCunoscut=0;" +
-                  " var syncUltimaScriere=0; var PAUZA_PAZA=30000;", ctx);
+                  " var syncUltimaScriere=0; var PAUZA_PAZA=30000; var sterseSync=[];", ctx);
   FUNCTII.forEach(f => vm.runInContext(H.grabFunction(src, f), ctx));
   if (o.revStiut !== undefined) vm.runInContext("syncRevSalveaza(" + o.revStiut + ");", ctx);
   if (o.ultimaScriere !== undefined) vm.runInContext("syncUltimaScriere=" + o.ultimaScriere + ";", ctx);
@@ -228,7 +228,11 @@ console.log("\n=== 5. Legat cum trebuie în aplicație ===");
   const scrie = H.grabFunction(src, "scrieStarea");
   t("ce am scris devine revizia noastră", /syncRevSalveaza\(j\.rev\); syncUltimaScriere=Date\.now\(\);/.test(scrie), true);
   t("scrierea propriu-zisă trimite tot concursul, ca înainte",
-    /body: JSON\.stringify\(\{data: faraSecrete\(stareFaraPoze\(state\)\)\}\)/.test(scrie), true);
+    /data: faraSecrete\(stareFaraPoze\(state\)\)/.test(scrie), true);
+  t("…și spune ce revizie știa, ca serverul să poată contopi",
+    /baseRev: syncRevCunoscut/.test(scrie), true);
+  t("…împreună cu peștii șterși intenționat",
+    /sterse: sterseSync\.slice\(\)/.test(scrie), true);
 
   t("revizia se încarcă odată cu setările camerei",
     /syncRevIncarca\(\);/.test(H.grabFunction(src, "loadSyncCfg")), true);

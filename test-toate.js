@@ -14,6 +14,7 @@ const TESTE = [
   ["Sector pe manșă", "test-sector-mansa.js"],
   ["Reparații drum de concurs", "test-reparatii.js"],
   ["Banda de sincronizare", "test-banda-sync.js"],
+  ["Contopirea cântăririlor", "test-contopire-cantariri.js"],
   ["Concursuri live acum", "test-live-acum.js"],
   ["Calendar: concursuri de două zile", "test-calendar-doua-zile.js"],
   ["Calendar: editare cu cheia de scriere", "test-calendar-cheie.js"],
