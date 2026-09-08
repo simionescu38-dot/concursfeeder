@@ -800,23 +800,39 @@
         var nm = nameOf(row.p);
         if(!nm) return;
         var cod = codBun(row);
-        var key = cod ? ("cod:"+cod) : cheiaOmului(nm);
-        if(!key) return;
-        if(!byKey[key]){
-          byKey[key] = {name:numeleAfisat(cod, nm), cod:cod, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]};
-        }
-        var rec = byKey[key];
         var place = places[idx];
-        rec.totalKg += row.kg;
-        rec.totalPoints += place;
-        rec.competitions += 1;
         var of = oficial[row.p.id] || {loc:0, sectoare:0, cmmc:false, mansaKg:0, mansaNr:0};
-        rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish,
-                       loc:of.loc, sectoare:of.sectoare, cmmc:of.cmmc,
-                       mansaKg:of.mansaKg, mansaNr:of.mansaNr});
-        if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = src.compName; }
+
+        /* La tandem, echipa e UN concurent în concurs — un stand, un cântar, un loc în
+           sector — dar rezultatul ei contează pentru AMÂNDOI în sezon. Așa, cine schimbă
+           partenerul de la o etapă la alta nu pierde nimic din ce a pescuit.
+           Coechipierul e scris de mână la înscriere, deci n-are cod de pescar: se leagă
+           după nume, ca pescarii dinaintea codurilor. */
+        var oameni = [{ nume: nm, cod: cod }];
+        var co = (row.p.coechipier || "").toString().trim();
+        if(co) oameni.push({ nume: co, cod: "" });
+
+        oameni.forEach(function(om){
+          var key = om.cod ? ("cod:"+om.cod) : cheiaOmului(om.nume);
+          if(!key) return;
+          if(!byKey[key]){
+            byKey[key] = {name:numeleAfisat(om.cod, om.nume), cod:om.cod, totalKg:0, totalPoints:0, competitions:0, bestFish:0, bestFishComp:"", rows:[]}
+          }
+          var rec = byKey[key];
+          rec.totalKg += row.kg;
+          rec.totalPoints += place;
+          rec.competitions += 1;
+          rec.rows.push({comp:src.compName, date:src.compDate, place:place, kg:row.kg, fish:row.fish,
+                         loc:of.loc, sectoare:of.sectoare, cmmc:of.cmmc,
+                         mansaKg:of.mansaKg, mansaNr:of.mansaNr});
+          if(row.fish > rec.bestFish){ rec.bestFish = row.fish; rec.bestFishComp = src.compName; }
+        });
+
+        /* Peștele sezonului se socotește o singură dată: e un pește, nu doi. La tandem
+           poartă numele echipei, fiindcă nu se știe care dintre cei doi l-a scos. */
         if(row.fish > 0 && (!seasonFish || row.fish > seasonFish.v)){
-          seasonFish = {v:row.fish, name:numeleAfisat(cod, nm), comp:src.compName};
+          seasonFish = {v:row.fish, comp:src.compName,
+                        name: co ? numeleAfisat(cod, nm)+" + "+co : numeleAfisat(cod, nm)};
         }
 
         var stand = (row.p.stand || "").toString().trim();
