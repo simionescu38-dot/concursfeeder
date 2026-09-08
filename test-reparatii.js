@@ -20,7 +20,7 @@ function aplicatie(numManse, manche) {
     ["emptyManche", "numManse", "scalaSectoare", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
      "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM",
      "cmmcAward", "absentLaMansa", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize", "curataNumarul",
-     "nameOf", "updateWarnStand"]
+     "nameOf", "numeAfisat", "tandem", "updateWarnStand"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }

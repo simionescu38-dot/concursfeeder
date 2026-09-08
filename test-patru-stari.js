@@ -25,7 +25,7 @@ const src = H.citeste("index.html");
 const t = H.creeazaVerificator();
 
 const FUNCTII = ["uid", "esc", "fmt", "fmtPts", "numManse", "manseRange", "emptyManche",
-  "ensureManche", "mOf", "sectorOfM", "standOfM", "mancheDeAfisat", "nameOf", "nameKey",
+  "ensureManche", "mOf", "sectorOfM", "standOfM", "mancheDeAfisat", "nameOf", "numeAfisat", "tandem", "nameKey",
   "standKey", "byStand", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM", "cmmcAward",
   "scalaSectoare", "scrieInJurnal", "mancheDisputata",
   "stareaLaMansa", "nelamurit", "standuriNecantarite", "absentLaMansa", "pointsMapS",

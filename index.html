@@ -196,6 +196,8 @@
   /* Padding-ul era 12vh sus, adică aproape o sută de pixeli de gol. Cu grila de 9
      în hero, al treilea rând cădea sub marginea ecranului — iar un meniu pe care
      trebuie să-l cauți derulând e exact ce am vrut să evităm. */
+  /* coechipierul, mai șters: la cântărire cauți întâi titularul */
+  .coech{font-weight:600; opacity:.62; font-size:.92em;}
   .hero{text-align:center; padding:4px 8px 10px; display:flex; flex-direction:column; align-items:center;}
   .hdr-logo{position:absolute; left:16px; top:14px; width:36px; height:36px; border-radius:9px;}
   /* eticheta care spune la ce folosesc dalele de sub ea */
@@ -865,6 +867,9 @@
         <div><label class="f">Nume</label><input id="in-nume" placeholder="Nume"></div>
         <div><label class="f">Sector</label><select id="in-sector" onchange="this.dataset.man='1'"></select></div>
       </div>
+      <div class="row" style="margin-bottom:8px;" id="wrap-coechipier" hidden>
+        <div><label class="f">Coechipier</label><input id="in-coechipier" placeholder="Numele celui de-al doilea"></div>
+      </div>
       <button class="btn btn-primary" onclick="addParticipant()">+ Adaugă la listă</button>
     </div>
 
@@ -1093,6 +1098,15 @@
         <button id="nm-3" onclick="setNumManse(3)">3 manșe</button>
       </div>
       <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Concurs pe echipe</div>
+      <div class="seg">
+        <button id="td-individual" class="on" onclick="setTandem(false)">Fiecare singur</button>
+        <button id="td-echipe" onclick="setTandem(true)">Tandem, doi într-o echipă</button>
+      </div>
+      <p class="hint"><b>Tandem:</b> la adăugare apare un câmp pentru coechipier, iar în clasament apar amândoi. Echipa e un singur concurent: un stand, un cântar, un loc în sector.</p>
     </div>
 
     <div class="card lockhide">
@@ -1494,6 +1508,32 @@
   // Implicit: locurile din sector, curat. „Locul 3 ia 3 puncte" e ce scrie în
   // regulamentele de aici, iar punctele fracționare la premiere nu se pot explica.
   function scalaSectoare(){ return state.scalaSectoare===true; }
+
+  /* Tandem: doi pescari, un stand, un cântar. O echipă e UN concurent — un singur rând,
+     cu al doilea nume alături. Așa punctajul, sectoarele, manșele și tragerea la sorți
+     rămân neatinse: ele nu știu că e echipă, și nici n-au nevoie.
+     Câmpul apare doar când concursul e pus pe echipe, ca ecranul de adăugare să nu se
+     îngroașe degeaba la concursurile individuale. */
+  function tandem(){ return state.tandem===true; }
+  function setTandem(v){
+    state.tandem=!!v; save();
+    var a=document.getElementById("td-individual"), b=document.getElementById("td-echipe");
+    if(a) a.classList.toggle("on", !v);
+    if(b) b.classList.toggle("on", !!v);
+    aratacampCoechipier();
+    renderList(); renderRank(); renderReg();
+  }
+  function aratacampCoechipier(){
+    var w=document.getElementById("wrap-coechipier");
+    if(w) w.hidden = !tandem();
+  }
+  /** numele scris pe ecran: la tandem, amândoi. NU se folosește la potrivirea cu baza de
+      pescari — aia merge pe cheiePescar(prenume, nume), a pescarului titular. */
+  function numeAfisat(p){
+    var n=nameOf(p);
+    var c=(p && p.coechipier || "").trim();
+    return c ? n+" + "+c : n;
+  }
   function setScalaSectoare(v){
     state.scalaSectoare=!!v; save();
     var a=document.getElementById("sc-simplu"), b=document.getElementById("sc-scala");
@@ -2577,6 +2617,7 @@
       '<ul style="margin:0; padding-left:20px; font-size:14px; line-height:1.5;">'+
       '<li><b>Totalul unui pescar</b> = cantitatea cântărită + peștii extra. Cel mai mare pește (CMMC) <b>nu</b> se adună separat, ca să nu fie numărat de două ori.</li>'+
       '<li><b>Punctele pe sector:</b> locul 1 ia 1 punct, locul 2 ia 2 și așa mai departe. Câștigă cel cu punctaj mic.</li>'+
+      (tandem() ? '<li><b>Tandem:</b> o echipă de doi e un singur concurent — un stand, un cântar, un loc în sector. Amândoi apar în clasament, iar punctele echipei merg la fiecare dintre ei în clasamentul de sezon.</li>' : '')+
       (scalaSectoare()
         ? '<li><b>Sectoare de mărimi diferite</b> se aduc pe aceeași scală, cea a sectorului cel mai numeros: primul din sector ia 1 punct, ultimul ia cât are cel mai mare sector, restul între ele — deci cine nimerește sectorul mic nu mai e avantajat de tragerea la sorți. Dacă toate sectoarele au același număr de oameni, punctele rămân exact locurile.</li>'
         : '<li><b>Sectoare de mărimi diferite:</b> punctele rămân locurile din sector — locul 3 ia 3 puncte, oricât de mare e sectorul. Se poate schimba din Contul meu, la „Puncte la sectoare inegale".</li>')+
@@ -3603,6 +3644,7 @@
     if(!state.manche) state.manche=1;
     if(state.numManse!==2 && state.numManse!==3) state.numManse=2;
     if(typeof state.scalaSectoare!=="boolean") state.scalaSectoare=false;
+    if(typeof state.tandem!=="boolean") state.tandem=false;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
     if(!(state.durataMin>0)) state.durataMin=0;
     if(typeof state.rules!=="string") state.rules="";
@@ -3774,7 +3816,10 @@
     if(!pre && !nume && !stand){ return; }
     var problema=problemaCodParticipant(cod, "", pre, nume);
     if(problema){ toast(problema); if(codEl) codEl.focus(); return; }
+    var coEl=document.getElementById("in-coechipier");
+    var co=(tandem() && coEl) ? coEl.value.trim() : "";
     var np={id:uid(), stand:stand, prenume:pre, nume:nume, sector:sec, m:{}};
+    if(co) np.coechipier=co;
     if(cod!==null) np.cod=cod;
     curataNumarul(np);
     ensureManche(np);
@@ -3788,6 +3833,7 @@
     if(codEl) codEl.value="";
     document.getElementById("in-prenume").value="";
     document.getElementById("in-nume").value="";
+    if(coEl) coEl.value="";
     // alegerea de mână a ținut de pescarul tocmai adăugat, nu de următorul
     delete document.getElementById("in-sector").dataset.man;
     queueSave(); renderList();
@@ -5652,6 +5698,7 @@
     if(L) editingId=null;
     visible.forEach(function(p){
       var full=(esc(p.prenume)+" "+esc(p.nume)).trim() || "—";
+      if((p.coechipier||"").trim()) full+=' <span class="coech">+ '+esc(p.coechipier.trim())+'</span>';
       var head;
       if(editingId===p.id){
         head='<div class="p-edit">'+
@@ -5936,7 +5983,7 @@
       if(st && st!=="cantarit") sub+=' · <span class="st-mic">'+esc(st==="necantarit"?"necântărit":STARI_MANSA[st])+'</span>';
       out+='<tr class="'+cls+'">'+
         '<td class="pos">'+medal+'</td>'+
-        '<td>'+esc(nameOf(p))+'<div class="small">'+sub+'</div></td>'+
+        '<td>'+esc(numeAfisat(p))+'<div class="small">'+sub+'</div></td>'+
         pts+
         '<td class="kg num">'+fmt(totalOfM(p,mi))+'</td>'+
       '</tr>';
@@ -6047,14 +6094,14 @@
     if(withFish.length){ var best=withFish.reduce(function(a,b){return cmmcAward(b,rankScope)>cmmcAward(a,rankScope)?b:a;}); lines.push("CMMC: "+nameOf(best)+" — "+fmt(cmmcAward(best,rankScope))+" kg"); lines.push(""); }
     if(rankMode==="fin" && finMethod==="pct"){
       lines.push("CLASAMENT FINAL (pe puncte)");
-      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(standOfM(p,rankScope)||"-")+", Sec "+(sectorOfM(p,rankScope)||"-")+") — "+fmtPts(pmap[p.id])+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
+      sortByPointsS(state.participants,pmap,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+numeAfisat(p)+" (St."+(standOfM(p,rankScope)||"-")+", Sec "+(sectorOfM(p,rankScope)||"-")+") — "+fmtPts(pmap[p.id])+" pct, "+fmt(totalOfM(p,rankScope))+" kg"); });
     } else if(rankMode==="fin"){
       lines.push("CLASAMENT FINAL (pe kg)");
-      sortRankS(state.participants,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+nameOf(p)+" (St."+(standOfM(p,rankScope)||"-")+") — "+fmt(totalOfM(p,rankScope))+" kg"); });
+      sortRankS(state.participants,rankScope).forEach(function(p,i){ lines.push((i+1)+". "+numeAfisat(p)+" (St."+(standOfM(p,rankScope)||"-")+") — "+fmt(totalOfM(p,rankScope))+" kg"); });
     } else {
       var secs={},order=[]; state.participants.forEach(function(p){var k=sectorOfM(p,rankScope)||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p);});
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
-      order.forEach(function(k){ lines.push("SECTOR "+k); sortRankS(secs[k],rankScope).forEach(function(p,i){ lines.push("  "+(i+1)+". "+nameOf(p)+" — "+fmt(totalOfM(p,rankScope))+" kg ("+fmtPts(pmap[p.id])+" pct)"); }); lines.push(""); });
+      order.forEach(function(k){ lines.push("SECTOR "+k); sortRankS(secs[k],rankScope).forEach(function(p,i){ lines.push("  "+(i+1)+". "+numeAfisat(p)+" — "+fmt(totalOfM(p,rankScope))+" kg ("+fmtPts(pmap[p.id])+" pct)"); }); lines.push(""); });
     }
     var txt=lines.join("\n");
     try{ navigator.clipboard.writeText(txt).then(function(){toast("Clasament copiat");},function(){fallbackCopy(txt);}); }
@@ -6285,7 +6332,7 @@
     if(stare==="incheiata"){
       h += rezumatMansei(mi);
     } else if(lider && totalOf(lider)>0){
-      h+='<div class="sl-lider">🏆 Lider: <b>'+esc(nameOf(lider))+'</b> — '+fmt(totalOf(lider))+' kg'+
+      h+='<div class="sl-lider">🏆 Lider: <b>'+esc(numeAfisat(lider))+'</b> — '+fmt(totalOf(lider))+' kg'+
          (standOfM(lider,mi)?' <span class="sl-st">Stand '+esc(standOfM(lider,mi))+'</span>':'')+'</div>';
     }
     // un singur buton, cel care are sens acum. Pescarul care se uită nu-l vede deloc.
@@ -7177,7 +7224,7 @@
     var lista = pePuncte ? sortByPointsS(state.participants,pmap,rankScope)
                          : sortRankS(state.participants,rankScope);
     lista.forEach(function(p,i){
-      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="c">'+esc(sectorOfM(p,rankScope)||"–")+'</td><td class="c">'+fmtPts(pmap[p.id])+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
+      h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(numeAfisat(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="c">'+esc(sectorOfM(p,rankScope)||"–")+'</td><td class="c">'+fmtPts(pmap[p.id])+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>';
     });
     h+='</table>';
     var secs={},order=[];
@@ -7186,7 +7233,7 @@
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
       order.forEach(function(k){
         h+='<div class="pr-sec">Sector '+esc(k)+'</div><table class="pr-t"><tr><th>Loc</th><th>Participant</th><th>Stand</th><th>Total kg</th></tr>';
-        sortRankS(secs[k],rankScope).forEach(function(p,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(nameOf(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>'; });
+        sortRankS(secs[k],rankScope).forEach(function(p,i){ h+='<tr><td class="c">'+(i+1)+'</td><td>'+esc(numeAfisat(p))+'</td><td class="c">'+esc(standOfM(p,rankScope)||"–")+'</td><td class="r">'+fmt(totalOfM(p,rankScope))+'</td></tr>'; });
         h+='</table>';
       });
     }
