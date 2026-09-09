@@ -7,7 +7,8 @@
  * din istoric, dar numai dacă observa cineva.
  *
  * Fiecare captură și fiecare pește extra are acum identitate proprie. Serverul pune înapoi
- * ce lipsește din ce vine, dar NU și ce a fost șters intenționat.
+ * ce lipsește din ce vine, dar NU și ce a fost șters intenționat. Aceeași regulă se aplică
+ * și pescarilor înșiși: doi organizatori care completează lista în paralel nu se mai șterg.
  *
  * Funcția verificată e cea ADEVĂRATĂ, scoasă din worker/index.js — nu o copie care poate
  * diverge de codul pus pe server de mână.
@@ -18,7 +19,7 @@ const H = require("./test-helpers.js");
 const t = H.creeazaVerificator();
 const sandbox = { console };
 vm.createContext(sandbox);
-vm.runInContext(H.grabFunction(H.citeste("worker/index.js"), "contopesteCantariri"), sandbox);
+vm.runInContext(H.grabFunction(H.citeste("worker/index.js"), "contopesteStarea"), sandbox);
 
 /** un pescar cu o manșă: kg cu identitățile lor */
 function pescar(id, capturi, extra) {
@@ -35,7 +36,7 @@ function pescar(id, capturi, extra) {
 const stare = (...p) => ({ participants: p });
 const contopeste = (dinBaza, venit, sterse) =>
   vm.runInContext(
-    `contopesteCantariri(${JSON.stringify(dinBaza)}, ${JSON.stringify(venit)}, ${JSON.stringify(sterse || [])})`,
+    `contopesteStarea(${JSON.stringify(dinBaza)}, ${JSON.stringify(venit)}, ${JSON.stringify(sterse || [])})`,
     sandbox);
 /** kg-urile unui pescar din rezultat, sortate, ca ordinea să nu conteze */
 const kg = (rez, id) => rez.participants.find(p => p.id === id).m[1].catches.slice().sort((a, b) => a - b);
@@ -98,11 +99,6 @@ console.log("\n=== 4. Fără efecte nedorite ===");
   t("telefon vechi fără identități: se scrie ce vine, ca înainte",
     contopeste(vechi, nouFaraId, []).participants[0].m[1].catches, [3]);
 
-  // pescar care există doar în baza de date
-  const doarInBaza = stare(pescar("ana", [[3, "c1"]]), pescar("bogdan", [[9, "c9"]]));
-  const doarUnul = stare(pescar("ana", [[3, "c1"]]));
-  t("un pescar lipsă din ce vine nu crapă contopirea",
-    contopeste(doarInBaza, doarUnul, []).participants.length, 1);
 
   t("stare goală nu crapă", contopeste({ participants: [] }, { participants: [] }, []).participants.length, 0);
   t("stare fără participanți se întoarce neatinsă",
@@ -122,6 +118,39 @@ console.log("\n=== 5. Trei telefoane pe rând ===");
   t("toate trei capturile sunt pe server", kg(peServer, "ana"), [3, 5, 7]);
   t("nicio identitate dublată",
     new Set(peServer.participants[0].m[1].catchIds).size, 3);
+}
+
+/* ================================================================
+   6. Pescarii înșiși, aceeași regulă.
+   Doi organizatori completează lista în paralel, de pe telefoane diferite.
+   ================================================================ */
+console.log("\n=== 6. Pescari înscriși în paralel ===");
+{
+  const dinBaza = stare(pescar("ana", [[3, "c1"]]), pescar("bogdan", [[9, "c9"]]));
+  const venit = stare(pescar("ana", [[3, "c1"]]), pescar("cristi", [[4, "c4"]]));
+  const rez = contopeste(dinBaza, venit, []);
+  t("pescarul înscris de celălalt NU se pierde",
+    rez.participants.map(p => p.id).sort(), ["ana", "bogdan", "cristi"]);
+  t("cel venit acum rămâne pe locul lui, cel pus la loc merge la coadă",
+    rez.participants.map(p => p.id), ["ana", "cristi", "bogdan"]);
+  t("cântăririle pescarului pus la loc vin cu el",
+    kg(rez, "bogdan"), [9]);
+
+  t("pescarul șters intenționat rămâne șters",
+    contopeste(dinBaza, stare(pescar("ana", [[3, "c1"]])), ["bogdan"]).participants.map(p => p.id),
+    ["ana"]);
+
+  t("fără ștergere anunțată, se pune la loc (de-aia există lista)",
+    contopeste(dinBaza, stare(pescar("ana", [[3, "c1"]])), []).participants.map(p => p.id).sort(),
+    ["ana", "bogdan"]);
+
+  // trei telefoane care înscriu, unul după altul
+  let peServer = stare(pescar("ana", [[3, "c1"]]));
+  peServer = contopeste(peServer, stare(pescar("ana", [[3, "c1"]]), pescar("bogdan", [[9, "c9"]])), []);
+  peServer = contopeste(peServer, stare(pescar("ana", [[3, "c1"]]), pescar("cristi", [[4, "c4"]])), []);
+  t("trei telefoane, toți pescarii pe server",
+    peServer.participants.map(p => p.id).sort(), ["ana", "bogdan", "cristi"]);
+  t("niciun pescar dublat", new Set(peServer.participants.map(p => p.id)).size, 3);
 }
 
 t.raport();

@@ -23,7 +23,7 @@ const t = H.creeazaVerificator();
 /* ---------- ce se încarcă, real, din fișierul livrat ---------- */
 const MOTOR = [
   "mOf", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM", "cmmcAward",
-  "standKey", "byStand", "nameKey", "nameOf", "esc", "fmt", "fmtPts",
+  "standKey", "byStand", "nameKey", "nameOf", "numeAfisat", "tandem", "esc", "fmt", "fmtPts",
   "sectorOfM", "standOfM", "mancheDeAfisat", "manseRange", "numManse", "scalaSectoare",
   "absentLaMansa", "stareaLaMansa", "nelamurit", "standuriNecantarite",
   "improspateazaNecantarite", "pointsMapS", "mancheDisputata", "pointsCombo", "bestMancheOf",
