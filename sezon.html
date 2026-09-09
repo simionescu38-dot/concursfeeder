@@ -883,7 +883,7 @@
     });
 
     return {list:list, comps:comps, seasonFish:seasonFish, locStands:locStands,
-            mostLoyal:mostLoyal, prag:prag};
+            mostLoyal:mostLoyal, prag:prag, pragStand:PRAG_STAND};
   }
 
   /* ---------- cartea personală a pescarului ----------
@@ -994,7 +994,7 @@
     var standHtml = season.locStands.map(function(L){
       var loc=0;
       var randuri = L.standuri.slice(0,15).map(function(s){
-        var clasat = s.uses >= 2;
+        var clasat = s.uses >= (season.pragStand || 2);
         if(clasat) loc++;
         var medal = clasat
           ? '<span class="place-badge '+(loc===1?'gold':loc===2?'silver':loc===3?'bronze':'')+'">'+loc+'</span>'

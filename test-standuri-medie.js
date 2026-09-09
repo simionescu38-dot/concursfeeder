@@ -90,4 +90,33 @@ console.log("\n=== 4. Fără efecte nedorite ===");
   t("…și stă la urmă", ordine(claseaza([["1", 0, 0], ["2", 2, 10]]))[0], "2");
 }
 
+/* ================================================================
+   5. Pragul e scris o singură dată.
+
+   Sortarea îl are în PRAG_STAND, afișarea îl primește prin `season`. Dacă afișarea și-ar
+   ține numărul ei, tabelul s-ar putea sorta după o regulă și da locurile după alta, fără
+   ca nimic să pară stricat.
+   ================================================================ */
+console.log("\n=== 5. Pragul e scris o singură dată ===");
+{
+  const pragDeclarat = Number(/var PRAG_STAND = (\d+);/.exec(src)[1]);
+
+  /* condiția de clasare din afișare, luată ca atare din pagină */
+  const cond = /var clasat = (s\.uses[^;]+);/.exec(src)[1];
+  const clasatLaAfisare = (uses, prag) =>
+    vm.runInNewContext("(function(s, season){ return " + cond + "; })")({ uses: uses }, { pragStand: prag });
+
+  t("afișarea urmează pragul primit, nu unul scris de mână al ei",
+    [clasatLaAfisare(3, 4), clasatLaAfisare(4, 4)], [false, true]);
+
+  /* ce pleacă din loadSeason spre afișare, evaluat cu PRAG_STAND-ul adevărat */
+  claseaza([["1", 2, 10]]);
+  const trimis = vm.runInContext(/mostLoyal:mostLoyal, prag:prag, pragStand:([^}]+)}/.exec(src)[1], ctx);
+  t("pragul trimis spre afișare e chiar cel după care s-a sortat", trimis, pragDeclarat);
+
+  const r = claseaza([["7", 1, 30], ["3", 6, 60], ["9", 4, 32]]);
+  t("aceleași standuri sunt clasate în tabel ca la sortare",
+    r.filter(x => clasatLaAfisare(x.uses, trimis)).map(x => x.stand), clasati(r));
+}
+
 t.raport();
