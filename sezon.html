@@ -849,9 +849,24 @@
 
     var list = Object.keys(byKey).map(function(k){ return byKey[k]; });
     // o listă de standuri pentru fiecare baltă, băltile cele mai pescuite primele
+    /* Standurile se clasează după MEDIA pe cântărire, nu după totalul kg. Totalul spune
+       mai ales de câte ori s-a nimerit standul la tragere: unul folosit de zece ori adună
+       mai mult decât unul folosit de trei ori, chiar dacă al doilea e vizibil mai bun. Iar
+       tabelul ăsta există tocmai ca să arate ce standuri sunt constant productive.
+       Media singură are însă gaura obișnuită: un stand folosit O SINGURĂ dată, cu o
+       captură norocoasă, ar sări primul. De aceea cele cu o singură cântărire rămân în
+       tabel, cu cifrele lor, dar fără loc — la fel ca pescarii sub pragul de participări
+       din clasamentul de sezon. */
+    var PRAG_STAND = 2;
     var locStands = Object.keys(byLoc).map(function(loc){
-      var standuri = Object.keys(byLoc[loc]).map(function(k){ return byLoc[loc][k]; })
-        .sort(function(a,b){ return b.totalKg - a.totalKg; });
+      var standuri = Object.keys(byLoc[loc]).map(function(k){ return byLoc[loc][k]; });
+      standuri.forEach(function(x){ x.medie = x.uses ? x.totalKg / x.uses : 0; });
+      standuri.sort(function(a,b){
+        var aC = a.uses >= PRAG_STAND, bC = b.uses >= PRAG_STAND;
+        if(aC !== bC) return aC ? -1 : 1;          // cele sub prag, la urmă
+        var d = b.medie - a.medie; if(Math.abs(d) > 1e-9) return d;
+        return b.uses - a.uses;                     // la medii egale, cel probat mai des
+      });
       var cantariri = standuri.reduce(function(a,x){ return a+x.uses; }, 0);
       return {loc:loc, standuri:standuri, cantariri:cantariri};
     }).sort(function(a,b){ return b.cantariri - a.cantariri; });
@@ -977,15 +992,23 @@
     }).join("");
 
     var standHtml = season.locStands.map(function(L){
-      var randuri = L.standuri.slice(0,15).map(function(s,i){
-        var loc=i+1, medal='<span class="place-badge '+(loc===1?'gold':loc===2?'silver':loc===3?'bronze':'')+'">'+loc+'</span>';
-        return '<tr><td class="pos">'+medal+'</td><td>Stand '+esc(s.stand)+'</td><td class="kg num">'+s.uses+'</td><td class="kg num">'+fmt(s.totalKg)+'</td></tr>';
+      var loc=0;
+      var randuri = L.standuri.slice(0,15).map(function(s){
+        var clasat = s.uses >= 2;
+        if(clasat) loc++;
+        var medal = clasat
+          ? '<span class="place-badge '+(loc===1?'gold':loc===2?'silver':loc===3?'bronze':'')+'">'+loc+'</span>'
+          : '<span class="place-badge">–</span>';
+        return '<tr><td class="pos">'+medal+'</td><td>Stand '+esc(s.stand)+'</td>'+
+          '<td class="kg num">'+s.uses+'</td>'+
+          '<td class="kg num"><b>'+fmt(s.medie)+'</b></td>'+
+          '<td class="kg num">'+fmt(s.totalKg)+'</td></tr>';
       }).join("");
       return '<div class="card" style="margin-top:14px;"><div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-location"></use></svg>Cel mai productiv stand · '+esc(L.loc)+'</div>'+
-        '<table><thead><tr><th class="pos">#</th><th>Stand</th><th class="kg">Cântăriri</th><th class="kg">Total kg</th></tr></thead><tbody>'+randuri+'</tbody></table></div>';
+        '<table><thead><tr><th class="pos">#</th><th>Stand</th><th class="kg">Cântăriri</th><th class="kg">Medie kg</th><th class="kg">Total kg</th></tr></thead><tbody>'+randuri+'</tbody></table></div>';
     }).join("");
     if(standHtml){
-      standHtml += '<p class="hint" style="margin-top:8px;">Suma kg prinse de pe fiecare stand, socotită separat pentru fiecare baltă — standul 46 de la o baltă n-are nimic de-a face cu standul 46 de la alta. Balta se scrie în Contul meu; concursurile de dinainte apar sub numele lor.</p>';
+      standHtml += '<p class="hint" style="margin-top:8px;">Standurile se clasează după <b>media pe cântărire</b>, nu după totalul kg: totalul spune mai ales de câte ori s-a nimerit standul la tragere. Cele cu o singură cântărire rămân în tabel, dar fără loc — dintr-o singură partidă nu se învață nimic. Socotit separat pentru fiecare baltă — standul 46 de la o baltă n-are nimic de-a face cu standul 46 de la alta. Balta se scrie în Contul meu; concursurile de dinainte apar sub numele lor.</p>';
     }
 
     body.innerHTML =
