@@ -196,14 +196,18 @@ console.log("\n=== 2d. Fără cod de cameră ===");
 
 console.log("\n=== 2e. Ecranul ===");
 {
-  const ecran = src.slice(src.indexOf("plianteaza('pliant-necaz')"), src.indexOf('id="view-strat"'));
-  t("butonul stă strâns în pliantul «Când ceva nu merge»",
+  /* Cardul stă acum după ușa „Nu merge ceva" (u3) din Contul meu, nu într-un sertar.
+     Aceeași idee: nu-ți sare în ochi la un concurs obișnuit. */
+  const ecran = src.slice(src.indexOf('id="grup-necaz"'), src.indexOf('id="view-strat"'));
+  t("butonul stă după ușa «Nu merge ceva»",
     /onclick="verificaServerul\(\)"/.test(ecran), true);
+  t("…iar cardul lui poartă semnul ușii a treia",
+    /<div class="card u3">\s*\r?\n\s*<div class="sec-title">Serverul răspunde\?/.test(ecran), true);
   t("butonul spune ce face", /Verifică serverul<\/button>/.test(ecran), true);
   t("e ghost, nu scos în față", /btn btn-ghost" onclick="verificaServerul/.test(ecran), true);
   t("are unde să scrie ce a găsit", /id="server-proba"/.test(ecran), true);
   /* Se poate apăsa și cu lacătul pus: nu umblă la nimic, doar întreabă serverul. */
-  t("nu se ascunde la lacăt", /<div class="card">\s*\r?\n\s*<div class="sec-title">Serverul răspunde\?/.test(ecran), true);
+  t("nu se ascunde la lacăt", /<div class="card u3">\s*\r?\n\s*<div class="sec-title">Serverul răspunde\?/.test(ecran), true);
   t("se spune că nu schimbă nimic", /Nu scrie și nu schimbă nimic — doar se uită\./.test(ecran), true);
 }
 

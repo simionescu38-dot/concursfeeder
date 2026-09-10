@@ -581,6 +581,25 @@
   .app-toast.bad{background:rgba(44,22,26,.97); border-color:#63323b; color:#ffaaa4;}
   .app-toast.good{background:rgba(13,43,38,.97); border-color:#286052; color:#8cf2df;}
 
+  /* Cele trei uși din „Contul meu". Ecranul avea 21 de carduri unul sub altul: pregătirea
+     concursului, setările telefonului și reparațiile de urgență, toate la grămadă. Nimic
+     nu se șterge — se așază după MOMENTUL în care ai nevoie de ele, care e mai ușor de
+     ghicit decât „cât de des se umblă".
+     Ușa închisă se ascunde cu !important, iar cea deschisă NU capătă nicio regulă de
+     afișare: altfel ar învia cardurile ascunse de lacăt (.lockhide). */
+  .usi{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:14px;}
+  .usi button{
+    font-family:inherit; cursor:pointer; padding:11px 6px; border-radius:14px;
+    border:1px solid var(--line); background:var(--card); color:var(--muted);
+    font-size:13px; font-weight:800; line-height:1.25; text-align:center;
+  }
+  .usi button .cand{display:block; font-size:10.5px; font-weight:700; opacity:.75; margin-top:3px;}
+  .usi button.on{background:var(--teal-soft); color:var(--teal-d); border-color:var(--teal);}
+  .usi button:focus-visible{outline:2px solid var(--teal); outline-offset:2px;}
+  body[data-usa="u1"] .u2, body[data-usa="u1"] .u3,
+  body[data-usa="u2"] .u1, body[data-usa="u2"] .u3,
+  body[data-usa="u3"] .u1, body[data-usa="u3"] .u2{display:none !important;}
+
   /* Modul arbitru: un ecran, un lucru. Arbitrul umblă cu telefonul lui la baltă și
      cântărește sectorul lui — nu are ce căuta în sectoare, manșe, punctaj sau server.
      Nu se șterge nimic din aplicație: se ascunde doar ce nu e treaba lui. */
@@ -1079,18 +1098,23 @@
 
   <!-- SETĂRI -->
   <section class="view" id="view-set">
+    <div class="usi" id="usi-set">
+      <button type="button" id="usa-u1" onclick="usaSet('u1')">Concursul<span class="cand">înainte de start</span></button>
+      <button type="button" id="usa-u2" onclick="usaSet('u2')">Telefonul<span class="cand">o dată, și gata</span></button>
+      <button type="button" id="usa-u3" onclick="usaSet('u3')">Nu merge ceva<span class="cand">rar</span></button>
+    </div>
     <div class="account-head">
       <div class="account-mark"><svg class="app-icon" aria-hidden="true"><use href="#i-user"></use></svg></div>
       <div class="account-copy"><div class="account-title">Contul meu</div><div class="account-sub">Concurs, sincronizare și siguranță într-un singur loc</div></div>
     </div>
-    <div class="card lockhide">
+    <div class="card u3 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-refresh"></use></svg>Versiunea aplicației</div>
       <p class="hint" id="app-ver" style="margin:0 0 10px;">se verifică…</p>
       <button class="btn btn-ghost" onclick="aduVariantaNoua()"><svg class="ui-ico" aria-hidden="true"><use href="#i-refresh"></use></svg>Adu varianta nouă acum</button>
       <p class="hint" style="margin-top:8px;">Aplicația se actualizează singură — verifică la fiecare deschidere și se reîncarcă atunci când apare ceva nou. Butonul e doar pentru cazul în care nu vrei să aștepți.</p>
     </div>
 
-    <div class="card">
+    <div class="card u1">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Numele concursului</div>
       <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
       <label class="f" style="margin-top:12px;">Balta</label>
@@ -1098,7 +1122,7 @@
       <p class="hint">Numele bălții, scris la fel de fiecare dată. După el se grupează standurile în clasamentul de sezon — ca „cel mai productiv stand" să fie al bălții, nu un amestec de la toate.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u1 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Sectoare</div>
       <div class="sectors-list" id="sectors-list"></div>
       <div class="row">
@@ -1111,7 +1135,7 @@
       <p class="hint">Standurile se împart pe sectoare în ordine, după intervalele de mai sus, iar sectorul se completează singur când scrii standul unui pescar. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u1 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșe</div>
       <div class="seg">
         <button id="nm-2" class="on" onclick="setNumManse(2)">2 manșe</button>
@@ -1120,7 +1144,7 @@
       <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u1 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Concurs pe echipe</div>
       <div class="seg">
         <button id="td-individual" class="on" onclick="setTandem(false)">Fiecare singur</button>
@@ -1129,7 +1153,7 @@
       <p class="hint"><b>Tandem:</b> la adăugare apare un câmp pentru partener, iar în clasament apar amândoi. Echipa e un singur concurent: un stand, un cântar, un loc în sector.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u1 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-scale"></use></svg>Puncte la sectoare inegale</div>
       <div class="seg">
         <button id="sc-simplu" class="on" onclick="setScalaSectoare(false)">Locul 3 = 3 puncte</button>
@@ -1138,7 +1162,7 @@
       <p class="hint"><b>Locul 3 = 3 puncte:</b> punctele rămân locurile din sector, oricât de mare e sectorul. <b>Îndreptat:</b> sectoarele mai mici se întind pe scala celui mai mare, ca ultimul dintr-un sector de 5 să ia tot cât ultimul dintr-unul de 6 — mai drept la sectoare foarte inegale, dar dă puncte cu zecimale (2,25 · 3,5). Când toate sectoarele au același număr de oameni, cele două variante dau exact aceleași puncte.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u1 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Import participanți</div>
       <textarea id="imp-text" rows="6" placeholder="Un participant pe linie, ex:&#10;1, Ion Popescu, A&#10;2, Vasile Ionescu, A&#10;Gheorghe Marin, B"></textarea>
       <p class="hint">Un participant pe linie. Separi cu virgulă sau tab: <b>stand, nume, sector</b>. Standul și sectorul sunt opționale. Sectoarele noi se creează automat.</p>
@@ -1149,7 +1173,7 @@
       <p class="hint" id="imp-preview"></p>
     </div>
 
-    <div class="card">
+    <div class="card u1">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-rules"></use></svg>Cum se calculează</div>
       <p class="hint">
         <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra.</b> CMMC (cel mai mare pește) se calculează automat din peștii extra, în tab-ul Statistici.
@@ -1158,7 +1182,7 @@
       <p class="hint"><b>Concurs pe mai multe zile (manșe):</b> în Setări alegi 2 sau 3 manșe pentru concurs. În tab-ul Participanți, sus, alegi manșa activă — tot ce cântărești merge acolo. În tab-ul Clasamente alegi ce vrei să vezi: fiecare manșă în parte sau <b>General</b> (suma tuturor). La „General" + „După puncte", clasamentul e suma locurilor din fiecare manșă — câștigă cine are cele mai puține puncte, exact ca la concursurile oficiale.</p>
     </div>
 
-    <div class="card">
+    <div class="card u2">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-copy"></use></svg>Sincronizare &amp; backup</div>
       <p class="hint" style="margin:0 0 10px;">Exportă datele într-un fișier și trimite-l pe alt telefon (WhatsApp, e-mail). Acolo, deschide aplicația și apasă „Importă din fișier".</p>
       <button class="btn btn-ghost" onclick="exportData()"><svg class="ui-ico" aria-hidden="true"><use href="#i-cloud"></use></svg>Exportă datele (fișier)</button>
@@ -1172,7 +1196,7 @@
       <p class="hint">„Combină" actualizează participanții comuni și îi adaugă pe cei noi — bun când două telefoane cântăresc sectoare diferite. „Înlocuiește tot" copiază fișierul exact cum e. <b>Atenție la concursurile cu mai multe manșe:</b> dacă doi organizatori cântăresc manșe diferite pentru ACELAȘI participant pe telefoane separate, sincronizați între manșe (nu în paralel) — altfel „Combină" poate suprascrie datele uneia dintre zile pentru acel participant.</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u2 lockhide" id="card-sync">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-live"></use></svg>Clasament live pe alte telefoane</div>
       <p class="hint" style="margin:0 0 10px;">Setează un cod de cameră și o cheie de scriere (o dată, pe telefonul organizatorului). De fiecare dată când cântărești, datele urcă automat în cloud. Trimite apoi linkul de mai jos celorlalți — ei văd clasamentul live, fără să poată modifica nimic.</p>
       <label class="f">Cod cameră</label>
@@ -1214,10 +1238,9 @@
     <!-- Trei carduri de mecanică a serverului, care nu se ating la un concurs obișnuit.
          Stăteau deschise între lucrurile de zi cu zi și îngroșau meniul fără folos.
          Pliat cu o comutare a atributului hidden, nu cu <details>: așa se poate proba. -->
-    <div class="pliant lockhide" id="pliant-server">
-      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-server')">🛠 Reparat pe server <span class="rar">rar</span></button>
-      <div class="pliant-in" hidden>
-    <div class="card lockhide" id="card-arhive">
+    <div id="grup-server">
+      <div>
+    <div class="card u3 lockhide" id="card-arhive">
       <div class="sec-title">Curăță arhiva de sezon</div>
       <p class="hint" style="margin:0 0 10px;">Concursurile arhivate online intră în <b>Clasamentul de sezon</b>. Dacă ai făcut simulări sau ai arhivat de două ori același concurs, șterge-le de aici. Coloana de kilograme te ajută să le deosebești: o simulare are de obicei <b>0 kg</b>.</p>
       <p class="hint" style="margin:0 0 10px;">Tot de aici îndrepți <b>numele</b> și <b>balta</b> unui concurs deja arhivat — o greșeală de tastare în nume ajunge altfel în clasamentul de sezon și pe pozele trimise pe WhatsApp. Fără baltă, același lac poate ieși în două clasamente de standuri, sub două nume de concurs; scrie-o la fel peste tot și se unesc.</p>
@@ -1225,14 +1248,14 @@
       <div id="arhive-list" style="margin-top:12px;"></div>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u3 lockhide">
       <div class="sec-title">Moderare calendar regional</div>
       <p class="hint" style="margin:0 0 10px;">Poți șterge orice concurs programat de altcineva (nu doar pe-ale tale), folosind cheia de scriere de mai sus — util dacă apare ceva greșit sau abuziv în calendarul public.</p>
       <button class="btn btn-ghost" onclick="loadModEvents()"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg>Încarcă toate concursurile programate</button>
       <div id="mod-events-list" style="margin-top:12px;"></div>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u3 lockhide">
       <div class="sec-title">Istoric cameră</div>
       <p class="hint" style="margin:0 0 10px;">Ultimele versiuni salvate automat ale camerei live (la fiecare suprascriere) — dacă s-a suprascris ceva din greșeală, poți reveni la o versiune anterioară.</p>
       <button class="btn btn-ghost" onclick="loadRoomHistory()">🕘 Vezi istoricul camerei</button>
@@ -1243,28 +1266,27 @@
 
     <!-- Notificările, vocea, iconița, codul QR și PIN-ul se pun o dată și nu se mai
          ating. Stăteau deschise printre lucrurile de la fiecare concurs. -->
-    <div class="pliant" id="pliant-odata">
-      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-odata')">⚙️ Setat o dată, și gata</button>
-      <div class="pliant-in" hidden>
-    <div class="card">
+    <div id="grup-odata">
+      <div>
+    <div class="card u1">
       <div class="sec-title">Baza de pescari</div>
       <button class="btn btn-ghost" onclick="showView('pescari')">Deschide baza de pescari</button>
       <p class="hint" id="pescari-scurt">Fiecare pescar cu codul lui, o dată, pentru tot sezonul.</p>
     </div>
 
-    <div class="card">
+    <div class="card u2">
       <div class="sec-title">Notificări live (doar Android/Chrome)</div>
       <button class="btn btn-ghost" id="btn-push" onclick="togglePush()">🔕 Oprite – apasă ca să pornești</button>
       <p class="hint">Primești un pop-up cu sunet pe telefon când apare un nou lider în concurs — chiar dacă aplicația e închisă. Are nevoie de un cod de cameră setat mai sus (sincronizare live).</p>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u2 lockhide">
       <div class="sec-title">Anunț vocal la cântar</div>
       <button class="btn btn-ghost" id="btn-voice" onclick="toggleVoice()">🔇 Oprit – apasă ca să pornești</button>
       <p class="hint">Telefonul anunță cu voce tare fiecare cântărire și locul în clasament (ex: „Ion Popescu, 8 kilograme și 650 de grame. Locul 2 la general."). Folosește vocea telefonului, fără internet.</p>
     </div>
 
-    <div class="card">
+    <div class="card u2">
       <div class="sec-title">Pune iconița pe ecran</div>
       <button class="btn btn-ghost" id="btn-install" style="display:none;" onclick="cereInstalarea()">📲 Instalează aplicația</button>
       <p class="hint" id="install-help" style="margin-top:8px;"></p>
@@ -1276,7 +1298,7 @@
       <p class="hint" style="text-align:center;">Dacă doi organizatori cântăresc în paralel, folosiți <b>sincronizarea live</b> (cod de cameră + cheie), nu Export/Import: importul cu „Combină" înlocuiește participantul întreg și poate șterge cântăririle celuilalt telefon.</p>
     </div>
 
-    <div class="card">
+    <div class="card u2">
       <div class="sec-title">Protecție cu PIN</div>
       <div id="pin-status" class="hint" style="margin:0 0 8px;"></div>
       <div class="lockhide">
@@ -1291,23 +1313,22 @@
     </div>
 
     <!-- Ultima plasă de siguranță: se caută doar când s-a stricat ceva. -->
-    <div class="pliant lockhide" id="pliant-necaz">
-      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-necaz')">🔧 Când ceva nu merge</button>
-      <div class="pliant-in" hidden>
-    <div class="card lockhide">
+    <div id="grup-necaz">
+      <div>
+    <div class="card u3 lockhide">
       <div class="sec-title">Adu înapoi ce era</div>
       <p class="hint" id="undo-info" style="margin:0 0 10px;"></p>
       <button class="btn btn-ghost" id="btn-undo" style="display:none;" onclick="aduInapoi()">↩ Adu înapoi copia dinainte</button>
     </div>
 
-    <div class="card">
+    <div class="card u3">
       <div class="sec-title">Serverul răspunde?</div>
       <p class="hint" style="margin:0 0 10px;">Încerc pe rând tot ce-i trebuie aplicației de pe server și îți spun ce răspunde. Nu scrie și nu schimbă nimic — doar se uită. De apăsat când ceva pare că nu mai merge, sau o dată pe sezon.</p>
       <button class="btn btn-ghost" onclick="verificaServerul()">Verifică serverul</button>
       <div id="server-proba" style="margin-top:10px;"></div>
     </div>
 
-    <div class="card lockhide">
+    <div class="card u3 lockhide">
       <div class="sec-title">Reset</div>
       <p class="hint" style="margin:0 0 10px;">De obicei nu-ți trebuie: la sfârșit de concurs apeși <b>🏁 Am terminat concursul</b>, în Clasamente, care salvează și apoi te întreabă dacă golește lista. Butonul de aici șterge tot dintr-o dată (arhivează întâi, dacă ai cheia de scriere).</p>
       <button class="btn btn-danger" onclick="wipe()">Șterge toate datele</button>
@@ -2646,7 +2667,12 @@
     showView(view);
     if(elId) setTimeout(function(){
       var el=document.getElementById(elId);
-      if(el) el.scrollIntoView({block:"start", behavior:"smooth"});
+      if(!el) return;
+      /* Cardul căutat poate sta după o ușă închisă din „Contul meu". Atunci se deschide
+         ușa lui — altfel saltul aterizează pe un card ascuns, adică nicăieri. */
+      var usa=(el.className.match(/\bu[123]\b/)||[])[0];
+      if(usa) usaSet(usa);
+      el.scrollIntoView({block:"start", behavior:"smooth"});
     }, 60);
   }
   // „Adu varianta nouă" reîncarcă index.html, dar sezon.html și concursuri.html sunt
@@ -2672,7 +2698,7 @@
     // ca ochiul să nu caute printr-un bloc de nouă dale la fel de grele.
     var org=[
       ["Desfășurare și rezultate", [
-        ["timer","Cronometru","meniuGo('set','card-cronometru')"],
+        ["timer","Cronometru","meniuGo('cal','card-cronometru')"],
         ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
         ["medal","Sezon","meniuLink('sezon.html')"]
       ]],
@@ -3969,6 +3995,31 @@
   var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set"};
   /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
      în browserul de probă, iar ce nu se poate proba nu se livrează. */
+  /* ---------- cele trei uși din „Contul meu" ----------
+     Ecranul avea 21 de carduri unul sub altul: pregătirea concursului, setările
+     telefonului și reparațiile de urgență, toate la grămadă. Arbitrul sau organizatorul
+     care deschidea aplicația prima oară nimerea peste toate deodată.
+
+     Nu s-a șters niciun card. Fiecare a primit ușa lui, după MOMENTUL în care ai nevoie
+     de el — mai ușor de ghicit decât „cât de des se umblă la el". */
+  var USA_KEY = "concurs-usa-setari";
+  function usaSet(id){
+    id = (id==="u2" || id==="u3") ? id : "u1";
+    document.body.dataset.usa = id;
+    try{ localStorage.setItem(USA_KEY, id); }catch(e){}
+    ["u1","u2","u3"].forEach(function(x){
+      var b=document.getElementById("usa-"+x);
+      if(b) b.classList.toggle("on", x===id);
+    });
+  }
+  /* Ușa deschisă se ține minte: cine e la al treilea concurs știe unde se duce, și n-are
+     rost să caute din nou. */
+  function usaPornire(){
+    var id="u1";
+    try{ id=localStorage.getItem(USA_KEY)||"u1"; }catch(e){}
+    usaSet(id);
+  }
+
   function plianteaza(id){
     var el=document.getElementById(id); if(!el) return;
     var cap=el.querySelector(".pliant-cap"), cuprins=el.querySelector(".pliant-in");
@@ -3986,6 +4037,7 @@
     document.querySelectorAll("nav.tabs button").forEach(function(b){b.classList.remove("on");});
     var tab=document.getElementById("tab-"+(TAB_PARINTE[v]||v));
     if(tab) tab.classList.add("on");
+    if(v==="set") usaPornire();
     if(v==="rank") renderRank();
     if(v==="cantar") renderList(); // standul se scrie din formularul fiecărui participant
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }

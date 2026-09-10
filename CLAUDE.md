@@ -17,8 +17,11 @@ Din regula asta ies toate celelalte:
 - **Un singur buton scos în față pe ecran** (`btn-primary`). Restul, `btn-ghost`. Dacă sunt
   două albastre, niciunul nu mai e cel important.
 - **Ce se folosește rar, se strânge**, nu se șterge: `.pliant` cu `plianteaza(id)`.
-  Setările au trei rânduri strânse (server, setat o dată, când ceva nu merge) — 9 carduri
-  pe ecran din 19.
+- **Contul meu are trei uși**, după MOMENTUL în care ai nevoie de lucrul acela, nu după cât
+  de des se umblă la el: *Concursul* (înainte de start), *Telefonul* (o dată, și gata),
+  *Nu merge ceva* (rar). Cardul nou capătă `u1`, `u2` sau `u3`; ușa închisă se ascunde cu
+  `!important`, cea deschisă **nu** primește regulă de afișare — altfel ar învia cardurile
+  ascunse de lacăt. Cel mai încărcat ecran are 8 carduri din 21.
 - **Nu se adaugă fără să se scoată.** Înainte de a pune ceva nou pe un ecran, întrebarea e
   ce iese, sau unde se strânge.
 - **Numele lui, nu ale mele.** Numele butoanelor se schimbă doar când le alege el.
