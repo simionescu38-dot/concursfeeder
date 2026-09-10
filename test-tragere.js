@@ -528,6 +528,9 @@ async function test14() {
       console, Math, Promise, JSON, parseInt, String, Array, setTimeout,
       taieturi: [], cereri: 0, toasturi: [], verificat: 0,
       syncKey: o.cheie === undefined ? "cheia" : o.cheie,
+      /* Codul camerei pleacă odată cu poza foii: serverul are nevoie de el ca să știe
+         a cui e cheia. Tragerea la sorți e a organizatorului, nu a arbitrului. */
+      syncRoom: o.camera === undefined ? "cupa" : o.camera,
       API_BASE: "https://api.test",
       raspunsuri: (o.raspunsuri || []).slice(),
       URL: { createObjectURL: () => "blob:x", revokeObjectURL() {} },
