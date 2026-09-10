@@ -2,9 +2,13 @@
  * Codurile din bază, puse pe tot concursul dintr-o apăsare.
  *
  * Codul se putea scrie de mână, unul câte unul, la fiecare pescar. La 44 de oameni e o
- * seară pierdută — iar baza sezonului îi știe deja pe toți. Butonul stă chiar în
- * avertismentul care spune „N pescari fără cod": acolo e spusă problema, acolo e și
- * leacul, nu la capătul celălalt al ecranului.
+ * seară pierdută — iar baza sezonului îi știe deja pe toți.
+ *
+ * Butonul a stat o vreme în avertismentul de pe ecranul Cântar, unde era spusă problema.
+ * Dar codul nu e o problemă a zilei de concurs: fără el, sezonul leagă după nume, ca
+ * înainte să existe coduri. Iar pe ecranul acela se uită acum arbitrii, cărora codul nu
+ * le spune nimic. Așa că leacul s-a mutat la Baza de pescari — de acolo vin codurile,
+ * acolo se pun, o dată, înainte de concurs.
  *
  * Regula de căpătâi: codurile se dau DIN BAZĂ, niciodată din concurs. Cine nu e în bază
  * rămâne fără cod și se spune pe nume — un cod inventat aici ar fi al nimănui la etapa
@@ -30,7 +34,7 @@ function pornire(optiuni) {
   const ctx = {
     console, JSON, Date, Math, parseInt, isNaN, Object, Array, String,
     blocat: !!o.blocat, intrebat: [], raspuns: o.confirma !== false,
-    toasturi: [], salvat: 0, desenat: 0, copii: [],
+    toasturi: [], salvat: 0, desenat: 0, desenatBaza: 0, copii: [],
     document: { getElementById: id => (elemente[id] = elemente[id] || { innerHTML: "", style: {} }) },
     guard() { return ctx.blocat; },
     isLocked() { return ctx.blocat; },
@@ -38,6 +42,7 @@ function pornire(optiuni) {
     toast(m) { ctx.toasturi.push(m); },
     queueSave() { ctx.salvat++; },
     renderList() { ctx.desenat++; },
+    renderPescari() { ctx.desenatBaza++; },
     puneDeoParte(motiv) { ctx.copii.push(motiv); },
     __el: elemente
   };
@@ -203,7 +208,6 @@ console.log("\n=== 3c. Cu lacătul pus ===");
   vm.runInContext("puneCodurile();", c);
   t("nu se pune niciun cod", coduri(c), ["Mihai Ionescu:-"]);
   t("nici nu s-a întrebat", c.intrebat, []);
-  t("nici butonul nu se arată", /puneCodurile/.test(avertisment(c).innerHTML), false);
 }
 
 console.log("\n=== 3d. A doua apăsare n-are ce pune ===");
@@ -216,51 +220,42 @@ console.log("\n=== 3d. A doua apăsare n-are ce pune ===");
 }
 
 /* ================================================================
-   4. Butonul stă în avertisment
+   4. Avertismentul de pe Cântar strigă doar ce strică ceva
    ------------------------------------------------------------------
-   Avertismentul spunea ce e greșit, dar nu și cum se drege. Acum poartă leacul.
+   Spunea „⚠ N pescari fără cod. Completează codurile înainte de concurs" — adică cerea
+   ca pe o datorie ceva de care ziua de concurs nu depinde. Acum tace despre ce lipsește
+   și vorbește numai despre ce se strică: două persoane cu același cod se topesc într-una
+   singură la clasamentul de sezon, iar asta nu se vede până la finalul lui.
    ================================================================ */
-console.log("\n=== 4. Avertismentul poartă leacul ===");
+console.log("\n=== 4. Avertismentul nu mai cere coduri ===");
 {
   const c = pornire({ baza: BAZA, concurs: ["Mihai Ionescu", "Ionuț Patronu", "Vasile Popescu"] });
   const w = avertisment(c);
-  t("se vede", w.style.display, "block");
-  t("spune cine n-are cod", /3 pescari fără cod/.test(text(w.innerHTML)), true);
-  t("…și poartă butonul", /onclick="puneCodurile\(\)"/.test(w.innerHTML), true);
-  t("butonul spune câte coduri pune", /Pune 2 coduri din baza de pescari/.test(text(w.innerHTML)), true);
-  t("butonul nu e scos în față", /btn-primary/.test(w.innerHTML), false);
-
-  vm.runInContext("puneCodurile();", c);
-  const w2 = avertisment(c);
-  t("după apăsare, tot avertizează pentru cel rămas", /1 pescar fără cod/.test(text(w2.innerHTML)), true);
-  t("…dar butonul dispare, n-are ce pune", /puneCodurile/.test(w2.innerHTML), false);
-}
-
-console.log("\n=== 4b. Când toți au cod, avertismentul se stinge ===");
-{
-  const c = pornire({ baza: BAZA, concurs: ["Mihai Ionescu", "Vasile Popescu"] });
-  vm.runInContext("puneCodurile();", c);
-  const w = avertisment(c);
-  t("nu se mai vede", w.style.display, "none");
-  /* Se golește, nu doar se ascunde: altfel butonul ar rămâne în pagină, nevăzut,
+  t("trei oameni fără cod nu mai sunt o problemă", w.style.display, "none");
+  /* Se golește, nu doar se ascunde: altfel textul ar rămâne în pagină, nevăzut,
      purtând o socoteală de acum două apăsări. */
-  t("…și nu rămâne niciun buton vechi în pagină", w.innerHTML, "");
+  t("…și nu rămâne niciun text vechi în pagină", w.innerHTML, "");
+  t("nici butonul nu mai stă acolo", /puneCodurile/.test(w.innerHTML), false);
 }
 
-console.log("\n=== 4c. Un singur cod de pus se scrie la singular ===");
+console.log("\n=== 4b. Codul dublu se strigă mai departe ===");
 {
-  const c = pornire({ baza: BAZA, concurs: [{ nume: "Vasile Popescu", cod: 2 }, "Mihai Ionescu"] });
-  t("«Pune 1 cod», nu «1 coduri»",
-    /Pune 1 cod din baza de pescari/.test(text(avertisment(c).innerHTML)), true);
+  const c = pornire({ baza: [], concurs: [{ nume: "Ana Unu", cod: 4 },
+                                          { nume: "Dan Doi", cod: 4 },
+                                          "Mihai Ionescu"] });
+  const w = avertisment(c);
+  t("se vede", w.style.display, "block");
+  t("spune cine se bate pe cod", /codul 4 este la Ana Unu și Dan Doi/.test(text(w.innerHTML)), true);
+  t("…și spune ce se strică", /se amestecă între ei/.test(text(w.innerHTML)), true);
+  /* Al treilea om n-are cod deloc, și e în regulă așa. */
+  t("dar tace despre cine n-are cod", /fără cod/.test(text(w.innerHTML)), false);
+  t("…și nu mai dă ordine", /Completează/.test(text(w.innerHTML)), false);
 }
 
-console.log("\n=== 4d. Numele nu pot intra ca HTML ===");
+console.log("\n=== 4c. Numele nu pot intra ca HTML ===");
 {
-  /* Avertismentul scrie acum HTML, ca să poată purta butonul. Numele vin din lista
-     lipită de pe grup, deci trec prin esc() — altfel un nume cu semne de cod ar ajunge
-     etichetă adevărată în pagină. */
-  /* Numele ajung în avertisment doar pe ramura codurilor duble — acolo se scrie
-     „codul 4 este la X și Y". Deci proba trebuie să treacă pe acolo. */
+  /* Numele vin din lista lipită de pe grup, deci trec prin esc() — altfel un nume cu
+     semne de cod ar ajunge etichetă adevărată în pagină. */
   const c = pornire({ baza: [], concurs: [{ nume: "<script> alert", cod: 4 },
                                           { nume: "Vasile Popescu", cod: 4 }] });
   const w = avertisment(c);
@@ -269,36 +264,49 @@ console.log("\n=== 4d. Numele nu pot intra ca HTML ===");
   t("…și nu ajunge etichetă adevărată", /<script>/.test(w.innerHTML), false);
 }
 
-console.log("\n=== 4e. Fără bază, avertismentul rămâne cum era ===");
-{
-  const c = pornire({ baza: [], concurs: ["Mihai Ionescu", "Vasile Popescu"] });
-  const w = avertisment(c);
-  t("tot spune cine n-are cod", /2 pescari fără cod/.test(text(w.innerHTML)), true);
-  t("…dar n-are de unde lua, deci niciun buton", /puneCodurile/.test(w.innerHTML), false);
-}
-
 /* ================================================================
    5. Legat cum trebuie
    ================================================================ */
 console.log("\n=== 5. Legat cum trebuie ===");
 {
   const wc = H.grabFunction(src, "updateWarnCod");
-  t("avertismentul cheamă potrivirea", /potrivesteCodurile\(\)/.test(wc), true);
-  t("numele trec prin esc()", /esc\(buc\.join/.test(wc), true);
-  t("butonul nu apare cu lacătul pus", /&& !isLocked\(\)/.test(wc), true);
+  t("avertismentul nu mai caută prin bază", /potrivesteCodurile/.test(wc), false);
+  t("…nici nu mai poartă butonul", /puneCodurile/.test(wc), false);
+  t("numele trec prin esc()", /esc\(duble\.map/.test(wc), true);
 
   const rl = H.grabFunction(src, "renderList");
   t("avertismentul se împrospătează odată cu lista", /updateWarnCod\(\);/.test(rl), true);
+
+  /* Cardul care poartă butonul stă în ecranul Bazei de pescari, se umple la desenarea
+     lui și se ascunde când n-are ce pune — altfel ar fi un buton care spune doar
+     „N-am ce cod să pun". */
+  const rp = H.grabFunction(src, "renderPescari");
+  t("ecranul bazei cheamă potrivirea", /potrivesteCodurile\(\)/.test(rp), true);
+  t("…umple cardul", /pune-coduri-cati/.test(rp), true);
+  t("…și îl ascunde când n-are ce pune",
+    /pcard\.style\.display = g\.gasiti\.length \? "" : "none";/.test(rp), true);
+  t("pliantul e chiar în ecranul bazei",
+    /id="view-pescari"[\s\S]*?id="pliant-coduri"/.test(src), true);
+  t("…și e ascuns de lacăt, ca tot ce schimbă concursul",
+    /<div class="pliant mt lockhide" id="pliant-coduri">/.test(src), true);
+  /* Strâns, nu adăugat: ecranul bazei rămâne cu trei carduri. */
+  t("…fără să crească ecranul bazei",
+    (src.slice(src.indexOf('id="view-pescari"'), src.indexOf('id="view-spons"'))
+       .match(/class="card/g) || []).length, 3);
 
   const pc = H.grabFunction(src, "puneCodurile");
   t("cu lacătul pus nu se pune nimic", /^\s*function puneCodurile\(\)\{\s*\r?\n\s*if\(guard\(\)\) return;/.test(pc), true);
   t("se întreabă înainte", /if\(!confirm\(q\)\) return;/.test(pc), true);
   t("se pune deoparte o copie", /puneDeoParte\("înainte de punerea codurilor"\)/.test(pc), true);
   t("se scrie în jurnal", /scrieInJurnal\(x\.p, mi, "cod", "pus"/.test(pc), true);
+  t("după punere se împrospătează și ecranul bazei",
+    /queueSave\(\); renderList\(\); renderPescari\(\);/.test(pc), true);
 
-  /* Nu s-a adăugat niciun rând nou pe ecranul Cântar: leacul stă în avertismentul
-     care exista deja. */
-  t("niciun pliant nou la Cântar", /id="pliant-coduri"/.test(src), false);
+  /* Nu s-a adăugat nimic pe ecranul Cântar — dimpotrivă, de acolo au ieșit un avertisment
+     și un buton. Pliantul codurilor stă în ecranul bazei, nu aici. */
+  const cantar = src.slice(src.indexOf('id="view-cantar"'), src.indexOf('id="view-rank"'));
+  t("niciun pliant de coduri la Cântar", /pliant-coduri/.test(cantar), false);
+  t("…și niciun buton de pus coduri", /puneCodurile/.test(cantar), false);
 }
 
 t.raport();

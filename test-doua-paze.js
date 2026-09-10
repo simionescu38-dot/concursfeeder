@@ -48,7 +48,11 @@ console.log("\n=== 1. Când întreabă și când nu ===");
   t("spune ce se pierde", /se leagă de sezon după nume/.test(c.intrebat[0]), true);
   t("…și că nu se mai poate drege", /Odată arhivată, nu se mai poate drege/.test(c.intrebat[0]), true);
   t("spune ce face fiecare buton",
-    /Anulează = ies, ca să apăs «Pune codurile»[\s\S]*OK = arhivez și așa/.test(c.intrebat[0]), true);
+    /Anulează = ies, ca să apăs «Pune codurile pe concursul de acum»[\s\S]*OK = arhivez și așa/.test(c.intrebat[0]), true);
+  /* Butonul s-a mutat de la Cântar la Baza de pescari: dacă întrebarea trimite în alt loc
+     decât cel adevărat, omul apasă Anulează și nu găsește nimic acolo. */
+  t("…și unde stă butonul acum", /la Baza de pescari/.test(c.intrebat[0]), true);
+  t("nu mai trimite la Cântar", /la Cântar/.test(c.intrebat[0]), false);
 }
 
 console.log("\n=== 1b. Când NU are ce spune ===");

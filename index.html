@@ -1466,6 +1466,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Drumul celălalt: din bază pe concursul de pe telefon. Butonul stătea în avertismentul
+         de pe ecranul Cântar — adică taman acolo unde se uită arbitrii, cărora codul nu le
+         spune nimic. Aici e locul lui: codurile de aici vin, aici se pun. Strâns în pliant,
+         nu într-un card nou: se apasă o dată pe concurs, iar ecranul are deja trei carduri. -->
+    <div class="pliant mt lockhide" id="pliant-coduri">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-coduri')"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Pune codurile pe concursul de acum <span class="rar">o dată pe concurs</span></button>
+      <div class="pliant-in" hidden>
+        <p class="hint" id="pune-coduri-cati"></p>
+        <button class="btn btn-ghost" onclick="puneCodurile()">Pune codurile din bază</button>
+        <p class="hint">Nu e obligatoriu. Fără cod, clasamentul de sezon leagă oamenii după nume, ca înainte să existe coduri. Codul ajută doar când același om e scris în două feluri pe foi diferite — atunci, la final de sezon, ies doi oameni din unul.</p>
+      </div>
+    </div>
   </section>
 
   <!-- SPONSORI -->
@@ -3264,6 +3277,19 @@
       card.style.display = toti ? "" : "none";
       caz.innerHTML = "Pe telefon e concursul <b>"+esc(state.name||"fără nume")+"</b>, cu <b>"+
         toti+"</b> pescari, dintre care <b>"+afara+"</b> nu-s încă în bază.";
+    }
+
+    /* Pliantul care pune codurile pe concurs se arată doar când are ce pune: altfel e un
+       buton care spune „N-am ce cod să pun" și atât. */
+    var pcaz=document.getElementById("pune-coduri-cati"),
+        pcard=document.getElementById("pliant-coduri");
+    if(pcaz && pcard){
+      var g=potrivesteCodurile();
+      pcard.style.display = g.gasiti.length ? "" : "none";
+      pcaz.innerHTML = "Am cod în bază pentru <b>"+g.gasiti.length+"</b> din pescarii concursului de pe telefon"+
+        (g.fara.length ? ", iar <b>"+g.fara.length+"</b> "+(g.fara.length===1?"nu e":"nu-s")+" în bază" : "")+
+        (g.incurcate.length ? ". <b>"+g.incurcate.length+"</b> "+(g.incurcate.length===1?"duce":"duc")+
+          " la mai mulți oameni deodată — pe "+(g.incurcate.length===1?"acela nu-l":"aceia nu-i")+" pun" : "")+".";
     }
 
     var cutie=document.getElementById("pescari-lista");
@@ -5940,36 +5966,35 @@
       x.p.cod=x.cod;
       scrieInJurnal(x.p, mi, "cod", "pus", x.cod, "", x.cod, "din baza de pescari");
     });
-    queueSave(); renderList();
+    queueSave(); renderList(); renderPescari();
     toast(g.gasiti.length+" "+(g.gasiti.length===1?"cod pus":"coduri puse"));
   }
 
+  /* Codul e o unealtă de sezon, nu o condiție de concurs: fără el, clasamentul de sezon
+     leagă oamenii după nume, exact ca înainte să existe coduri. Ecranul de cântar spunea
+     totuși „⚠ N pescari fără cod. Completează codurile înainte de concurs" — adică cerea
+     ca pe o datorie ceva de care ziua de concurs nu depinde deloc. Acum pe ecranul acela
+     se uită arbitrii, iar un avertisment pe care ei n-au ce să-l facă e taman ce nu
+     trebuie la baltă. Punerea codurilor s-a mutat la Baza de pescari, de unde vin ele.
+     Aici rămâne strigat doar ce STRICĂ ceva: doi oameni cu același cod se topesc într-unul
+     singur la clasamentul de sezon, iar asta nu se vede nicăieri până la finalul lui. */
   function updateWarnCod(){
     var w=document.getElementById("warn-cod");
     if(!w) return;
-    var fara=[], pe={};
+    var pe={};
     (state.participants||[]).forEach(function(p){
       var c=codParticipant(p.cod);
-      if(c===null || isNaN(c)){ fara.push(nameOf(p)); return; }
+      if(c===null || isNaN(c)) return;
       (pe[c]=pe[c]||[]).push(nameOf(p));
     });
     var duble=Object.keys(pe).filter(function(c){ return pe[c].length>1; });
-    /* Se golește, nu doar se ascunde: altfel butonul de mai jos rămâne în pagină,
-       nevăzut, purtând o socoteală de acum două apăsări. */
-    if(!fara.length && !duble.length){ w.innerHTML=""; w.style.display="none"; return; }
-    var buc=[];
-    if(fara.length) buc.push(fara.length+(fara.length===1?" pescar fără cod":" pescari fără cod"));
-    if(duble.length) buc.push(duble.map(function(c){ return "codul "+c+" este la "+pe[c].join(" și "); }).join(" · "));
-    /* Textul intră acum ca HTML, ca să poată purta butonul de dedesubt — deci numele
-       trec prin esc(). Cu textContent erau ferite de la sine. */
-    w.innerHTML="⚠ "+esc(buc.join(" · "))+". Completează codurile înainte de concurs.";
-    /* Avertismentul spunea ce e greșit, dar nu și cum se drege. Butonul stă aici, unde e
-       spusă problema — nu la capătul celălalt al ecranului. */
-    var g=potrivesteCodurile();
-    if(g.gasiti.length && !isLocked()){
-      w.innerHTML+='<br><button class="btn btn-ghost mt" onclick="puneCodurile()">Pune '+
-        g.gasiti.length+" "+(g.gasiti.length===1?"cod":"coduri")+" din baza de pescari</button>";
-    }
+    /* Se golește, nu doar se ascunde: altfel textul rămâne în pagină, nevăzut, purtând
+       o socoteală de acum două apăsări. */
+    if(!duble.length){ w.innerHTML=""; w.style.display="none"; return; }
+    /* Numele vin din lista lipită de pe grup, deci trec prin esc() — altfel un nume cu
+       semne de cod ar ajunge etichetă adevărată în pagină. */
+    w.innerHTML="⚠ "+esc(duble.map(function(c){ return "codul "+c+" este la "+pe[c].join(" și "); }).join(" · "))+
+      ". La clasamentul de sezon se amestecă între ei — dă-i altul unuia.";
     w.style.display="block";
   }
   function renderList(){
@@ -6025,7 +6050,7 @@
             (p.photo&&!L?'<button class="av-x" onclick="removePhoto(\''+p.id+'\')">×</button>':'')+
           '</div>'+
           '<div class="p-name"><div class="nm">'+full+'</div>'+
-            '<div class="p-sub"><span>'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'Fără stand')+'</span>'+(p.cod?'<span>Cod '+esc(String(p.cod))+'</span>':'<span>Fără cod</span>')+(sectorOfM(p,state.manche||1)?'<span>Sector '+esc(sectorOfM(p,state.manche||1))+'</span>':'')+'</div></div>'+
+            '<div class="p-sub"><span>'+(esc(standOfM(p,state.manche||1))?'Stand '+esc(standOfM(p,state.manche||1)):'Fără stand')+'</span>'+(p.cod?'<span>Cod '+esc(String(p.cod))+'</span>':'')+(sectorOfM(p,state.manche||1)?'<span>Sector '+esc(sectorOfM(p,state.manche||1))+'</span>':'')+'</div></div>'+
           (L?'':'<button class="edit" aria-label="Editează participantul" onclick="editParticipant(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-edit"></use></svg></button>'+
           '<button class="del" aria-label="Șterge participantul" onclick="delParticipant(\''+p.id+'\')"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg></button>')+
         '</div>';
@@ -7744,9 +7769,10 @@
     if(cuCod) return true;
     return confirm(
       "Niciunul dintre cei "+lista.length+" pescari n-are cod, deși în bază ai "+pescari.length+".\n\n"+
-      "Fără coduri, etapa asta se leagă de sezon după nume — adică tocmai greșeala pe care "+
-      "baza vine s-o repare. Odată arhivată, nu se mai poate drege.\n\n"+
-      "Anulează = ies, ca să apăs «Pune codurile» la Cântar.\n"+
+      "Fără coduri, etapa asta se leagă de sezon după nume. Merge și așa — dar dacă unul e "+
+      "scris altfel pe altă foaie, la final de sezon ies doi oameni din unul. Odată "+
+      "arhivată, nu se mai poate drege.\n\n"+
+      "Anulează = ies, ca să apăs «Pune codurile pe concursul de acum», la Baza de pescari.\n"+
       "OK = arhivez și așa."
     );
   }
