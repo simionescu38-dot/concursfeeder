@@ -7,6 +7,12 @@ binding = "DB"
 database_name = "concurs-api"
 database_id = "5f071722-0419-4209-b5fa-b249f9c06f93"
 
+# Modelul care citește cifrele de pe cântar și numele de pe foaia de tragere la
+# sorți (`/api/citeste-cantar`, `/api/citeste-tragerea`). Fără legătura asta,
+# amândouă răspund 501 „fara-ai" și aplicația spune „scrie tu".
+[ai]
+binding = "AI"
+
 [vars]
 VAPID_PUBLIC_KEY = "BJXKpO9ZN60T-rEAwHW9ItFIEUFkCq9ec2tbYzrRY6T_lFf23Quii01j0TjuBa-zongkFSe56EHMRQeTR-mFsAs"
 
