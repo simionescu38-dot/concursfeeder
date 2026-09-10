@@ -304,6 +304,9 @@
   .sl-lider{margin-top:10px; font-size:14px; font-weight:700; background:rgba(255,255,255,.14);
     border-radius:12px; padding:8px 10px;}
   .sl-st{opacity:.85; font-weight:700;}
+  /* Rândul de pe ecranul gol: o propoziție, cu litere cât ceasul. E singurul lucru de
+     citit acolo, deci n-are rost să fie mic. */
+  .sl-pas{font-size:17px; font-weight:700; margin-top:5px; line-height:1.3; opacity:.95;}
   /* butonul de manșă stă ÎN panou: panoul spune în ce stare e, butonul o schimbă.
      Alb pe fundal colorat — nu e al doilea albastru pe ecran. */
   .sl-act{display:block; width:100%; margin-top:12px; border:0; border-radius:999px;
@@ -1086,7 +1089,7 @@
       <div class="pliant-in" hidden><div id="statBody"></div></div>
     </div>
 
-    <div class="card mt">
+    <div class="card mt" id="card-final">
       <div class="sec-title">Sezon</div>
       <a class="btn btn-ghost" style="display:block;text-align:center;text-decoration:none;" href="sezon.html"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Clasament de sezon (toate concursurile)</a>
       <p class="hint">Combină automat rezultatele din toate concursurile sincronizate și arată clasamentul pe tot sezonul.</p>
@@ -1114,7 +1117,7 @@
       <p class="hint" style="margin-top:8px;">Aplicația se actualizează singură — verifică la fiecare deschidere și se reîncarcă atunci când apare ceva nou. Butonul e doar pentru cazul în care nu vrei să aștepți.</p>
     </div>
 
-    <div class="card u1">
+    <div class="card u1" id="card-nume">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Numele concursului</div>
       <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
       <label class="f" style="margin-top:12px;">Balta</label>
@@ -2697,8 +2700,10 @@
     // pentru care „Vezi clasamentele" a fost scos mai demult. Ce rămâne e grupat pe rost,
     // ca ochiul să nu caute printr-un bloc de nouă dale la fel de grele.
     var org=[
+      /* Dala „Cronometru" a ieșit: butonul panoului de deasupra pornește și oprește manșa,
+         iar același drum în două locuri pe același ecran nu ajută pe nimeni. Cronometrul
+         rămâne în Calendar, pentru cine vrea să pună orele dinainte. */
       ["Desfășurare și rezultate", [
-        ["timer","Cronometru","meniuGo('cal','card-cronometru')"],
         ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
         ["medal","Sezon","meniuLink('sezon.html')"]
       ]],
@@ -6615,8 +6620,78 @@
     if(now <= state.endAt) return "live";
     return "incheiata";
   }
+  /* ---------- ce urmează ----------
+     Panoul de pe Acasă spunea de mult „un singur buton, cel care are sens acum" — dar
+     știa doar de ceas: pornește manșa, oprește manșa. Restul zilei nu era nicăieri, iar
+     un om care deschidea aplicația prima oară nimerea peste un ecran gol: fără pescari,
+     panoul nu se desena deloc.
+
+     Acum aceeași socoteală acoperă ziua întreagă. Ordinea verificărilor E regula: fără
+     standuri, toți pescarii ies „absenți" din manșă, deci ar părea că s-a terminat
+     cântărirea înainte să înceapă. De aceea tragerea la sorți se întreabă ÎNAINTEA
+     cântăririlor. */
+  function pasulUrmator(){
+    var P = state.participants || [];
+    if(!P.length){
+      return (state.name||"").trim()
+        ? {t:"Înscrie pescarii", a:"showView('cantar')"}
+        : {t:"Fă concursul", a:"meniuGo('set','card-nume')"};
+    }
+    var mi = state.manche||1;
+    if(!P.some(function(p){ return standOfM(p, mi); }))
+      return {t:"Trage la sorți", a:"laTragere()"};
+
+    var stare = stareaMansei();
+    var gata = P.filter(arbGata).length;
+    if(gata >= P.length){
+      if(mi < numManse()) return {t:"Treci la manșa "+(mi+1), a:"treciLaMansa("+(mi+1)+")"};
+      /* Nu doar „du-te la Clasament": pe ecranul acela sunt mai multe lucruri, iar
+         butonul căutat e jos. Saltul aterizează chiar pe cardul lui. */
+      return {t:"Publică rezultatul", a:"meniuGo('rank','card-final')"};
+    }
+    if(stare === "live") return {t:"🏁 Gata, s-a terminat manșa", a:"opresteMansa()"};
+    /* Ceasul rămas de la altă manșă e ca și cum n-ar fi: manșa asta n-a pornit încă.
+       Concursurile de dinainte n-au însemnul, iar acolo rămâne purtarea veche. */
+    var ceasStrain = state.mansaCeas && state.mansaCeas !== mi;
+    if(!state.startAt || stare === "neinceputa" || ceasStrain)
+      return {t:"▶️ Pornește manșa "+mi, a:"pornesteMansa()"};
+    return {t:"Cântărește · "+gata+" din "+P.length, a:"showView('cantar')"};
+  }
+  /* Tragerea la sorți se trece dintr-o poză sau dintr-un mesaj lipit — sertarul ei stă pe
+     Cântar. Se deschide singur, altfel omul ajunge pe ecranul bun și tot nu vede unde. */
+  function laTragere(){
+    showView("cantar");
+    setTimeout(function(){
+      var el=document.getElementById("pliant-tragere");
+      if(!el) return;
+      var cuprins=el.querySelector(".pliant-in");
+      if(cuprins && cuprins.hidden) plianteaza("pliant-tragere");
+      el.scrollIntoView({block:"start", behavior:"smooth"});
+    }, 60);
+  }
+  function treciLaMansa(n){
+    if(guard()) return;
+    if(!confirm("Treci la manșa "+n+"?\n\nManșa "+(state.manche||1)+" rămâne cu tot ce s-a cântărit în ea.")) return;
+    setManche(n);
+    showView("cantar");
+  }
+
   function statusLiveHtml(){
-    if(!state.participants.length) return "";
+    /* Fără pescari, panoul nu se desena deloc: cine deschidea aplicația prima oară
+       nimerea peste un ecran gol, fără nimic care să-i spună cu ce începe. Acum tocmai
+       acolo are cea mai mare nevoie de un singur rând și un singur buton. */
+    if(!state.participants.length){
+      if(isLocked()) return "";
+      var pas0=pasulUrmator();
+      /* Rândul spune UNDE ești, butonul spune CE FACI. Prima variantă scria același text
+         în amândouă — două rânduri care spun același lucru nu ajută pe nimeni. */
+      var unde=(state.name||"").trim()
+        ? esc(state.name.trim())+' · niciun pescar înscris'
+        : 'Niciun concurs pe telefonul ăsta';
+      return '<div class="sl astept"><div class="sl-cap">Urmează</div>'+
+        '<div class="sl-pas">'+unde+'</div>'+
+        '<button type="button" class="sl-act" onclick="'+pas0.a+'">'+esc(pas0.t)+'</button></div>';
+    }
     var mi=state.manche||1;
     var stare=stareaMansei();
     var cap={ "live":["🔴","ÎN DESFĂȘURARE","live"], "neinceputa":["⏸","NU A ÎNCEPUT","astept"],
@@ -6641,11 +6716,12 @@
       h+='<div class="sl-lider">🏆 Lider: <b>'+esc(numeAfisat(lider))+'</b> — '+fmt(totalOf(lider))+' kg'+
          (standOfM(lider,mi)?' <span class="sl-st">Stand '+esc(standOfM(lider,mi))+'</span>':'')+'</div>';
     }
-    // un singur buton, cel care are sens acum. Pescarul care se uită nu-l vede deloc.
+    /* Un singur buton, cel care are sens acum — de-acum pentru toată ziua, nu doar
+       pentru ceas: tragerea la sorți, cântărirea, manșa următoare, publicarea.
+       Pescarul care se uită nu-l vede deloc. */
     if(!isLocked()){
-      h += (stare==="live")
-        ? '<button type="button" class="sl-act" onclick="opresteMansa()">🏁 Gata, s-a terminat manșa</button>'
-        : '<button type="button" class="sl-act" onclick="pornesteMansa()">▶️ Pornește manșa '+mi+'</button>';
+      var pas=pasulUrmator();
+      h += '<button type="button" class="sl-act" onclick="'+pas.a+'">'+esc(pas.t)+'</button>';
     }
     h+='</div>';
     return h;
@@ -6714,8 +6790,11 @@
   function semnaturaStatus(){
     var mi=state.manche||1, stare=stareaMansei();
     var kg=state.participants.reduce(function(s,p){ return s+totalOfM(p,mi); },0);
+    /* Pasul următor intră în semnătură, altfel panoul rămâne cu butonul vechi. După
+       tragerea la sorți, de pildă, nu se schimbă nici starea, nici capturile, nici
+       kilogramele — dar butonul trebuie să nu mai spună „Trage la sorți". */
     var parti=[stare, mi, state.participants.length, isLocked()?1:0,
-               cateCapturi(mi), fmt(kg), leaderId()||""];
+               cateCapturi(mi), fmt(kg), leaderId()||"", pasulUrmator().t];
     /* Pe manșa încheiată, panoul arată câștigătorii pe sectoare și cel mai mare pește.
        Ăștia se schimbă fără ca totalul, capturile sau liderul să se miște: e destul ca
        doi oameni din același sector să facă schimb de kilograme. Fără ei aici, pe ecran
@@ -6769,6 +6848,10 @@
     state.durataMin=min;
     state.startAt=now;
     state.endAt=now+min*60000;
+    /* Ceasul e al manșei ăsteia. La „Treci la manșa 2", orele rămân cele ale manșei 1 —
+       demult trecute — și fără însemnul ăsta socoteala ar crede că și manșa 2 s-a
+       terminat, cerând cântărirea în loc de pornire. */
+    state.mansaCeas=mi;
     // queueSave, nu save: ora trebuie să ajungă și pe telefoanele care privesc camera,
     // altfel doar organizatorul vede cât mai e
     queueSave();
