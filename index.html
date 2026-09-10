@@ -1196,7 +1196,7 @@
       <p class="hint">„Combină" actualizează participanții comuni și îi adaugă pe cei noi — bun când două telefoane cântăresc sectoare diferite. „Înlocuiește tot" copiază fișierul exact cum e. <b>Atenție la concursurile cu mai multe manșe:</b> dacă doi organizatori cântăresc manșe diferite pentru ACELAȘI participant pe telefoane separate, sincronizați între manșe (nu în paralel) — altfel „Combină" poate suprascrie datele uneia dintre zile pentru acel participant.</p>
     </div>
 
-    <div class="card u2 lockhide">
+    <div class="card u2 lockhide" id="card-sync">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-live"></use></svg>Clasament live pe alte telefoane</div>
       <p class="hint" style="margin:0 0 10px;">Setează un cod de cameră și o cheie de scriere (o dată, pe telefonul organizatorului). De fiecare dată când cântărești, datele urcă automat în cloud. Trimite apoi linkul de mai jos celorlalți — ei văd clasamentul live, fără să poată modifica nimic.</p>
       <label class="f">Cod cameră</label>
@@ -2667,7 +2667,12 @@
     showView(view);
     if(elId) setTimeout(function(){
       var el=document.getElementById(elId);
-      if(el) el.scrollIntoView({block:"start", behavior:"smooth"});
+      if(!el) return;
+      /* Cardul căutat poate sta după o ușă închisă din „Contul meu". Atunci se deschide
+         ușa lui — altfel saltul aterizează pe un card ascuns, adică nicăieri. */
+      var usa=(el.className.match(/\bu[123]\b/)||[])[0];
+      if(usa) usaSet(usa);
+      el.scrollIntoView({block:"start", behavior:"smooth"});
     }, 60);
   }
   // „Adu varianta nouă" reîncarcă index.html, dar sezon.html și concursuri.html sunt
@@ -2693,7 +2698,7 @@
     // ca ochiul să nu caute printr-un bloc de nouă dale la fel de grele.
     var org=[
       ["Desfășurare și rezultate", [
-        ["timer","Cronometru","meniuGo('set','card-cronometru')"],
+        ["timer","Cronometru","meniuGo('cal','card-cronometru')"],
         ["chart","Statistici","meniuGo('rank','pliant-stat',statisticiDinMeniu)"],
         ["medal","Sezon","meniuLink('sezon.html')"]
       ]],

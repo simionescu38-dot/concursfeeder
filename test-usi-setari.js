@@ -168,4 +168,26 @@ console.log("\n=== 7. Când se așază ===");
     /pliant-server|pliant-odata|pliant-necaz/.test(src), false);
 }
 
+/* ================================================================
+   8. Saltul din altă parte deschide ușa cardului căutat.
+
+   Banda de sincronizare din antet și dalele de pe Acasă sar direct la un card.
+   Dacă acela stă după o ușă închisă, saltul aterizează pe un card ascuns — adică
+   nicăieri, iar omul crede că butonul nu face nimic.
+   ================================================================ */
+console.log("\n=== 8. Saltul deschide ușa ===");
+{
+  t("meniuGo caută ușa cardului", /var usa=\(el\.className\.match\(\/\\bu\[123\]\\b\/\)\|\|\[\]\)\[0\];/.test(src), true);
+  t("…și o deschide înainte să sară", /if\(usa\) usaSet\(usa\);[\s\S]{0,120}scrollIntoView/.test(src), true);
+
+  /* Două ținte care lipseau de mult, găsite tocmai fiindcă ușile le-au făcut vizibile. */
+  t("banda de sincronizare are unde să sară", /id="card-sync"/.test(src), true);
+  t("…iar ținta ei e cardul cu codul camerei",
+    /id="card-sync">(?:\s*\r?\n)?\s*<div class="sec-title">[\s\S]{0,120}Clasament live pe alte telefoane/.test(src), true);
+  /* Cronometrul stă în Calendar, nu în Contul meu: dala trimitea în alt ecran. */
+  t("dala Cronometru duce în ecranul unde chiar e cronometrul",
+    /meniuGo\('cal','card-cronometru'\)/.test(src), true);
+  t("…și nu mai duce în Contul meu", /meniuGo\('set','card-cronometru'\)/.test(src), false);
+}
+
 t.raport();
