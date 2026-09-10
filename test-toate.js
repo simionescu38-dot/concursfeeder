@@ -15,6 +15,7 @@ const TESTE = [
   ["Reparații drum de concurs", "test-reparatii.js"],
   ["Banda de sincronizare", "test-banda-sync.js"],
   ["Contopirea stării", "test-contopire-stare.js"],
+  ["Cheile camerei", "test-chei-camera.js"],
   ["Tandem în sezon", "test-tandem-sezon.js"],
   ["Standuri, după medie", "test-standuri-medie.js"],
   ["Concursuri live acum", "test-live-acum.js"],

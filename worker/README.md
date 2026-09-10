@@ -30,6 +30,56 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
    - Variable `VAPID_PUBLIC_KEY` — cheia publică (base64url). Aceeași valoare trebuie copiată și în `index.html`, la constanta `VAPID_PUBLIC_KEY`.
 4. **Backup arhive în git (opțional, dar recomandat)** — Settings → Variables and Secrets → Add → tip „Secret", nume `GITHUB_TOKEN`. Valoare: un token GitHub *fine-grained* (Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token), cu acces **doar** la repo-ul `concursfeeder` și permisiunea **Contents: Read and write**. Fără acest secret, arhivarea funcționează normal, doar că sare peste pasul de backup în git (rămâne doar în D1, ca înainte).
 
+## Concursuri ale altor cluburi — trei trepte de cheie
+
+Serverul avea o singură cheie de scriere (`WRITE_KEY`), aceeași pentru toate camerele:
+cine o avea putea scrie oriunde, putea publica în arhiva de sezon și putea modera
+calendarul. Bun cât timp organizatorul era unul singur.
+
+Acum fiecare cameră are cheile ei:
+
+| treaptă | cheia | ce poate |
+|---|---|---|
+| **administrator** | `WRITE_KEY` (secretul serverului) | tot, în orice cameră; invitații; ștergere din arhivă |
+| **organizator** | `ownerKey`, dată la facerea camerei | tot, dar **numai în camera lui** |
+| **arbitru** | `refKey`, dată la facerea camerei | **numai cifrele cântarului**, în camera lui |
+
+În bază se ține amprenta SHA-256 a cheii, nu cheia. Cheile se arată **o singură dată**,
+în răspunsul de la facerea camerei.
+
+**Camerele făcute înainte** n-au rând în `room_keys`. Pentru ele merge mai departe doar
+`WRITE_KEY`, exact ca până acum — nicio zi de concurs în desfășurare nu se strică.
+
+### Ce poate arbitrul, mai exact
+
+Scrierea lui nu se respinge **niciodată** — s-ar pierde cântăriri făcute la baltă. În
+schimb se ia din ea doar ce are voie să schimbe: se pleacă de la starea de pe server și
+se pun peste ea cifrele lui (`CAMPURI_CANTAR` din `index.js`: capturi, pești extra, orele
+și pozele lor, cel mai mare pește, „lampă/absent"). Standul și sectorul **nu** sunt în
+listă: alea vin din tragerea la sorți.
+
+Poate și să **șteargă** o cântărire greșită — cerut explicit, e mai simplu la baltă decât
+să sune organizatorul.
+
+### Căi noi
+
+- `POST /api/room/create` — face o cameră cu cheile ei. Body: `{ invite, room?, club? }`.
+  Fără `x-write-key` cere o invitație valabilă; cu cheia serverului merge și fără.
+  Răspunde `{ ok, room, club, ownerKey, refKey }` — **singura dată** când se văd cheile.
+  O cameră care are deja stăpân nu poate fi luată a doua oară (`409 camera-are-stapan`).
+- `POST /api/room/refkey?room=<cod>` — schimbă cheia de arbitru (organizator sau
+  administrator). La baltă cheia stă pe ecran, în fața tuturor; de aceea se poate schimba.
+  Cea de organizator **nu** se schimbă de aici — ar fi calea prin care cineva ia camera altuia.
+- `GET|POST|DELETE /api/invites` — invitațiile cluburilor, **numai** cu cheia serverului.
+  `POST { club }` → `{ code }`. `DELETE ?code=` stinge invitația (`active=0`); nu se șterge,
+  iar camerele făcute cu ea rămân ale clubului.
+
+### La livrare
+
+Tabelele `room_keys` și `invites` sunt **noi**. Se rulează blocurile de la coada lui
+`schema.sql` în D1 → baza ta → Console. Sunt `CREATE TABLE IF NOT EXISTS`, deci nu ating
+nimic din ce există: nicio coloană adăugată la tabelele vechi, nimic șters.
+
 ## Legăturile stau în `wrangler.toml`, nu în panou
 
 `npx wrangler deploy` pune pe Worker **exact** legăturile scrise în `wrangler.toml` și le

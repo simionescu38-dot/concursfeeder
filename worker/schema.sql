@@ -60,3 +60,37 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_events_date ON events (event_date);
+
+/* ---------------------------------------------------------------------------
+   Concursuri ale altor cluburi (adăugat septembrie 2026)
+
+   Până acum serverul avea o singură cheie de scriere, aceeași pentru toate
+   camerele: cine o avea putea scrie oriunde. Ca să poată ține concurs și alt
+   club, fiecare cameră capătă cheile ei — una de organizator și una de arbitru.
+
+   Blocurile de mai jos sunt NOI. Se rulează pe o bază care există deja fără
+   nicio grijă: `IF NOT EXISTS` nu atinge nimic din ce e acolo, iar tabelele
+   vechi rămân neschimbate (nicio coloană adăugată, nimic șters).
+   --------------------------------------------------------------------------- */
+
+/* Cheile unei camere. Se ține hash-ul (SHA-256), nu cheia — dacă cineva ajunge
+   la baza de date, tot nu poate scrie în camere. */
+CREATE TABLE IF NOT EXISTS room_keys (
+  room       TEXT PRIMARY KEY,
+  owner_key  TEXT NOT NULL,
+  ref_key    TEXT NOT NULL,
+  club       TEXT,
+  invite     TEXT,
+  created_at TEXT NOT NULL
+);
+
+/* Codurile date cluburilor. Unul pe club, nu unul pe concurs: clubul îl
+   folosește de câte ori vrea, până i se stinge. */
+CREATE TABLE IF NOT EXISTS invites (
+  code       TEXT PRIMARY KEY,
+  club       TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  active     INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_room_keys_club ON room_keys (club);
