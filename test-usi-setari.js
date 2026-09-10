@@ -184,10 +184,13 @@ console.log("\n=== 8. Saltul deschide ușa ===");
   t("banda de sincronizare are unde să sară", /id="card-sync"/.test(src), true);
   t("…iar ținta ei e cardul cu codul camerei",
     /id="card-sync">(?:\s*\r?\n)?\s*<div class="sec-title">[\s\S]{0,120}Clasament live pe alte telefoane/.test(src), true);
-  /* Cronometrul stă în Calendar, nu în Contul meu: dala trimitea în alt ecran. */
-  t("dala Cronometru duce în ecranul unde chiar e cronometrul",
-    /meniuGo\('cal','card-cronometru'\)/.test(src), true);
-  t("…și nu mai duce în Contul meu", /meniuGo\('set','card-cronometru'\)/.test(src), false);
+  /* Cronometrul stă în Calendar, nu în Contul meu — dala de pe Acasă trimitea în alt
+     ecran. A ieșit cu totul odată cu „ce urmează": butonul panoului pornește și oprește
+     manșa, iar același drum în două locuri pe același ecran nu ajută pe nimeni. */
+  t("dala nu mai trimite în Contul meu", /meniuGo\('set','card-cronometru'\)/.test(src), false);
+  t("nici nu mai există ca dală", /"Cronometru","meniuGo/.test(src), false);
+  t("dar cardul cronometrului e la locul lui, în Calendar",
+    /id="view-cal"[\s\S]*?id="card-cronometru"/.test(src), true);
 }
 
 t.raport();

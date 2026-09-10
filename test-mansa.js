@@ -182,11 +182,18 @@ console.log("\n=== 7. Ceasul spune aceeași vorbă peste tot ===");
 console.log("\n=== 8. Panoul: un singur buton, și niciunul pentru privitori ===");
 {
   const panou = grabFunction(src, "statusLiveHtml");
-  t("butonul de oprire apare doar cât e manșa în desfășurare",
-    /stare==="live"\s*\)?\s*\n?\s*\?\s*'<button[^']*opresteMansa/.test(panou), true);
-  t("altfel apare cel de pornire", /:\s*'<button[^']*pornesteMansa/.test(panou), true);
-  t("amândouă stau sub lacăt", /if\s*\(\s*!isLocked\(\)\s*\)/.test(panou), true);
-  t("nu sunt două butoane deodată", (panou.match(/class="sl-act"/g) || []).length, 2);
+  /* Butonul nu mai e ales în panou: panoul îl cere de la `pasulUrmator`, care știe toată
+     ziua, nu doar ceasul. Ce se verifică aici e că panoul chiar întreabă, și că rămâne
+     un singur buton, ascuns de lacăt. Ce anume spune butonul se probează în
+     test-ce-urmeaza.js, rulând socoteala pe stări adevărate. */
+  t("panoul cere pasul următor, nu-l alege el", /pasulUrmator\(\)/.test(panou), true);
+  t("butonul face ce spune pasul", /onclick="'\+pas\.a\+'"/.test(panou), true);
+  t("stă sub lacăt", /if\(!isLocked\(\)\)/.test(panou), true);
+  /* Două locuri în care se desenează butonul: ecranul gol și panoul obișnuit. Niciodată
+     amândouă deodată — ecranul gol se întoarce din funcție înainte. */
+  t("un singur buton pe ecran", (panou.match(/class="sl-act"/g) || []).length, 2);
+  t("…iar ecranul gol se întoarce înainte să ajungă la celălalt",
+    panou.indexOf("if(!state.participants.length)") < panou.indexOf("var mi=state.manche"), true);
 }
 
 /* ---------- 9. Regresia care ar rupe butonul ---------- */
@@ -249,7 +256,18 @@ function concurs(oameni, o) {
     grabFunction(src, "absentLaMansa"), grabFunction(src, "totalOf"),
     grabFunction(src, "cateCapturi"), grabFunction(src, "stareaMansei"), grabFunction(src, "leaderId"),
     grabFunction(src, "castigatoriPeSectoare"), grabFunction(src, "celMaiMarePeste"),
-    grabFunction(src, "rezumatMansei"), grabFunction(src, "semnaturaStatus")
+    grabFunction(src, "rezumatMansei"), grabFunction(src, "semnaturaStatus"),
+    /* Semnătura ține minte și pasul următor, altfel panoul rămâne cu butonul vechi după
+       tragerea la sorți. Deci pasul, cu tot ce ține de el, intră și aici — adevărat,
+       nu pus la bătaie cu mâna. */
+    grabFunction(src, "pasulUrmator"), grabFunction(src, "arbGata"),
+    grabFunction(src, "stareaLaMansa"), grabFunction(src, "standOfM"),
+    grabFunction(src, "sectorOfM"), grabFunction(src, "mOf"), grabFunction(src, "numManse"),
+    grabFunction(src, "cantOfM"), grabFunction(src, "extraOfM"), grabFunction(src, "totalOfM"),
+    grabFunction(src, "num"),
+    /var STARI_MANSA=\{[^}]*\};/.exec(src)[0],
+    "function ensureManche(){} function manseRange(){ return [1,2,3]; }",
+    "var arbitruMode=false, arbitruSector='';"
   ].join("\n"), ctx);
   // [nume, sector, stand, kg, pesteExtra?]
   ctx.state.participants = oameni.map(function (om, i) {
@@ -368,7 +386,11 @@ console.log("\n=== 15. Semnătura prinde și rezumatul ===");
   // cât manșa e în desfășurare, semnătura n-are de ce să care sectoarele
   const viu = concurs([["Ana", "A", "1", 5.0]], { acum: 1500 });   // între startAt și endAt
   t("manșa e în desfășurare", viu.ruleaza("stareaMansei()"), "live");
-  t("…iar semnătura rămâne scurtă", viu.ruleaza("semnaturaStatus()").split("|").length, 7);
+  /* Opt bucăți, nu șapte: pasul următor a intrat în semnătură, ca panoul să nu rămână
+     cu butonul vechi după tragerea la sorți. Sectoarele tot nu se cară cât e manșa vie. */
+  t("…iar semnătura rămâne scurtă", viu.ruleaza("semnaturaStatus()").split("|").length, 8);
+  t("…și poartă pasul următor",
+    viu.ruleaza("semnaturaStatus()").split("|").pop(), viu.ruleaza("pasulUrmator().t"));
 }
 
 console.log("\n=== 16. Rezumatul folosește aceeași clasare ca ecranul și PDF-ul ===");
