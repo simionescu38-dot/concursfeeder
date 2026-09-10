@@ -74,6 +74,9 @@ function pornire(pescari, optiuni) {
     blocat: !!o.blocat, intrebat: [], raspunsLaConfirm: o.confirma !== false,
     toasturi: [], salvat: 0, copii: [], ecrane: [], magaziaStearsa: 0, cereri: [],
     syncKey: o.cheie === undefined ? "cheia" : o.cheie,
+    /* Codul camerei pleacă odată cu poza: serverul are nevoie de el ca să știe a cui e
+       cheia — a organizatorului sau a unui arbitru. */
+    syncRoom: o.camera === undefined ? "cupa" : o.camera,
     API_BASE: "https://api.test",
     PRAG_KG: +/var PRAG_KG=(\d+)/.exec(src)[1],
     STARI: {}, pozaDeschisa: null, pozePrimite: [],
@@ -307,7 +310,9 @@ function pune(c, randuri) {
     const c = pornire(LOT);
     const r = await vm.runInContext("citesteCantarul(null)", c);
     t("întoarce cifra citită", [r.kg, r.sigur, r.stare], [12.34, true, "citit"]);
-    t("pleacă spre worker-ul lui", /\/api\/citeste-cantar$/.test(c.cereri[0].u), true);
+    t("pleacă spre worker-ul lui", /\/api\/citeste-cantar\?/.test(c.cereri[0].u), true);
+    t("…cu codul camerei, ca serverul să știe a cui e cheia",
+      /[?&]room=cupa(&|$)/.test(c.cereri[0].u), true);
     t("cu cheia de scriere în antet", c.cereri[0].cfg.headers["x-write-key"], "cheia");
     /* Poza de telefon are 3-12 MB. Pe 4G, la baltă, nu se urcă așa ceva de 17 ori. */
     t("poza pleacă micșorată", /pozaMicsorata\(blob\)/.test(H.grabFunction(src, "citesteCantarul")), true);
@@ -525,7 +530,7 @@ function pune(c, randuri) {
     t("service worker-ul păstrează legenda", /form\.get\("title"\)[\s\S]{0,40}form\.get\("text"\)/.test(swSrc), true);
     t("…sub o adresă recunoscută de aplicație", /legenda-primita/.test(swSrc), true);
     t("aplicația o caută acolo", /indexOf\("legenda"\)/.test(src), true);
-    t("versiunea a fost urcată", /concurs-pescuit-v177/.test(swSrc), true);
+    t("versiunea a fost urcată", /concurs-pescuit-v178/.test(swSrc), true);
     /* „Nu-mi apare aplicația la Distribuie." Nu e lămurit dacă Androidul duce mai departe
        interogarea din „action"; dacă n-o duce, POST-ul vine curat pe „./index.html". Se
        prinde orice POST către aplicație — altfel ar pleca spre GitHub Pages, care nu

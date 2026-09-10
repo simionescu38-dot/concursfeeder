@@ -107,13 +107,23 @@ console.log("\n=== 3. Bara de ieșire din antet ===");
 console.log("\n=== 4. Ordinea la pornire ===");
 {
   // „?room=" din adresă bate camera ținută minte: dacă cineva primește linkul
-  // altui concurs, trebuie să ajungă acolo, nu în camera de ieri
-  const init = src.slice(src.indexOf("var roomParam="), src.indexOf("var roomParam=") + 400);
-  t("întâi se citește ?room= din adresă", init.indexOf("if(roomParam) startViewerMode") >= 0, true);
-  t("abia apoi camera ținută minte",
-    init.indexOf("shouldResumeViewer()") > init.indexOf("if(roomParam) startViewerMode"), true);
+  // altui concurs, trebuie să ajungă acolo, nu în camera de ieri.
+  // Iar linkul de ARBITRU le bate pe amândouă: el aduce și cheia, deci nu e o
+  // vizualizare, e o intrare la lucru.
+  const init = src.slice(src.indexOf("var roomParam="), src.indexOf("var roomParam=") + 1400);
+  const dupa = (a, bb) => init.indexOf(bb) > init.indexOf(a) && init.indexOf(a) >= 0;
+
+  t("linkul de arbitru e citit primul", init.indexOf("if(roomParam && arbParam)") >= 0, true);
+  t("cheia lui nu rămâne în adresă",
+    /if\(roomParam && arbParam\)\{[\s\S]{0,200}history\.replaceState[\s\S]{0,120}intraCaArbitru/.test(init), true);
+  t("apoi arbitrul care se întoarce a doua zi",
+    dupa("if(roomParam && arbParam)", "arbIncarcat()"), true);
+  t("apoi ?room= din adresă, ca vizualizare",
+    dupa("arbIncarcat()", "else if(roomParam) startViewerMode"), true);
+  t("apoi camera ținută minte",
+    dupa("else if(roomParam) startViewerMode", "shouldResumeViewer()"), true);
   t("iar dacă nu e niciuna, aplicația pornește normal",
-    init.indexOf("else loadAcasaRegional()") > init.indexOf("shouldResumeViewer()"), true);
+    dupa("shouldResumeViewer()", "else loadAcasaRegional()"), true);
 }
 
 /* ================================================================
