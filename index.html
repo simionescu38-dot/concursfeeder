@@ -6650,7 +6650,11 @@
       return {t:"Publică rezultatul", a:"meniuGo('rank','card-final')"};
     }
     if(stare === "live") return {t:"🏁 Gata, s-a terminat manșa", a:"opresteMansa()"};
-    if(!state.startAt || stare === "neinceputa") return {t:"▶️ Pornește manșa "+mi, a:"pornesteMansa()"};
+    /* Ceasul rămas de la altă manșă e ca și cum n-ar fi: manșa asta n-a pornit încă.
+       Concursurile de dinainte n-au însemnul, iar acolo rămâne purtarea veche. */
+    var ceasStrain = state.mansaCeas && state.mansaCeas !== mi;
+    if(!state.startAt || stare === "neinceputa" || ceasStrain)
+      return {t:"▶️ Pornește manșa "+mi, a:"pornesteMansa()"};
     return {t:"Cântărește · "+gata+" din "+P.length, a:"showView('cantar')"};
   }
   /* Tragerea la sorți se trece dintr-o poză sau dintr-un mesaj lipit — sertarul ei stă pe
@@ -6844,6 +6848,10 @@
     state.durataMin=min;
     state.startAt=now;
     state.endAt=now+min*60000;
+    /* Ceasul e al manșei ăsteia. La „Treci la manșa 2", orele rămân cele ale manșei 1 —
+       demult trecute — și fără însemnul ăsta socoteala ar crede că și manșa 2 s-a
+       terminat, cerând cântărirea în loc de pornire. */
+    state.mansaCeas=mi;
     // queueSave, nu save: ora trebuie să ajungă și pe telefoanele care privesc camera,
     // altfel doar organizatorul vede cât mai e
     queueSave();

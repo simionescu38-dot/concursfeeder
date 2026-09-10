@@ -115,6 +115,40 @@ console.log("\n=== 2. De ce se întreabă tragerea la sorți întâi ===");
 }
 
 /* ================================================================
+   2b. Ceasul e al unei manșe anume.
+
+   `startAt`/`endAt` sunt ale manșei care rulează. După „Treci la manșa 2" ele rămân
+   cele ale manșei 1 — deci ora e demult trecută. Fără să știm A CUI e ceasul, socoteala
+   crede că manșa 2 s-a și terminat, și cere cântărirea în loc de pornire.
+   ================================================================ */
+console.log("\n=== 2b. Ceasul e al manșei lui ===");
+{
+  const dupaSchimbare = {
+    name: "Cupa", numManse: 2, manche: 2,
+    mansaCeas: 1,                       // ceasul e al manșei 1, care s-a terminat
+    startAt: ACUM - 5 * ORA, endAt: ACUM - ORA,
+    participants: [pescar("a", "1", [], null, 2), pescar("b", "2", [], null, 2)],
+  };
+  t("după trecerea la manșa 2, se pornește manșa 2",
+    pasul(dupaSchimbare).t, "▶️ Pornește manșa 2");
+
+  /* Iar cazul adevărat de la manșa 1 nu se strică: s-a strigat stop, pescarii vin cu
+     juvelnicele, încă n-a cântărit nimeni — atunci se cântărește, nu se repornește. */
+  t("ceasul manșei de acum, scurs, cere cântărire",
+    pasul({ name: "Cupa", numManse: 2, manche: 1, mansaCeas: 1,
+            startAt: ACUM - 5 * ORA, endAt: ACUM - ORA,
+            participants: [pescar("a", "1"), pescar("b", "2")] }).t,
+    "Cântărește · 0 din 2");
+
+  /* Concursurile de dinainte n-au câmpul ăsta: acolo rămâne purtarea veche. */
+  t("fără însemnul ceasului, purtarea rămâne cea de dinainte",
+    pasul({ name: "Cupa", numManse: 2, manche: 2,
+            startAt: ACUM - 5 * ORA, endAt: ACUM - ORA,
+            participants: [pescar("a", "1", [], null, 2), pescar("b", "2", [], null, 2)] }).t,
+    "Cântărește · 0 din 2");
+}
+
+/* ================================================================
    3. Ce înseamnă „lămurit" la numărătoare.
    ================================================================ */
 console.log("\n=== 3. Cine intră în numărătoare ===");
