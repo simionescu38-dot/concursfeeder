@@ -30,6 +30,20 @@ Acest folder e doar sursa de referință — Worker-ul `concurs-api` e administr
    - Variable `VAPID_PUBLIC_KEY` — cheia publică (base64url). Aceeași valoare trebuie copiată și în `index.html`, la constanta `VAPID_PUBLIC_KEY`.
 4. **Backup arhive în git (opțional, dar recomandat)** — Settings → Variables and Secrets → Add → tip „Secret", nume `GITHUB_TOKEN`. Valoare: un token GitHub *fine-grained* (Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token), cu acces **doar** la repo-ul `concursfeeder` și permisiunea **Contents: Read and write**. Fără acest secret, arhivarea funcționează normal, doar că sare peste pasul de backup în git (rămâne doar în D1, ca înainte).
 
+## Legăturile stau în `wrangler.toml`, nu în panou
+
+`npx wrangler deploy` pune pe Worker **exact** legăturile scrise în `wrangler.toml` și le
+scoate pe cele adăugate doar din panoul Cloudflare. Așa s-a pierdut o dată modelul care
+citește cântarul din poză: `env.AI` era pus de mână din browser, iar prima livrare făcută
+cu `wrangler` l-a șters, fără ca ceva să pară stricat — aplicația spunea doar „scrie tu".
+
+De aceea toate legăturile de care are nevoie codul stau acum în `wrangler.toml`: `DB`
+(baza D1) și `AI` (modelul). Ce se adaugă pe viitor în panou trebuie scris și acolo,
+altfel dispare la următoarea livrare.
+
+**Secretele nu se pierd.** `WRITE_KEY`, `VAPID_PRIVATE_JWK` și `GITHUB_TOKEN` sunt ținute
+separat de Cloudflare; o livrare nu le atinge.
+
 ## Notă: proiectul „concursiasi"
 
 Când ai adăugat acest folder `worker/` la repo, Cloudflare a creat automat un proiect separat numit `concursiasi`, conectat prin Git la acest repo — de-aia pică build-ul lui (nu are D1/secrete configurate și nu e nevoie de el). E un duplicat neintenționat: poți să-l ștergi din Cloudflare Dashboard → Workers & Pages → `concursiasi` → Settings → Delete. Worker-ul real folosit de aplicație rămâne `concurs-api`, neschimbat.
