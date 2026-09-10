@@ -379,8 +379,15 @@ console.log("\n=== 8. Ecranul e legat cum trebuie ===");
 {
   t("există ecranul", /<section class="view" id="view-pescari">/.test(src), true);
   t("se ajunge la el dintr-un buton", /onclick="showView\('pescari'\)"/.test(src), true);
-  t("butonul stă în «Setat o dată, și gata»",
-    src.indexOf('id="pliant-odata"') < src.indexOf("showView('pescari')") &&
+  /* Baza de pescari se pregătește ÎNAINTE de concurs, deci stă după ușa „Concursul" (u1),
+     nu printre setările telefonului. Semnul ușii se caută pe cardul ei, nu pe un reper
+     din jur: altfel proba ar trece și dacă reperul dispare (indexOf întoarce -1, care e
+     mai mic decât orice — exact cum a trecut degeaba când sertarele au fost desființate). */
+  const cardBaza = src.slice(src.lastIndexOf('<div class="card', src.indexOf('<div class="sec-title">Baza de pescari')),
+                             src.indexOf("showView('pescari')"));
+  t("cardul bazei poartă semnul primei uși", /^<div class="card u1"/.test(cardBaza), true);
+  t("butonul spre ea e chiar în cardul acela", cardBaza.length > 0 && cardBaza.length < 1200, true);
+  t("…iar ecranul bazei vine după el",
     src.indexOf("showView('pescari')") < src.indexOf('id="view-pescari"'), true);
   t("butonul spune ce face", /Deschide baza de pescari<\/button>/.test(src), true);
   t("are drum înapoi", /id="view-pescari">[\s\S]{0,200}showView\('set'\)/.test(src), true);
