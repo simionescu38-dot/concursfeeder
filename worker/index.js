@@ -627,6 +627,16 @@ export default {
       const are = await env.DB.prepare("SELECT room FROM room_keys WHERE room=?").bind(cod).first();
       if (are) return json({ ok: false, error: "camera-are-stapan" }, 409);
 
+      /* Nici camerele DINAINTE de chei nu se pot lua. Ele n-au rând în room_keys —
+         printre ele sunt concursurile ligii, care merg pe cheia serverului. Fără
+         verificarea asta, un club invitat ar putea cere camera „feedermoldova" și
+         ar deveni organizatorul unui concurs în desfășurare. Administratorul poate,
+         fiindcă el le are oricum pe toate. */
+      if (!esteAdmin) {
+        const veche = await env.DB.prepare("SELECT code FROM rooms WHERE code=?").bind(cod).first();
+        if (veche) return json({ ok: false, error: "camera-exista" }, 409);
+      }
+
       const cheieOrganizator = cheieNoua(12);
       const cheieArbitru = cheieNoua(8);
       await env.DB.prepare(
