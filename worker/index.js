@@ -393,6 +393,89 @@ function contopesteStarea(dinBaza, venit, sterse) {
   return venit;
 }
 
+/* ===========================================================================
+   Cine are voie să scrie — trei trepte
+
+   Până acum serverul avea o singură cheie: cine o avea putea scrie în ORICE
+   cameră, putea publica în arhiva de sezon și putea modera calendarul. Bun cât
+   timp organizatorul era unul singur. Ca să poată ține concurs și alt club,
+   fiecare cameră capătă cheile ei.
+
+     admin        cheia serverului (WRITE_KEY). Poate tot, oriunde.
+     organizator  cheia camerei lui. Poate tot, dar NUMAI în camera lui.
+     arbitru      cheia de arbitru a camerei. Poate schimba DOAR cifrele
+                  cântarului — nu standurile, nu sectoarele, nu participanții.
+
+   Camerele făcute înainte de schimbarea asta n-au rând în `room_keys`. Pentru
+   ele merge mai departe doar cheia serverului, exact ca până acum: nicio zi de
+   concurs în desfășurare nu se strică.
+   =========================================================================== */
+
+async function amprenta(cheie) {
+  const b = new TextEncoder().encode(cheie);
+  const h = await crypto.subtle.digest("SHA-256", b);
+  return Array.from(new Uint8Array(h)).map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+/* În bază se ține amprenta, nu cheia. Dacă cineva ajunge vreodată la baza de
+   date, tot nu poate scrie în camerele nimănui. */
+async function cinePoate(env, req, room) {
+  const cheie = (req.headers.get("x-write-key") || "").trim();
+  if (!cheie) return null;
+  if (env.WRITE_KEY && cheie === env.WRITE_KEY) return "admin";
+  if (!room) return null;
+  const row = await env.DB.prepare("SELECT owner_key, ref_key FROM room_keys WHERE room=?")
+    .bind(room).first();
+  if (!row) return null;
+  const a = await amprenta(cheie);
+  if (a === row.owner_key) return "organizator";
+  if (a === row.ref_key) return "arbitru";
+  return null;
+}
+
+/* Cheile se citesc cu ochiul de pe ecran și se bat cu degetul ud, deci fără
+   caractere care se confundă: 0/O, 1/l/I. */
+const ALFABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+function cheieNoua(n) {
+  const b = new Uint8Array(n);
+  crypto.getRandomValues(b);
+  return Array.from(b).map((x) => ALFABET[x % ALFABET.length]).join("");
+}
+
+/* Ce are voie arbitrul să schimbe într-o manșă. Standul și sectorul NU sunt
+   aici: alea vin din tragerea la sorți, adică de la organizator. */
+const CAMPURI_CANTAR = [
+  "catches", "catchTimes", "catchPhotos", "catchIds",
+  "extras", "extraTimes", "extraPhotos", "extraIds",
+  "cmmc", "stare",
+];
+
+/* Scrierea unui arbitru nu se respinge niciodată — s-ar pierde cântăriri făcute
+   la baltă, ceea ce e mai rău decât orice. În schimb se ia din ea DOAR ce are
+   voie să schimbe: se pleacă de la starea de pe server și se pun peste ea
+   cifrele lui. Dacă telefonul lui avea un nume vechi al concursului sau o
+   tragere la sorți depășită, ele pur și simplu nu ajung nicăieri. */
+function doarCantaririle(dinBaza, venit) {
+  if (!dinBaza || !Array.isArray(dinBaza.participants)) return venit;
+  const noi = new Map(
+    (Array.isArray(venit && venit.participants) ? venit.participants : [])
+      .map((p) => [p && p.id, p])
+  );
+  const rez = JSON.parse(JSON.stringify(dinBaza));
+  for (const p of rez.participants) {
+    const n = noi.get(p && p.id);
+    if (!n || !n.m || !p.m) continue;
+    for (const mi of Object.keys(p.m)) {
+      const aici = p.m[mi], deLaArbitru = n.m[mi];
+      if (!aici || !deLaArbitru) continue;
+      for (const c of CAMPURI_CANTAR) {
+        if (Object.prototype.hasOwnProperty.call(deLaArbitru, c)) aici[c] = deLaArbitru[c];
+      }
+    }
+  }
+  return rez;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
@@ -407,7 +490,9 @@ export default {
        fără internet. Când drumul ăsta nu răspunde — semnal prost, model căzut, binding
        nepus — telefonul lasă căsuța goală și omul scrie de mână, exact ca până acum. */
     if (url.pathname === "/api/citeste-cantar" && req.method === "POST") {
-      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+      /* Arbitrul cântărește din poză, deci are voie aici. */
+      const nivelCantar = await cinePoate(env, req, (url.searchParams.get("room") || "").trim().toLowerCase());
+      if (!nivelCantar)
         return json({ ok: false, error: "forbidden" }, 403);
       if (!env.AI) return json({ ok: false, error: "fara-ai" }, 501);
 
@@ -454,7 +539,9 @@ export default {
        în concurs: telefonul scrie lista în căsuța de text, ca omul s-o vadă și s-o dreagă
        înainte de „Verifică". Un stand citit greșit e mai rău decât unul netrecut. */
     if (url.pathname === "/api/citeste-tragerea" && req.method === "POST") {
-      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+      /* Tragerea la sorți nu e treaba arbitrului. */
+      const nivelTragere = await cinePoate(env, req, (url.searchParams.get("room") || "").trim().toLowerCase());
+      if (nivelTragere !== "admin" && nivelTragere !== "organizator")
         return json({ ok: false, error: "forbidden" }, 403);
       if (!env.AI) return json({ ok: false, error: "fara-ai" }, 501);
 
@@ -509,6 +596,100 @@ export default {
       return json({ ok: true, randuri, brut: text.slice(0, 300) });
     }
 
+    /* ---------- camere ale altor cluburi ----------
+       Clubul primește de la administrator un cod de invitație. Cu el își face
+       camerele lui, oricâte, iar serverul îi dă pentru fiecare două chei:
+       una de organizator și una de arbitru. Cheile se arată O SINGURĂ DATĂ, la
+       facere — în bază rămân doar amprentele lor. Dacă se pierd, se face alta
+       (arbitrului) sau altă cameră (organizatorului). */
+    if (url.pathname === "/api/room/create" && req.method === "POST") {
+      let body;
+      try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+
+      const esteAdmin = !!env.WRITE_KEY && (req.headers.get("x-write-key") || "") === env.WRITE_KEY;
+      const invite = (body && body.invite || "").toString().trim().toUpperCase();
+      let club = (body && body.club || "").toString().trim().slice(0, 120);
+
+      if (!esteAdmin) {
+        if (!invite) return json({ ok: false, error: "fara-invitatie" }, 403);
+        const inv = await env.DB.prepare("SELECT club, active FROM invites WHERE code=?")
+          .bind(invite).first();
+        if (!inv || !inv.active) return json({ ok: false, error: "invitatie-nevalabila" }, 403);
+        club = inv.club;   // numele clubului vine din invitație, nu de la telefon
+      }
+
+      const cod = (body && body.room || "").toString().trim().toLowerCase()
+        .replace(/[^a-z0-9\-]/g, "").slice(0, 40) || cheieNoua(8).toLowerCase();
+
+      /* O cameră cu chei nu se poate lua în stăpânire a doua oară. Fără regula
+         asta, cine ghicește codul unei camere în desfășurare și-ar putea face
+         chei noi peste ea. */
+      const are = await env.DB.prepare("SELECT room FROM room_keys WHERE room=?").bind(cod).first();
+      if (are) return json({ ok: false, error: "camera-are-stapan" }, 409);
+
+      const cheieOrganizator = cheieNoua(12);
+      const cheieArbitru = cheieNoua(8);
+      await env.DB.prepare(
+        "INSERT INTO room_keys (room,owner_key,ref_key,club,invite,created_at) VALUES (?,?,?,?,?,?)"
+      ).bind(cod, await amprenta(cheieOrganizator), await amprenta(cheieArbitru),
+             club || null, invite || null, new Date().toISOString()).run();
+
+      return json({ ok: true, room: cod, club: club || null,
+                    ownerKey: cheieOrganizator, refKey: cheieArbitru });
+    }
+
+    /* Cheia de arbitru se schimbă când a văzut-o cine nu trebuia: la baltă e
+       ținută pe ecran, în fața tuturor. Cea de organizator NU se schimbă de
+       aici — ar fi calea prin care cineva ia camera altuia. */
+    if (url.pathname === "/api/room/refkey" && req.method === "POST") {
+      const room = (url.searchParams.get("room") || "").trim().toLowerCase();
+      if (!room) return json({ ok: false, error: "missing room" }, 400);
+      const nivelR = await cinePoate(env, req, room);
+      if (nivelR !== "admin" && nivelR !== "organizator")
+        return json({ ok: false, error: "forbidden" }, 403);
+      const are = await env.DB.prepare("SELECT room FROM room_keys WHERE room=?").bind(room).first();
+      if (!are) return json({ ok: false, error: "camera fara chei" }, 404);
+      const cheieArbitru = cheieNoua(8);
+      await env.DB.prepare("UPDATE room_keys SET ref_key=? WHERE room=?")
+        .bind(await amprenta(cheieArbitru), room).run();
+      return json({ ok: true, room, refKey: cheieArbitru });
+    }
+
+    /* ---------- invitațiile cluburilor (numai administratorul) ---------- */
+    if (url.pathname === "/api/invites") {
+      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+        return json({ ok: false, error: "forbidden" }, 403);
+
+      if (req.method === "GET") {
+        const rs = await env.DB.prepare(
+          "SELECT code, club, created_at, active FROM invites ORDER BY created_at DESC LIMIT 200"
+        ).all();
+        return json({ ok: true, invites: rs.results || [] });
+      }
+
+      if (req.method === "POST") {
+        let body;
+        try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
+        const club = (body && body.club || "").toString().trim().slice(0, 120);
+        if (!club) return json({ ok: false, error: "fara-club" }, 400);
+        const code = cheieNoua(10);
+        await env.DB.prepare("INSERT INTO invites (code,club,created_at,active) VALUES (?,?,?,1)")
+          .bind(code, club, new Date().toISOString()).run();
+        return json({ ok: true, code, club });
+      }
+
+      /* Nu se șterge, se stinge: camerele făcute cu ea rămân ale clubului, iar
+         în bază rămâne scris cui i s-a dat și când. */
+      if (req.method === "DELETE") {
+        const code = (url.searchParams.get("code") || "").trim().toUpperCase();
+        if (!code) return json({ ok: false, error: "missing code" }, 400);
+        await env.DB.prepare("UPDATE invites SET active=0 WHERE code=?").bind(code).run();
+        return json({ ok: true, code, active: 0 });
+      }
+
+      return json({ ok: false, error: "method" }, 405);
+    }
+
     if (url.pathname === "/api/state") {
       const room = (url.searchParams.get("room") || "").trim().toLowerCase();
       if (!room) return json({ ok: false, error: "missing room" }, 400);
@@ -520,13 +701,13 @@ export default {
       }
 
       if (req.method === "PUT") {
-        if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+        const nivel = await cinePoate(env, req, room);
+        if (!nivel)
           return json({ ok: false, error: "forbidden" }, 403);
         let body;
         try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
-        const data = body && body.data;
+        let data = body && body.data;
         if (!data || typeof data !== "object") return json({ ok: false, error: "no data" }, 400);
-        const name = (data.name || "").toString().slice(0, 200);
         const now = new Date().toISOString();
 
         const prevRow = await env.DB.prepare("SELECT data, rev FROM rooms WHERE code=?").bind(room).first();
@@ -539,6 +720,19 @@ export default {
             contopesteStarea(JSON.parse(prevRow.data), data, body && body.sterse);
           } catch (e) { /* o stare veche stricată nu trebuie să blocheze scrierea */ }
         }
+        /* Arbitrul scrie DUPĂ contopire, ca doi arbitri care cântăresc în același
+           minut să nu se șteargă — și abia apoi i se ia din scriere doar ce are
+           voie să schimbe. Ordinea contează: invers, contopirea ar aduce înapoi
+           cifrele vechi peste ce tocmai a șters el. */
+        if (nivel === "arbitru") {
+          if (!prevRow) return json({ ok: false, error: "camera nu există" }, 404);
+          try {
+            data = doarCantaririle(JSON.parse(prevRow.data), data);
+          } catch (e) {
+            return json({ ok: false, error: "stare stricată" }, 409);
+          }
+        }
+        const name = (data.name || "").toString().slice(0, 200);
         const prevLeader = prevRow ? computeLeader(JSON.parse(prevRow.data)) : null;
 
         if (prevRow) {
@@ -587,7 +781,8 @@ export default {
     }
 
     if (url.pathname === "/api/restore" && req.method === "POST") {
-      if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+      const nivelRestore = await cinePoate(env, req, (url.searchParams.get("room") || "").trim().toLowerCase());
+      if (nivelRestore !== "admin" && nivelRestore !== "organizator")
         return json({ ok: false, error: "forbidden" }, 403);
       const room = (url.searchParams.get("room") || "").trim().toLowerCase();
       const id = (url.searchParams.get("id") || "").trim();
@@ -621,7 +816,9 @@ export default {
 
     if (url.pathname === "/api/archive") {
       if (req.method === "POST") {
-        if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
+        /* Publicarea în sezon e a organizatorului, nu a arbitrului. */
+        const nivelArh = await cinePoate(env, req, (url.searchParams.get("room") || "").trim().toLowerCase());
+        if (nivelArh !== "admin" && nivelArh !== "organizator")
           return json({ ok: false, error: "forbidden" }, 403);
         let body;
         try { body = await req.json(); } catch (e) { return json({ ok: false, error: "bad json" }, 400); }
@@ -656,6 +853,8 @@ export default {
       }
 
       if (req.method === "DELETE") {
+        /* Ștergerea din arhivă rămâne numai a administratorului: arhivele sunt
+           ale ligii, nu ale unui concurs. */
         if ((req.headers.get("x-write-key") || "") !== env.WRITE_KEY)
           return json({ ok: false, error: "forbidden" }, 403);
         const id = (url.searchParams.get("id") || "").trim();
