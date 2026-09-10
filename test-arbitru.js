@@ -76,6 +76,7 @@ function pornire(o) {
     "iesDinArbitru", "arbTrage", "linkArbitru", "queueSync", "improspateazaCantariti",
   ].map((n) => H.grabFunction(src, n)).join("\n"), ctx);
   vm.runInContext('var ARB_KEY = "concurs-arbitru";', ctx);
+  vm.runInContext('var ARB_CHEIE_DINAINTE = "concurs-cheie-dinainte";', ctx);
   vm.runInContext(/var STARI_MANSA=\{[^}]*\};/.exec(src)[0], ctx);
   return ctx;
 }
@@ -213,6 +214,24 @@ console.log("\n=== 6. Iese când vrea ===");
   const nu = pornire({ cheie: "CHEIE8", confirma: false });
   vm.runInContext("arbSalveaza(); iesDinArbitru()", nu);
   t("dacă se răzgândește la întrebare, rămâne arbitru", vm.runInContext("esteArbitru()", nu), true);
+
+  /* Organizatorul scanează codul pe telefonul LUI, ca să vadă ce văd arbitrii. Fără
+     grija asta, cheia lui de scriere ar fi acoperită de cea de arbitru și ar rămâne așa:
+     la ieșire s-ar trezi fără ea, în mijlocul concursului, fără nimic care să-i spună
+     de ce. */
+  const lulu = pornire({ arbitru: false, cheie: "CHEIA-ORGANIZATORULUI", sector: "" });
+  vm.runInContext('intraCaArbitru("cupa", "CHEIE-ARB", "a")', lulu);
+  t("cât e arbitru, scrie cu cheia de arbitru", lulu.syncKey, "CHEIE-ARB");
+  t("cea veche e pusă deoparte, nu pierdută",
+    lulu.localStorage.getItem("concurs-cheie-dinainte"), "CHEIA-ORGANIZATORULUI");
+  vm.runInContext("iesDinArbitru()", lulu);
+  t("la ieșire îi vine cheia lui înapoi", lulu.syncKey, "CHEIA-ORGANIZATORULUI");
+  t("…și nu mai rămâne pusă deoparte",
+    lulu.localStorage.getItem("concurs-cheie-dinainte"), null);
+
+  const curat = pornire({ arbitru: false, cheie: "", sector: "" });
+  vm.runInContext('intraCaArbitru("cupa", "CHEIE-ARB", "a"); iesDinArbitru()', curat);
+  t("un telefon care n-avea cheie rămâne fără, la ieșire", curat.syncKey, "");
 }
 
 /* ================================================================

@@ -2422,6 +2422,7 @@
      Cheia nu se ține în adresă după intrare: ar rămâne în istoricul browserului și în
      linkul pe care l-ar da mai departe fără să vrea. */
   var ARB_KEY = "concurs-arbitru";
+  var ARB_CHEIE_DINAINTE = "concurs-cheie-dinainte";
   var arbitruMode = false, arbitruSector = "", arbNetrimis = false, arbPollT = null;
 
   function esteArbitru(){ return arbitruMode === true; }
@@ -2434,6 +2435,13 @@
   }
 
   function intraCaArbitru(room, cheie, sector){
+    /* Cheia de dinainte se pune deoparte. Dacă organizatorul scanează codul pe telefonul
+       LUI — ca să vadă ce văd arbitrii — cheia de scriere ar fi acoperită de cea de
+       arbitru și ar rămâne așa: la ieșire s-ar trezi fără ea, în mijlocul concursului,
+       cu nimic pe ecran care să-i spună de ce. */
+    if(cheie && !esteArbitru() && syncKey && syncKey!==cheie){
+      try{ localStorage.setItem(ARB_CHEIE_DINAINTE, syncKey); }catch(e){}
+    }
     saveSyncRoom(room);
     if(cheie) saveSyncKey(cheie);
     arbitruMode = true;
@@ -2454,7 +2462,11 @@
     clearInterval(arbPollT); arbPollT=null;
     arbitruMode=false; arbitruSector="";
     try{ localStorage.removeItem(ARB_KEY); }catch(e){}
-    saveSyncKey("");
+    /* Cheia lui de dinainte, dacă avea una, se pune la loc — altfel organizatorul care a
+       intrat o dată ca arbitru rămâne fără ea. */
+    var inapoi="";
+    try{ inapoi=localStorage.getItem(ARB_CHEIE_DINAINTE)||""; localStorage.removeItem(ARB_CHEIE_DINAINTE); }catch(e){}
+    saveSyncKey(inapoi);
     document.body.classList.remove("arb");
     var bi=document.getElementById("arb-iesire"); if(bi) bi.hidden=true;
     arbBara(); renderList(); updateLockUI();
