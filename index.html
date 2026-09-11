@@ -7246,10 +7246,14 @@
     var leftMin=(state.endAt-nowSync())/60000;
     WARN_MIN.forEach(function(m){ if(leftMin<=m) warnAlerted[m]=true; });
   }
-  // preia orele venite prin sincronizare (telefonul care privește camera live).
+  // preia orele așa cum sunt ACUM: la pornirea aplicației și la orele venite prin
+  // sincronizare (telefonul care privește camera live).
   // Marchează drept „deja sunate" alarmele ale căror momente au trecut: fără asta,
   // un telefon care intră în cameră la mijlocul concursului ar claxona pe rând
-  // 30, 10, 5 și 1 minut, în secunde consecutive.
+  // 30, 10, 5 și 1 minut, în secunde consecutive — iar telefonul organizatorului ar
+  // striga „Start pescuit!" de fiecare dată când deschide aplicația.
+  // Ce NU atinge: startul adevărat, nădirea și finalul care vin la momentul lor;
+  // pe acelea le sună timerTick, mai jos.
   function adoptTimer(){
     resetWarnings();
     var now=nowSync(), ndMin=state.nadireMin||0;
@@ -7913,10 +7917,10 @@
     if(scc) scc.classList.toggle("on", scalaSectoare());
     updateManseButtons();
     renderSectors(); updateLockUI(); updateVoiceBtn(); updatePushBtn(); renderList(); updateUploadBar();
-    if(state.startAt) document.getElementById("t-start").value=toLocalInput(state.startAt);
-    if(state.endAt) document.getElementById("t-end").value=toLocalInput(state.endAt);
-    document.getElementById("t-nadire").value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
-    resetWarnings();
+    // adoptTimer, nu resetWarnings: el completează câmpurile din Setări ȘI însemnează
+    // drept „deja sunate" alarmele ale căror momente au trecut. Fără el, telefonul care
+    // deschide aplicația în timpul concursului striga „Start pescuit!" de fiecare dată.
+    adoptTimer();
     startTimerLoop();
     var qp=new URLSearchParams(location.search);
     /* Poza trimisă din „Distribuie" a fost prinsă de service worker și pusă în magazie;

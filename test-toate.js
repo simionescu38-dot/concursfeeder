@@ -64,6 +64,7 @@ const TESTE = [
   ["Semnul codurilor și proba serverului", "test-doua-paze.js"],
   ["Aceleași cuvinte, altă ordine", "test-ordine-nume.js"]
   ,["Pagina publică a concursului", "test-rezultat-public.js"]
+  ,["Foaia cu trei coloane de cifre", "test-foaie-hazliu.js"]
 ];
 
 let picate = [];
