@@ -117,4 +117,81 @@ const FINAL = 1000 * MIN;
   t("cronometru șters: bara se ascunde", m.camp.timerBar.style.display, "none");
 }
 
+// ---------- 3. la DESCHIDEREA aplicației ----------
+/* Pe telefonul organizatorului nimic nu venea din cameră, deci nimeni nu chema
+   adoptTimer la pornire: startAlerted rămânea fals și aplicația striga „Start pescuit!"
+   de fiecare dată când o deschidea, chiar cu vocea oprită din setări (alarmele de start
+   și de final își aprind singure vocea o clipă). */
+const initSrc = require("./test-helpers").grabIIFE(src, "// ---------- init ----------");
+
+t("la pornire se preiau orele așa cum sunt acum", /adoptTimer\(\);/.test(initSrc), true);
+t("…și nu se mai cheamă doar resetWarnings", /\bresetWarnings\(\);/.test(initSrc), false);
+t("bucla ceasului pornește mai departe", /startTimerLoop\(\);/.test(initSrc), true);
+/* adoptTimer completează el câmpurile din Setări, deci cele trei rânduri care le
+   completau de mână au ieșit — altfel am fi avut aceeași treabă făcută de două ori */
+t("câmpurile din Setări nu se mai completează de două ori",
+  (initSrc.match(/t-nadire/g) || []).length, 0);
+
+// deschide aplicația în minutul 40 din 60: nu se aude nimic, dar finalul sună la ora lui
+{
+  const m = mediu({ startAt: FINAL - 60 * MIN, endAt: FINAL, nadireMin: 10 });
+  m.la(FINAL - 20 * MIN);
+  m.ruleaza("adoptTimer");          // ce face acum pornirea aplicației
+  m.ruleaza("timerTick");
+  t("deschidere în timpul concursului: tăcere", m.alarme.slice(), []);
+  t("…dar bara arată cât a mai rămas", /Timp rămas/.test(m.camp.timerBar.textContent), true);
+  m.la(FINAL - 9 * MIN); m.ruleaza("timerTick");
+  t("avertismentul de 10 minute sună mai departe", m.alarme.slice(), ["warn10"]);
+  m.la(FINAL + 1000); m.ruleaza("timerTick");
+  t("și claxonul de final, la ora lui", m.alarme.slice(-1), ["end"]);
+}
+
+// deschide aplicația în timpul nădirii grele: nici nădirea nu se repetă
+{
+  const START = FINAL - 60 * MIN;
+  const m = mediu({ startAt: START, endAt: FINAL, nadireMin: 10 });
+  m.la(START - 5 * MIN);            // nădirea a fost strigată acum 5 minute
+  m.ruleaza("adoptTimer");
+  m.ruleaza("timerTick");
+  t("deschidere în timpul nădirii: nu se strigă a doua oară", m.alarme.slice(), []);
+  m.la(START); m.ruleaza("timerTick");
+  t("startul adevărat sună la ora lui", m.alarme.slice(), ["start"]);
+}
+
+/* Partea care contează cel mai mult: nu cumva am stins claxoanele adevărate.
+   Deschide aplicația ÎNAINTE de concurs — toate trei trebuie să sune, la rând. */
+{
+  const START = FINAL - 60 * MIN;
+  const m = mediu({ startAt: START, endAt: FINAL, nadireMin: 10 });
+  m.la(START - 30 * MIN);           // deschide cu jumătate de oră înainte
+  m.ruleaza("adoptTimer");
+  m.ruleaza("timerTick");
+  t("înainte de concurs: încă tăcere", m.alarme.slice(), []);
+  m.la(START - 9 * MIN); m.ruleaza("timerTick");
+  t("nădirea grea sună", m.alarme.slice(), ["nadire"]);
+  m.la(START); m.ruleaza("timerTick");
+  t("startul sună", m.alarme.slice(), ["nadire", "start"]);
+  m.la(FINAL + 1000); m.ruleaza("timerTick");
+  t("finalul sună", m.alarme.slice(), ["nadire", "start", "end"]);
+}
+
+// deschide aplicația a doua zi, cu concursul de ieri încă în telefon
+{
+  const m = mediu({ startAt: FINAL - 60 * MIN, endAt: FINAL, nadireMin: 10 });
+  m.la(FINAL + 18 * 60 * MIN);
+  m.ruleaza("adoptTimer");
+  m.ruleaza("timerTick");
+  t("concurs vechi în telefon: niciun claxon", m.alarme.slice(), []);
+}
+
+// aplicație deschisă fără niciun concurs pus: nimic de sunat, nimic de arătat
+{
+  const m = mediu({ startAt: null, endAt: null, nadireMin: 10 });
+  m.la(FINAL);
+  m.ruleaza("adoptTimer");
+  m.ruleaza("timerTick");
+  t("fără concurs: tăcere", m.alarme.slice(), []);
+  t("fără concurs: bara stă ascunsă", m.camp.timerBar.style.display, "none");
+}
+
 t.raport();
