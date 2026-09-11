@@ -552,24 +552,61 @@ export default {
         return json({ ok: false, error: "fara poza" }, 400);
       if (poza.length > 1400000) return json({ ok: false, error: "poza prea mare" }, 413);
 
-      /* Întrebarea e scrisă după foaia adevărată, nu după una închipuită. Prima variantă
-         cerea „un număr de stand și un nume" și pierdea o bandă din mijloc: foaia are
-         sectorul și standul într-o coloană („A 2"), numele pe DOUĂ rânduri (prenumele
-         deasupra, numele dedesubt) și, în dreapta, o grilă goală de cantități, lată cât
-         jumătate de pagină. Grila aia e zgomotul care făcea citirea să-și piardă locul. */
+      /* Întrebarea e scrisă după foile ADEVĂRATE, nu după una închipuită — și sunt două
+         feluri de foaie, nu unul.
+
+         Cea de la Rediu are sectorul și standul într-o coloană („A 2"), numele scris de
+         mână cu majuscule pe DOUĂ rânduri, și în dreapta o grilă goală de cantități, lată
+         cât jumătate de pagină. Grila aia era zgomotul care făcea citirea să-și piardă
+         locul, de-aia scrie mai jos s-o ignore.
+
+         Cea de la Balta din Oraș („Antrenamentul lu' Hazliu") e altfel: cap de tabel
+         tipărit, numele tipărite, niciun sector — și TREI coloane cu cifre: „Nr. crt.",
+         „Ordine" (tragerea la sorți, încercuită cu pixul) și „Stand". Întrebarea veche
+         cerea „prima coloană, o literă urmată de un număr"; pe foaia asta nu există așa
+         ceva, deci citirea n-avea de ce să se prindă. De aici încolo hotărăște CAPUL DE
+         TABEL care coloană e standul, nu poziția ei.
+
+         De ce nu se poate ghici din cifre: „Ordine" și „Stand" sunt amândouă permutări
+         ale lui 1…N. Pe foaia lui, standurile sunt 13, 1, 18, 6… iar ordinea 18, 16, 12,
+         11… — două șiruri la fel de verosimile. Nimic în afară de scrisul din capul
+         coloanei nu le deosebește, nici aici, nici în aplicație. */
       const INTREBARE =
-        "În poză e foaia unui concurs de pescuit, un tabel cu rânduri. Structura fiecărui rând:\n" +
-        "- prima coloană (SECTOR): o literă de sector (A, B, C sau D) urmată de numărul standului, " +
-        "de exemplu \"A 2\", \"B 8\", \"C 14\";\n" +
-        "- a doua coloană (NUME): numele pescarului, scris de mână cu majuscule, de obicei pe " +
-        "DOUĂ rânduri — prenumele deasupra, numele de familie dedesubt. Lipește-le într-un " +
-        "singur nume, în ordinea în care sunt scrise;\n" +
-        "- restul foii, în dreapta (CANTITATE): o grilă de căsuțe, goală. IGNOR-O complet.\n" +
-        "Ignoră și antetul: data, manșa, arbitrul, sigla, LOCUL 1/2/3, CMMC.\n" +
-        "Citește rândurile de sus în jos, pe rând, fără să sari niciunul. Rândurile în care " +
-        "coloana NUME e goală se sar — sunt locuri neocupate.\n" +
-        "Numele sunt românești. Nu inventa nimic: dacă un nume nu se poate citi, sari rândul.\n" +
-        "Răspunde doar cu JSON, fără nimic în jurul lui:\n" +
+        "În poză e foaia unui concurs de pescuit: un tabel cu un rând pentru fiecare pescar.\n" +
+        "Din fiecare rând am nevoie de două lucruri: NUMELE pescarului și numărul STANDULUI lui.\n" +
+        "\n" +
+        "Uită-te întâi la capul de tabel, rândul de sus cu denumirile coloanelor.\n" +
+        "1. Dacă există o coloană al cărei cap scrie „Stand” (sau „Standul”, „Nr. stand”), " +
+        "standul e numărul din ACEA coloană — de obicei scris de mână.\n" +
+        "2. Dacă nu există, foaia e de tipul vechi: prima coloană are litera sectorului și " +
+        "numărul standului împreună — „A 2”, „B 8”, „C 14”. Atunci litera e sectorul " +
+        "și numărul e standul.\n" +
+        "\n" +
+        "ATENȚIE la celelalte coloane cu cifre. Pe aceeași foaie mai pot fi:\n" +
+        "- „Nr. crt.” — numerotarea rândurilor, 1, 2, 3… la rând de sus în jos. NU e standul.\n" +
+        "- „Ordine” sau „Ordinea tragerii” — ordinea la tragerea la sorți, adesea încercuită " +
+        "cu pixul. NU e standul, chiar dacă are numere la fel de mari.\n" +
+        "- o sumă scrisă de mână lângă nume, de pildă „250” — taxa de participare. NU e standul.\n" +
+        "- coloane cu bifă sau liniuță. N-au numere.\n" +
+        "Capul de tabel hotărăște, nu poziția coloanei.\n" +
+        "\n" +
+        "NUMELE e în coloana al cărei cap scrie „Nume concurent” (sau „Nume”, „Pescar”). " +
+        "Poate fi tipărit sau scris de mână, cu majuscule sau nu, pe un rând sau pe două " +
+        "(prenumele deasupra, numele de familie dedesubt — atunci lipește-le într-unul " +
+        "singur). Scrie cuvintele exact în ordinea de pe foaie, nu le muta între ele.\n" +
+        "\n" +
+        "Ignoră antetul de sus: sigla, denumirea concursului, data, balta, manșa, arbitrul, " +
+        "LOCUL 1/2/3, CMMC. Ignoră grila goală de cantități din dreapta, dacă e.\n" +
+        "Citește rândurile de sus în jos, pe rând, fără să sari niciunul.\n" +
+        "Rândurile fără nume se sar — sunt locuri neocupate.\n" +
+        "Numele sunt românești. Nu inventa nimic: dacă un nume nu se poate citi, fiindcă e " +
+        "tăiat sau șters, sari rândul.\n" +
+        "\n" +
+        "Răspunde doar cu JSON, fără nimic în jurul lui. Câmpul sector se pune NUMAI dacă " +
+        "sectorul e scris pe foaie:\n" +
+        "{\"randuri\": [{\"stand\": \"13\", \"nume\": \"Muscalu Andrei\"}, " +
+        "{\"stand\": \"1\", \"nume\": \"Pescaru Hazliu\"}]}\n" +
+        "Pe foaia veche, cea cu sector:\n" +
         "{\"randuri\": [{\"sector\": \"A\", \"stand\": \"2\", \"nume\": \"NICU ROMAN\"}, " +
         "{\"sector\": \"B\", \"stand\": \"8\", \"nume\": \"COSTEL TATIANA\"}]}";
 
