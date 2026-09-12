@@ -305,5 +305,38 @@ const linistit = () => new Promise(r => setTimeout(r, 30));
   }
 
 
+  /* ================================================================
+     Fișierele din arhiva/ și lista de rezervă din sezon.html
+     ------------------------------------------------------------------
+     Sezonul citește folderul arhiva/ prin API-ul GitHub. Când acela tace — limită de
+     cereri — cade pe lista scrisă de mână din sezon.html. Regula era spusă doar într-un
+     comentariu: „fiecare fișier nou trebuie trecut și aici". Un fișier uitat nu se vede
+     niciodată la probe, doar într-o zi în care API-ul are toane, iar concursul dispare
+     din clasamentul de sezon fără ca nimeni să știe de ce.
+     ================================================================ */
+  console.log("\n=== Arhivele din depozit sunt și în lista de rezervă ===");
+  {
+    const fs = require("fs");
+    const path = require("path");
+    const dir = path.join(RADACINA, "arhiva");
+    const fisiere = fs.readdirSync(dir).filter((f) => /^\d{4}-\d{2}-\d{2}-.*\.json$/.test(f))
+      .map((f) => "arhiva/" + f).sort();
+    const sez = citeste("sezon.html");
+    const lista = (/var ARCHIVE_FILES = \[([\s\S]*?)\];/.exec(sez)[1].match(/"([^"]+)"/g) || [])
+      .map((x) => x.slice(1, -1)).sort();
+    t("fiecare arhivă din depozit e și în lista de rezervă", fisiere.filter((f) => lista.indexOf(f) < 0), []);
+    t("…și lista nu pomenește fișiere care nu există", lista.filter((f) => fisiere.indexOf(f) < 0), []);
+
+    /* Fiecare fișier trebuie să poată fi citit de sezon: altfel e o arhivă moartă. */
+    const stricate = fisiere.filter(function (f) {
+      try {
+        const d = JSON.parse(fs.readFileSync(path.join(RADACINA, f), "utf8"));
+        return !d || !d.data || !Array.isArray(d.data.participants) || !d.data.participants.length
+               || !d.exportedAt;
+      } catch (e) { return true; }
+    });
+    t("toate se citesc și au pescari și oră de salvare", stricate, []);
+  }
+
   t.raport();
 })();

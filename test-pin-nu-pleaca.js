@@ -206,7 +206,9 @@ console.log("\n=== 6. Arhivele din depozit ===");
     const j = JSON.parse(fs.readFileSync(path.join(dosar, f), "utf8"));
     return s + ((j.data || j).participants || []).length;
   }, 0);
-  t("cei 79 de pescari din cele 6 concursuri sunt toți acolo", total, 79);
+  /* Numărul se mișcă la fiecare concurs arhivat — asta e și treaba lui: dacă scade fără
+     să fi adăugat nimeni nimic, înseamnă că o ștergere a luat și altceva cu ea. */
+  t("cei 136 de pescari din cele 8 concursuri sunt toți acolo", total, 136);
 }
 
 t.raport();
