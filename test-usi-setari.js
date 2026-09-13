@@ -42,14 +42,14 @@ const ale = (u) => carduri().filter((c) => c.usa === u).map((c) => c.titlu);
 console.log("\n=== 1. Toate cardurile au ușa lor ===");
 {
   const toate = carduri();
-  /* 21: ceasul a venit din Calendar (+1) — stătea acolo sub numele „Cronometru concurs",
-     cu „(opțional)" lângă ora de început — iar „Puncte la sectoare inegale" s-a strâns în
-     pliant (−1). Se alege o dată și rămâne tot sezonul — nu e ceva de hotărât la fiecare
-     etapă, deci nu mai stă ca un card întreg în drum. */
-  t("ecranul are tot atâtea carduri câte avea", toate.length, 21);
+  /* De la 21, cât era: ceasul a venit din Calendar (+1) — stătea acolo sub numele
+     „Cronometru concurs", cu „(opțional)" lângă ora de început; „Puncte la sectoare
+     inegale" s-a strâns în pliant (−1), fiindcă se alege o dată și rămâne tot sezonul;
+     iar „Import participanți" a plecat la Cântar (−1), unde se face înscrierea. */
+  t("ecranul are tot atâtea carduri câte avea", toate.length, 20);
   t("niciunul nu a rămas fără ușă", toate.filter((c) => !c.usa).map((c) => c.titlu), []);
   t("nu s-a pierdut niciunul pe drum",
-    ale("u1").length + ale("u2").length + ale("u3").length, 21);
+    ale("u1").length + ale("u2").length + ale("u3").length, 20);
 }
 
 /* ================================================================
@@ -59,7 +59,7 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 {
   t("Concursul — ce se pregătește înainte de start", ale("u1"), [
     "Numele concursului", "Sectoare", "Manșe", "Orele manșelor", "Concurs pe echipe",
-    "Import participanți", "Cum se calculează", "Baza de pescari",
+    "Cum se calculează", "Baza de pescari",
   ]);
   /* Orele stau imediat după Manșe fiindcă sunt ALE manșelor — fiecare cu ale ei. */
   t("orele stau lângă manșe", ale("u1").indexOf("Orele manșelor"), ale("u1").indexOf("Manșe") + 1);
@@ -80,8 +80,8 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 console.log("\n=== 3. Câte carduri vezi odată ===");
 {
   const max = Math.max(ale("u1").length, ale("u2").length, ale("u3").length);
-  t("cel mai încărcat ecran are 8 carduri, nu 21", max, 8);
-  t("…adică mai puțin de jumătate din cât era", max * 2 < 21, true);
+  t("cel mai încărcat ecran are 7 carduri, nu 20", max, 7);
+  t("…adică mai puțin de jumătate din cât era", max * 2 < 20, true);
 }
 
 /* ================================================================
@@ -311,8 +311,49 @@ console.log("\n=== 11. Codurile date oamenilor, la Concursul ===");
     /fara\.style\.display = syncRoom \? "none" : "block";/.test(H.grabFunction(src, "updateLiveQr")), true);
 
   /* Niciun card în plus pe nicio ușă: au venit ca pliant, nu ca încă un card. */
-  t("ușa Concursul are tot 8 carduri", ale("u1").length, 8);
+  t("ușa Concursul are 7 carduri", ale("u1").length, 7);
   t("ușa Telefonului are tot 6", ale("u2").length, 6);
+}
+
+/* ================================================================
+   12. Înscrierea pescarilor stă acolo unde se înscriu — la Cântar.
+
+   „Import participanți" stătea în Contul meu, la setări, deși înscrierea se face pe
+   ecranul de cântar, lângă butonul „+ Adaugă la listă". Cine avea lista pe WhatsApp o
+   lipea abia după ce dădea de ea, două ecrane mai încolo.
+
+   ÎNDREPTARE la hartă: scrisesem că „face exact ce face butonul de pe Cântar". Nu e
+   adevărat — importul ADUCE oameni în concurs, tragerea doar îi MUTĂ pe standuri pe cei
+   deja înscriși. Locul era greșit, nu fapta.
+
+   Odată venit, pliantele de la Cântar stau în ordinea zilei.
+   ================================================================ */
+console.log("\n=== 12. Pliantele de la Cântar, în ordinea zilei ===");
+{
+  const cantar = src.slice(src.indexOf('id="view-cantar"'), src.indexOf('id="view-rank"'));
+
+  t("importul a venit la Cântar", /id="pliant-import"/.test(cantar), true);
+  t("…și nu mai e în Contul meu", /id="pliant-import"/.test(set), false);
+  t("căsuța de lipit a venit cu el", /id="pliant-import"[\s\S]{0,900}id="imp-text"/.test(cantar), true);
+  t("…și amândouă butoanele lui",
+    /id="pliant-import"[\s\S]{0,1600}onclick="previewImport\(\)"[\s\S]{0,300}onclick="doImport\(\)"/.test(cantar), true);
+  t("stă strâns, nu deschis",
+    /id="pliant-import"[\s\S]{0,400}class="pliant-in" hidden/.test(cantar), true);
+  /* Arbitrii cântăresc, nu înscriu — ca la tragere. */
+  t("arbitrii nu-l văd", /<div class="pliant mt lockhide arbhide" id="pliant-import">/.test(cantar), true);
+
+  /* Ordinea zilei: aduci pescarii, tragi la sorți, cântărești, te uiți în jurnal.
+     Înainte cântarele erau primele și tragerea a doua. */
+  const ordine = ["pliant-import", "pliant-tragere", "pliant-cantare", "pliant-jurnal"]
+    .map((id) => cantar.indexOf('id="' + id + '"'));
+  t("toate patru sunt pe ecran", ordine.filter((x) => x < 0), []);
+  t("…și stau în ordinea zilei", ordine.slice().sort((x, y) => x - y), ordine);
+
+  /* Spune limpede care e diferența, ca omul să nu le încurce. */
+  t("importul spune că ADUCE oameni",
+    /id="pliant-import"[\s\S]{0,2400}aduce în concurs/.test(cantar), true);
+  t("…și trimite la tragere pentru cei deja înscriși",
+    /id="pliant-import"[\s\S]{0,2600}Trec tragerea la sorți/.test(cantar), true);
 }
 
 t.raport();
