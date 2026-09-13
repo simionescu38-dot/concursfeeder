@@ -48,10 +48,10 @@ console.log("\n=== 1. Toate cardurile au ușa lor ===");
      balta, sectoarele, manșele, orele — au plecat pe ecranul lor, „Fă concursul", și au
      lăsat în urmă un singur card care-l deschide (−4 +1, ceasul venit din Calendar
      plecând odată cu ele). */
-  t("ecranul are tot atâtea carduri câte avea", toate.length, 17);
+  t("ecranul are tot atâtea carduri câte avea", toate.length, 18);
   t("niciunul nu a rămas fără ușă", toate.filter((c) => !c.usa).map((c) => c.titlu), []);
   t("nu s-a pierdut niciunul pe drum",
-    ale("u1").length + ale("u2").length + ale("u3").length, 17);
+    ale("u1").length + ale("u2").length + ale("u3").length, 18);
 }
 
 /* ================================================================
@@ -71,8 +71,12 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
   ]);
   t("Nu merge ceva — reparațiile, rar sau niciodată", ale("u3"), [
     "Versiunea aplicației", "Curăță arhiva de sezon", "Moderare calendar regional",
-    "Istoric cameră", "Adu înapoi ce era", "Serverul răspunde?", "Reset",
+    "Istoric cameră", "Adu înapoi ce era", "Adu concursul din cameră",
+    "Serverul răspunde?", "Reset",
   ]);
+  /* Frați: unul aduce de pe telefon, celălalt din cameră. Stau unul lângă altul. */
+  t("cele două „adu” stau alături",
+    ale("u3").indexOf("Adu concursul din cameră"), ale("u3").indexOf("Adu înapoi ce era") + 1);
 }
 
 /* ================================================================
@@ -81,8 +85,8 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 console.log("\n=== 3. Câte carduri vezi odată ===");
 {
   const max = Math.max(ale("u1").length, ale("u2").length, ale("u3").length);
-  t("cel mai încărcat ecran are 7 carduri, nu 17", max, 7);
-  t("…adică mai puțin de jumătate din cât era", max * 2 < 17, true);
+  t("cel mai încărcat ecran are 8 carduri, nu 18", max, 8);
+  t("…adică mai puțin de jumătate din cât era", max * 2 < 18, true);
 }
 
 /* ================================================================
