@@ -1409,6 +1409,18 @@
       <button class="btn btn-ghost" id="btn-undo" style="display:none;" onclick="aduInapoi()">↩ Adu înapoi copia dinainte</button>
     </div>
 
+    <!-- Fratele celui de deasupra: unul aduce de pe telefon, celălalt din cameră.
+         Telefonul organizatorului ÎMPINGE în cameră, dar nu trage niciodată din ea —
+         `pullState` rulează doar în modul de vizualizare. Așa că dacă concursul e în
+         cameră și nu pe telefon (l-ai pus de pe alt telefon, ți-ai schimbat telefonul,
+         sau ai început din greșeală unul nou), nu exista niciun drum înapoi: trebuia
+         scos de mână, ca fișier. Ăsta e drumul. -->
+    <div class="card u3 lockhide">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-cloud"></use></svg>Adu concursul din cameră</div>
+      <p class="hint" style="margin:0 0 10px;">Ia concursul de pe server și îl pune pe telefonul ăsta. Îți arată întâi ce e în cameră și ce ai acum, și te întreabă înainte să înlocuiască. Ce e acum pe telefon se pune deoparte — îl întorci cu „Adu înapoi ce era".</p>
+      <button class="btn btn-ghost" onclick="aduDinCamera()"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Adu concursul din cameră</button>
+    </div>
+
     <div class="card u3">
       <div class="sec-title">Serverul răspunde?</div>
       <p class="hint" style="margin:0 0 10px;">Încerc pe rând tot ce-i trebuie aplicației de pe server și îți spun ce răspunde. Nu scrie și nu schimbă nimic — doar se uită. De apăsat când ceva pare că nu mai merge, sau o dată pe sezon.</p>
@@ -3603,6 +3615,59 @@
         if(!ok){ syncPaused=true; setSyncStatus("Sincronizare oprită automat — camera live avea alte date. Verifică în Setări.", true); }
       }
     }).catch(function(){});
+  }
+  /* Telefonul organizatorului împinge în cameră, dar nu trage niciodată din ea. Ăsta e
+     drumul înapoi: când preiei concursul de pe alt telefon, când ți-ai schimbat telefonul,
+     sau când ai început din greșeală unul nou peste cel adevărat. */
+  function aduDinCamera(){
+    if(guard()) return;
+    if(!syncRoom){ toast("Setează întâi un cod de cameră"); return; }
+    toast("Mă uit în cameră…");
+    fetch(API_BASE+"/api/state?room="+encodeURIComponent(syncRoom))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j || !j.ok || !j.data || !Array.isArray(j.data.participants) || !j.data.participants.length){
+          toast("Camera „"+syncRoom+"” n-are niciun concurs"); return;
+        }
+        var d=j.data, kg=0;
+        d.participants.forEach(function(p){
+          manseRange().forEach(function(mi){
+            var m=(p.m && p.m[mi]) || {};
+            (m.catches||[]).forEach(function(v){ kg+=(+v||0); });
+            (m.extras||[]).forEach(function(v){ kg+=(+v||0); });
+          });
+        });
+        var nm=function(x){ return ((x||"").trim()) || "concurs fără nume"; };
+        if(!confirm(
+          "În camera „"+syncRoom+"” este:\n"+
+          "   "+nm(d.name)+"\n"+
+          "   "+d.participants.length+" pescari · "+fmt(kg)+" kg cântărite\n\n"+
+          "Pe telefonul ăsta ai:\n"+
+          "   "+nm(state.name)+"\n"+
+          "   "+state.participants.length+" pescari\n\n"+
+          "Aduci concursul din cameră peste cel de pe telefon?"+
+          /* `puneDeoParte` nu salvează un concurs fără pescari — n-are ce. Atunci nici nu
+             se promite: o vorbă care nu se ține e mai rea decât niciuna. */
+          (state.participants.length
+            ? "\nCe e acum pe telefon se pune deoparte — îl întorci cu „Adu înapoi ce era”."
+            : "")
+        )) return;
+        puneDeoParte("înainte de aducerea din cameră");
+        state=stareDinFisier(d, state.pinHash, state.lock);
+        normalize(); save();
+        /* De-acum telefonul ȘTIE revizia camerei. Fără asta, prima lui scriere ar părea
+           venită de pe o revizie veche, iar serverul ar contopi înapoi tocmai ce am
+           înlocuit. Ștergerile în așteptare sunt ale stării de dinainte, deci pleacă. */
+        syncRevSalveaza(j.rev); sterseSync=[];
+        syncPaused=false; syncProblem="";
+        document.getElementById("nm-2").classList.toggle("on", numManse()===2);
+        document.getElementById("nm-3").classList.toggle("on", numManse()===3);
+        updateManseButtons(); adoptTimer(); renderSectors(); renderList(); renderRank();
+        updateUploadBar(); improspateazaStatus();
+        var cn=document.getElementById("compName"); if(cn) cn.textContent=state.name||"";
+        toast(state.participants.length+" pescari aduși din cameră");
+      })
+      .catch(function(){ toast("Nu răspunde serverul"); });
   }
   function fmtHistDate(iso){
     try{
