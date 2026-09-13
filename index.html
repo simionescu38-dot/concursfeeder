@@ -44,6 +44,14 @@
     position:sticky; top:0; z-index:20;
     box-shadow:0 4px 20px -6px rgba(15,49,98,.35);
   }
+  /* Antetul stă lipit sus. Un salt cu scrollIntoView({block:"start"}) duce ținta la
+     y=0 — adică FIX ÎN SPATELE lui. „Fă concursul" ateriza corect pe cardul cu numele,
+     dar căsuța în care trebuie scris rămânea sub bară: primul lucru care se vedea era
+     „Balta", iar omul credea că a nimerit aiurea. La fel pățeau „Trage la sorți",
+     „Publică rezultatul" și editarea unui concurs din calendar.
+     scroll-margin-top spune saltului să lase bara deasupra. Înălțimea ei se schimbă cu
+     lățimea ecranului, deci nu se scrie de mână: o măsoară masoaraAntetul(). */
+  .card, .pliant, #event-form{ scroll-margin-top:var(--antet,101px); }
   header .kicker,header h1,header .comp{padding-left:46px;}
   header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
   header h1{margin:2px 0 0; font-size:20px; font-weight:800; letter-spacing:-.01em;}
@@ -2678,6 +2686,15 @@
   // ---------- grila de meniu de pe Acasă ----------
   // Se schimbă după lacăt: organizatorul vede uneltele de concurs, pescarul nu vede
   // niciodată cântărirea. Trimite doar către ecrane care există.
+  /* Cât ocupă bara de sus chiar acum, pe ecranul ăsta. Se cheamă la pornire și la fiecare
+     schimbare de lățime (rotirea telefonului), fiindcă antetul e mai înalt pe ecran lat. */
+  function masoaraAntetul(){
+    var h=document.querySelector("header");
+    if(!h) return;
+    document.documentElement.style.setProperty("--antet", (h.offsetHeight+8)+"px");
+  }
+  window.addEventListener("resize", masoaraAntetul);
+
   function meniuGo(view, elId, inainte){
     if(inainte) inainte();
     showView(view);
@@ -7902,6 +7919,7 @@
 
   // ---------- init ----------
   (function(){
+    masoaraAntetul();
     load();
     pescariIncarca(); bazaIncarcaRev();
     loadSyncCfg(); updateSyncUI(); loadArchiveId(); checkRoomMismatch();
