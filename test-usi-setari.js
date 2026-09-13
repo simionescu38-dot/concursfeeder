@@ -390,7 +390,11 @@ console.log("\n=== 12. Pliantele de la Cântar, în ordinea zilei ===");
    ================================================================ */
 console.log("\n=== 13. Ecranul «Fă concursul» ===");
 {
-  const nou = src.slice(src.indexOf('id="view-nou"'), src.indexOf('<!-- SETĂRI -->'));
+  /* Marginea era „până la comentariul SETĂRI", adică se bizuia pe faptul că ecranul
+     următor era chiar acela. Când s-a strecurat un ecran nou între ele, proba a început
+     să numere cardurile VECINULUI. Acum se oprește la propriul </section>. */
+  const deLaNou = src.indexOf('id="view-nou"');
+  const nou = src.slice(deLaNou, src.indexOf("</section>", deLaNou));
 
   t("ecranul există", /<section class="view" id="view-nou">/.test(src), true);
   t("are drum înapoi la Acasă", /id="view-nou">[\s\S]{0,300}showView\('part'\)/.test(src), true);
@@ -426,6 +430,45 @@ console.log("\n=== 13. Ecranul «Fă concursul» ===");
   t("bara de jos știe de ecranul nou", /nou:"set"/.test(src), true);
   /* Rândurile de ore se fac din cod: la intrare trebuie aduse la zi. */
   t("orele se desenează la intrarea pe ecran", /if\(v==="nou"\) deseneazaOre\(\);/.test(src), true);
+}
+
+/* ================================================================
+   14. Ecranul de verificare — semaforul.
+   „Aplicația trebuie să inspire încredere și să prevină greșelile."
+   Un pas din zi, nu o setare: de-aia NU e card în Contul meu.
+   ================================================================ */
+console.log("\n=== 14. Semaforul de verificare ===");
+{
+  const deLaV = src.indexOf('id="view-verific"');
+  const v = src.slice(deLaV, src.indexOf("</section>", deLaV));
+
+  t("ecranul există", deLaV > 0, true);
+  t("are drum înapoi la Cântar", /showView\('cantar'\)/.test(v), true);
+  t("are cele trei locuri care se umplu din cod",
+    ["verific-far", "verific-lista", "verific-buton"].filter((id) => v.indexOf('id="' + id + '"') >= 0).length, 3);
+
+  /* Nu e un card în Contul meu: acolo sunt setări, iar asta e un pas din zi. */
+  t("nu s-a mai adăugat niciun card în Contul meu", carduri().length, 18);
+  t("…și ecranul nu stă sub niciuna dintre cele trei uși",
+    /id="view-verific"[\s\S]*?class="card( u[123])?"/.test(v) && /class="card u[123]"/.test(v), false);
+
+  /* Bara de jos rămâne pe Cântar: de acolo vii, acolo te întorci să repari. */
+  t("bara de jos rămâne pe Cântar", /verific:"cantar"/.test(src), true);
+  t("se redesenează la fiecare intrare",
+    /if\(v==="verific"\) deseneazaVerificarea\(\);/.test(src), true);
+
+  /* Miezul: pe roșu butonul e STINS, nu însoțit de un avertisment. */
+  t("pe roșu butonul de publicare e stins",
+    /stare === "rosu"\)[\s\S]{0,120}class="btn stins" disabled/.test(src), true);
+  t("…și nu există niciun «publică totuși»",
+    /public[ăa] totuși|salvezi totuși/i.test(src), false);
+  t("butonul stins chiar arată stins", /\.btn\.stins\{/.test(src), true);
+
+  /* Culorile semaforului nu sunt accentul aplicației: altfel verdictul s-ar citi ca
+     încă un buton. */
+  ["#3ddc84", "#f2b84b", "#ff6b6b"].forEach((c) =>
+    t("semaforul are culoarea " + c, src.indexOf(c) > 0, true));
+  t("…și niciuna nu e teal-ul butoanelor", /\.far\.[vpr]\s*\{[^}]*var\(--teal\)/.test(src), false);
 }
 
 t.raport();

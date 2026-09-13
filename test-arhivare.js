@@ -92,14 +92,21 @@ function aplicatie(opt) {
       }, 0);
     });
   };
+  /* Pragul și starea sincronizării: semaforul se uită și la ele. Camera lipsește
+     dinadins — probele de aici sunt despre arhivare, nu despre trimiterea în cameră. */
+  ctx.PRAG_KG = +/var PRAG_KG=(\d+)/.exec(src)[1];
+  ctx.syncPaused = false; ctx.syncBusy = false; ctx.syncLastOk = "12:40"; ctx.arbNetrimis = false;
+  ctx.Math = Math; ctx.String = String;
   vm.createContext(ctx);
   vm.runInContext(["emptyManche", "numManse", "manseRange", "ensureManche", "mOf", "cantOfM", "extraOfM",
     "cmmcOfM", "totalOfM", "fmt", "faraSecrete", "archiveToSeason", "wipe", "goleste", "amTerminatConcursul"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
-  /* cele patru stări: sfârșitul de concurs le cere înainte de a arhiva */
+  /* Sfârșitul de concurs nu mai întreabă nimic: trece prin semafor, iar ce strică
+     rezultatul nu mai ajunge în sezon deloc. Deci are nevoie de verificarea întreagă. */
   vm.runInContext(src.match(/var STARI_MANSA=\{[^}]*\};/)[0], ctx);
   vm.runInContext(["stareaLaMansa", "nelamurit", "standuriNecantarite",
-                   "mancheDisputata", "manseRange", "numManse", "mOf", "standOfM", "ensureManche"]
+                   "mancheDisputata", "manseRange", "numManse", "mOf", "standOfM", "ensureManche",
+                   "sectorOfM", "nameOf", "mansaTrasa", "faraStandLaMansa", "verificaConcursul"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
