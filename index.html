@@ -335,6 +335,16 @@
   .sl.live .sl-act{color:#8e2a1f;}
   .sl.gata .sl-act{color:#155c39;}
   .sl-act:active{transform:translateY(1px);}
+  /* Același buton, singur, sus pe ecranul de cântar. Pe Acasă stă într-un panou colorat
+     și e alb pe fundalul lui; aici n-are panou sub el, deci își poartă singur culoarea.
+     Un rând, nu un panou: lista de pescari nu trebuie împinsă în jos.
+
+     NU plin, ci contur: pe ecranul ăsta „+ Adaugă la listă" e deja butonul plin, iar două
+     butoane pline unul sub altul înseamnă că niciunul nu mai e cel important. Se vede
+     oricum primul — e lat cât ecranul și stă sus de tot. */
+  .pas-sus{margin:0 0 12px;}
+  .pas-sus .sl-act{margin-top:0; background:var(--teal-soft); color:var(--teal-d);
+    border:1.5px solid var(--teal); box-shadow:none;}
   /* rezumatul manșei încheiate: exact ce se strigă cu voce tare, la premiere */
   .sl-rez{margin-top:10px; background:rgba(255,255,255,.14); border-radius:12px; padding:6px 10px;}
   .sl-rez>div{font-size:14px; font-weight:700; padding:4px 0;}
@@ -911,6 +921,11 @@
   <section class="view" id="view-cantar">
     <div id="arb-bara" class="arb-bara" hidden></div>
     <div class="lockbar"><svg class="ui-ico" aria-hidden="true"><use href="#i-lock"></use></svg>Mod vizualizare – doar organizatorul poate modifica (lacătul de sus + PIN).</div>
+    <!-- „Ce urmează" stătea doar pe Acasă, iar treaba se face aici. Într-un concurs asta
+         înseamnă patru drumuri dus-întors între cele două ecrane, de fiecare dată doar ca
+         să te uiți ce urmează. Acum butonul e și aici: rămâi pe cântar toată ziua.
+         Arbitrii nu-l văd — ei au un singur lucru de făcut, cântăresc. -->
+    <div id="status-cantar" class="pas-sus arbhide"></div>
     <div class="seg arbhide">
       <button id="mc-1" class="on" onclick="setManche(1)"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșa 1</button>
       <button id="mc-2" onclick="setManche(2)"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșa 2</button>
@@ -4162,7 +4177,7 @@
     if(tab) tab.classList.add("on");
     if(v==="set") usaPornire();
     if(v==="rank") renderRank();
-    if(v==="cantar") renderList(); // standul se scrie din formularul fiecărui participant
+    if(v==="cantar"){ renderList(); improspateazaStatus(); } // standul se scrie din formularul fiecărui participant
     if(v==="cal"){ loadCalendarLive(); loadEvents(); }
     if(v==="part"){ renderMeniu(); improspateazaStatus(); }
     /* Versiunea se citea o singură dată, la pornire — adică ÎNAINTE ca service worker-ul
@@ -6953,16 +6968,26 @@
     }
     return parti.join("|");
   }
+  /* Numai butonul, fără panoul din jurul lui: atât îi trebuie ecranului de cântar, unde
+     starea se vede oricum din listă și din bara de ceas de sus. */
+  function butonulPasului(){
+    if(isLocked()) return "";
+    var pas=pasulUrmator();
+    return '<button type="button" class="sl-act" onclick="'+pas.a+'">'+esc(pas.t)+'</button>';
+  }
   function improspateazaStatus(){
-    var el=document.getElementById("status-live"); if(!el) return;
+    var el=document.getElementById("status-live");
+    var elC=document.getElementById("status-cantar");
+    if(!el && !elC) return;
     var semn=semnaturaStatus();
     if(semn===statusSemn){
-      var ceas=el.querySelector(".sl-ceas");
-      if(ceas) ceas.textContent="⏱ "+textCeas();
+      /* doar ceasul curge: se împrospătează pe loc, fără să se redeseneze tot */
+      if(el){ var ceas=el.querySelector(".sl-ceas"); if(ceas) ceas.textContent="⏱ "+textCeas(); }
       return;
     }
     statusSemn=semn;
-    el.innerHTML=statusLiveHtml();
+    if(el) el.innerHTML=statusLiveHtml();
+    if(elC) elC.innerHTML=butonulPasului();
   }
   /** cât ține o manșă, în minute: întâi cât s-a pus ultima oară, apoi cât e pe ceasul
       din Cronometru. Zero înseamnă „nu știu încă" — atunci se întreabă o dată. */
@@ -7498,7 +7523,9 @@
     // panoul de pe Acasă are un ceas care curge, deci se împrospătează odată cu bara —
     // dar numai când chiar se vede, ca să nu redesenăm degeaba în timpul cântăririi
     var acasa=document.getElementById("view-part");
-    if(acasa && acasa.classList.contains("active")) improspateazaStatus();
+    var cant=document.getElementById("view-cantar");
+    if((acasa && acasa.classList.contains("active")) ||
+       (cant && cant.classList.contains("active"))) improspateazaStatus();
   }
   function startTimerLoop(){ if(timerInt) clearInterval(timerInt); timerTick(); timerInt=setInterval(timerTick,1000); }
   function alarmNadire(){
