@@ -42,10 +42,13 @@ const ale = (u) => carduri().filter((c) => c.usa === u).map((c) => c.titlu);
 console.log("\n=== 1. Toate cardurile au ușa lor ===");
 {
   const toate = carduri();
-  t("ecranul are tot atâtea carduri câte avea", toate.length, 21);
+  /* 22, nu 21: „Orele manșelor" a venit din Calendar, unde stătea sub numele
+     „Cronometru concurs", cu „(opțional)" lângă ora de început — pe alt ecran decât cel
+     unde faci concursul, deși el e tocmai lucrul care face ziua să meargă fără tine. */
+  t("ecranul are tot atâtea carduri câte avea, plus ceasul venit din Calendar", toate.length, 22);
   t("niciunul nu a rămas fără ușă", toate.filter((c) => !c.usa).map((c) => c.titlu), []);
   t("nu s-a pierdut niciunul pe drum",
-    ale("u1").length + ale("u2").length + ale("u3").length, 21);
+    ale("u1").length + ale("u2").length + ale("u3").length, 22);
 }
 
 /* ================================================================
@@ -54,10 +57,12 @@ console.log("\n=== 1. Toate cardurile au ușa lor ===");
 console.log("\n=== 2. Ce e după fiecare ușă ===");
 {
   t("Concursul — ce se pregătește înainte de start", ale("u1"), [
-    "Numele concursului", "Sectoare", "Manșe", "Concurs pe echipe",
+    "Numele concursului", "Sectoare", "Manșe", "Orele manșelor", "Concurs pe echipe",
     "Puncte la sectoare inegale", "Import participanți", "Cum se calculează",
     "Baza de pescari",
   ]);
+  /* Orele stau imediat după Manșe fiindcă sunt ALE manșelor — fiecare cu ale ei. */
+  t("orele stau lângă manșe", ale("u1").indexOf("Orele manșelor"), ale("u1").indexOf("Manșe") + 1);
   t("Telefonul — ce se setează o dată", ale("u2"), [
     "Sincronizare & backup", "Clasament live pe alte telefoane",
     "Notificări live (doar Android/Chrome)", "Anunț vocal la cântar",
@@ -75,8 +80,8 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 console.log("\n=== 3. Câte carduri vezi odată ===");
 {
   const max = Math.max(ale("u1").length, ale("u2").length, ale("u3").length);
-  t("cel mai încărcat ecran are 8 carduri, nu 21", max, 8);
-  t("…adică mai puțin de jumătate din cât era", max * 2 < 21, true);
+  t("cel mai încărcat ecran are 9 carduri, nu 22", max, 9);
+  t("…adică mai puțin de jumătate din cât era", max * 2 < 22, true);
 }
 
 /* ================================================================
@@ -189,8 +194,13 @@ console.log("\n=== 8. Saltul deschide ușa ===");
      manșa, iar același drum în două locuri pe același ecran nu ajută pe nimeni. */
   t("dala nu mai trimite în Contul meu", /meniuGo\('set','card-cronometru'\)/.test(src), false);
   t("nici nu mai există ca dală", /"Cronometru","meniuGo/.test(src), false);
-  t("dar cardul cronometrului e la locul lui, în Calendar",
-    /id="view-cal"[\s\S]*?id="card-cronometru"/.test(src), true);
+  /* Ceasul a plecat din Calendar la Contul meu › Concursul: acolo faci concursul, iar
+     orele sunt ale lui, nu ale calendarului regional. */
+  t("ceasul nu mai stă în Calendar",
+    /id="view-cal"[\s\S]*?id="card-cronometru"/.test(
+      src.slice(src.indexOf('id="view-cal"'), src.indexOf('id="view-rank"'))), false);
+  t("…ci în Contul meu, pe ușa Concursul",
+    /<div class="card u1 lockhide" id="card-cronometru">/.test(src), true);
 }
 
 /* ================================================================

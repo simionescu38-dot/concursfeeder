@@ -33,7 +33,14 @@ t("pullState le preia doar când s-au schimbat", /oldEnd/.test(pullSrc), true);
 // ---------- 2. comportamentul cu ceas fals ----------
 function mediu(stare) {
   const alarme = [];
-  const camp = { "t-start": { value: "" }, "t-end": { value: "" }, "t-nadire": { value: "" }, "timerBar": { style: {}, textContent: "" } };
+  /* Rândurile de ore se desenează din cod, câte unul pe manșă, deci nu se mai poate
+     scrie lista de câmpuri dinainte: orice id cerut capătă un element. */
+  const camp = {};
+  const el = id => (camp[id] = camp[id] || {
+    value: "", style: {}, textContent: "", innerHTML: "",
+    /* ecranul Acasă nu e „activ" în probă, deci panoul lui nu se redesenează */
+    classList: { contains: () => false, toggle: () => {} }
+  });
   let acum = 0;
   // ceas fals doar pentru Date.now(); restul (getFullYear ș.a.) rămâne real,
   // fiindcă toLocalInput chiar formatează o dată
@@ -42,7 +49,7 @@ function mediu(stare) {
   const ctx = {
     state: stare,
     Date: CeasFals,
-    document: { getElementById: id => camp[id] || null },
+    document: { getElementById: el },
     setInterval: () => 1, clearInterval: () => {},
     alarmWarn: m => alarme.push("warn" + m),
     alarmEnd: () => alarme.push("end"),
@@ -59,6 +66,13 @@ function mediu(stare) {
     pragurileReale,
     grabFunction(src, "resetWarnings"),
     grabFunction(src, "adoptTimer"),
+    grabFunction(src, "numManse"),
+    grabFunction(src, "deseneazaOre"),
+    grabFunction(src, "umpleOre"),
+    grabFunction(src, "aplicaOreleMansei"),
+    grabFunction(src, "scrieCandSunaNadirea"),
+    grabFunction(src, "p2"),
+    grabFunction(src, "hhmm"),
     grabFunction(src, "toLocalInput"),
     grabFunction(src, "fmtDur"),
     grabFunction(src, "timerTick")
@@ -99,13 +113,51 @@ const FINAL = 1000 * MIN;
   t("bara arata concurs incheiat", /încheiat/.test(m.camp.timerBar.textContent), true);
 }
 
-// ora primită se vede și în câmpurile din Setări, ca organizatorul al doilea să o vadă
+/* Ora primită se vede și în câmpurile din Setări, ca organizatorul al doilea să o vadă.
+   Ce vine prin cameră e `startAt`/`endAt`, fără manșe — telefonul care primește le trece
+   pe manșa lor în `normalize()`, chemat de `pullState`. Aici starea e dată deja trecută
+   prin el; că `normalize` chiar face mutarea se verifică mai jos, pe funcția adevărată. */
 {
-  const m = mediu({ startAt: FINAL - 240 * MIN, endAt: FINAL, nadireMin: 15 });
+  const m = mediu({ startAt: FINAL - 240 * MIN, endAt: FINAL, nadireMin: 15,
+                    oreManse: { 1: { s: FINAL - 240 * MIN, e: FINAL } } });
   m.la(FINAL - 60 * MIN);
   m.ruleaza("adoptTimer");
-  t("campul cu ora de final se completeaza din camera", /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(m.camp["t-end"].value), true);
+  t("campul cu ora de final se completeaza din camera", /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(m.camp["ora-e-1"].value), true);
   t("minutele de nădire vin și ele", m.camp["t-nadire"].value, 15);
+  t("…și se scrie când sună nădirea", /nădirea la <b>\d{2}:\d{2}<\/b>/.test(m.camp["ore-nadire-cand"].innerHTML), true);
+}
+
+/* ---------- orele sunt ale manșelor ---------- */
+{
+  const nor = grabFunction(src, "normalize");
+  t("concursurile de dinainte își mută ceasul pe manșa lui",
+    /state\.oreManse\[state\.mansaCeas \|\| state\.manche \|\| 1\] =/.test(nor), true);
+  t("…doar dacă nu are deja ore pe manșe",
+    /if\(!Object\.keys\(state\.oreManse\)\.length && \(state\.startAt \|\| state\.endAt\)\)/.test(nor), true);
+
+  /* Trecerea la manșa următoare îi ia ceasul ei. Fără asta, manșa 2 rămânea cu orele
+     manșei 1 — demult trecute — și ziua părea încheiată înainte să înceapă. */
+  const START2 = FINAL + 60 * MIN;
+  const m = mediu({ manche: 1, numManse: 2, nadireMin: 10,
+                    startAt: FINAL - 240 * MIN, endAt: FINAL,
+                    oreManse: { 1: { s: FINAL - 240 * MIN, e: FINAL },
+                                2: { s: START2, e: START2 + 240 * MIN } } });
+  m.la(FINAL + 10 * MIN);
+  t("manșa 2 are ceasul ei", vm.runInContext("aplicaOreleMansei(2)", m.ctx), true);
+  t("…iar ceasul care merge e al ei", m.ctx.state.startAt, START2);
+  t("…și se ține minte a cui e", m.ctx.state.mansaCeas, 2);
+  t("o manșă fără ore nu clatină ceasul", vm.runInContext("aplicaOreleMansei(3)", m.ctx), false);
+  t("…ceasul rămâne al manșei 2", m.ctx.state.startAt, START2);
+
+  /* Câte rânduri se desenează: unul pe manșă, nici unul în plus. */
+  m.ctx.state.numManse = 3;
+  m.ruleaza("deseneazaOre");
+  t("trei manșe, trei rânduri",
+    (m.camp["ore-manse"].innerHTML.match(/id="ora-s-\d"/g) || []).length, 3);
+  m.ctx.state.numManse = 2;
+  m.ruleaza("deseneazaOre");
+  t("înapoi la două, două rânduri",
+    (m.camp["ore-manse"].innerHTML.match(/id="ora-s-\d"/g) || []).length, 2);
 }
 
 // ștergerea cronometrului în cameră golește câmpurile pe celălalt telefon
@@ -113,7 +165,7 @@ const FINAL = 1000 * MIN;
   const m = mediu({ startAt: null, endAt: null, nadireMin: 10 });
   m.la(FINAL);
   m.ruleaza("adoptTimer");
-  t("cronometru șters în cameră: câmpurile se golesc", m.camp["t-end"].value, "");
+  t("cronometru șters în cameră: câmpurile se golesc", m.camp["ora-e-1"].value, "");
   t("cronometru șters: bara se ascunde", m.camp.timerBar.style.display, "none");
 }
 

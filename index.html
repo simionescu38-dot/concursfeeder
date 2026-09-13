@@ -52,6 +52,17 @@
      scroll-margin-top spune saltului să lase bara deasupra. Înălțimea ei se schimbă cu
      lățimea ecranului, deci nu se scrie de mână: o măsoară masoaraAntetul(). */
   .card, .pliant, #event-form{ scroll-margin-top:var(--antet,101px); }
+  /* Un bloc pe manșă: numele ei, apoi ora de început și cea de final, fiecare pe rândul
+     ei. Nu una lângă alta: o căsuță de dată-și-oră are o lățime minimă mare, iar două
+     alături pe un telefon de 412px își ciuntesc textul — se vedea „12:C" în loc de ora
+     întreagă. O oră tăiată e mai rea decât un rând în plus. `min-width:0` lasă căsuța să
+     se strângă: fără el, o coloană de grilă nu coboară sub lățimea conținutului ei. */
+  .ora-rand{margin-bottom:16px;}
+  .ora-rand .ora-et{font-size:12px; font-weight:800; letter-spacing:.05em;
+                    text-transform:uppercase; color:var(--muted); margin-bottom:7px;}
+  .ora-linie{display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:center; margin-bottom:8px;}
+  .ora-linie .ora-cf{font-size:13.5px; color:var(--muted); white-space:nowrap; min-width:78px;}
+  .ora-linie input{margin:0; min-width:0; width:100%;}
   header .kicker,header h1,header .comp{padding-left:46px;}
   header .kicker{font-size:11px; letter-spacing:.18em; text-transform:uppercase; opacity:.7; font-weight:700;}
   header h1{margin:2px 0 0; font-size:20px; font-weight:800; letter-spacing:-.01em;}
@@ -1054,18 +1065,6 @@
       <p class="hint">Pagină publică cu toate camerele active chiar acum — oricine poate deschide clasamentul live al oricărui concurs, fără cod.</p>
     </div>
 
-    <div class="card lockhide" id="card-cronometru">
-      <div class="sec-title">Cronometru concurs</div>
-      <label class="f">Începe la (opțional)</label>
-      <input type="datetime-local" id="t-start" onchange="setTimer()">
-      <label class="f" style="margin-top:8px;">Nădire grea înainte de start (minute)</label>
-      <input inputmode="numeric" id="t-nadire" placeholder="ex: 10" onchange="setTimer()">
-      <label class="f" style="margin-top:8px;">Se termină la</label>
-      <input type="datetime-local" id="t-end" onchange="setTimer()">
-      <button class="btn btn-ghost mt" onclick="testHorn()"><svg class="ui-ico" aria-hidden="true"><use href="#i-volume"></use></svg>Ascultă claxonul</button>
-      <button class="btn btn-danger mt" onclick="clearTimer()">Șterge cronometrul</button>
-      <p class="hint">Timpul rămas apare sus în aplicație. Dacă setezi „Nădire grea", cu 10 minute (sau câte alegi) înainte de start sună o alertă de „ÎNCEPE NĂDIREA", apoi la ora de start sună „START PESCUIT". <b>Cu 30, 10, 5 și 1 minut înainte de final sună un claxon lung</b> și se anunță cât timp a mai rămas. La final sună alarma și se anunță „STOP PESCUIT!". Cântărirea rămâne permisă și după stop (peștii prinși înainte de final se cântăresc după). Apasă „Ascultă claxonul" o dată înainte de concurs — și ca să-i verifici volumul, și ca să deblochezi sunetul pe telefon.</p>
-    </div>
   </section>
 
   <!-- CLASAMENTE -->
@@ -1153,6 +1152,22 @@
         <button id="nm-3" onclick="setNumManse(3)">3 manșe</button>
       </div>
       <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
+    </div>
+
+    <!-- Ceasul stătea în Calendar, cu „(opțional)" scris lângă ora de început — adică pe
+         alt ecran decât cel unde faci concursul, și cu o vorbă care spunea că nu contează.
+         El e tocmai lucrul care face ziua să meargă fără tine: nădirea, startul, claxoanele
+         de final și stopul sună singure dacă orele sunt puse. Acum stă aici, lângă manșe,
+         fiindcă orele SUNT ale manșelor — fiecare cu ale ei. -->
+    <div class="card u1 lockhide" id="card-cronometru">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-clock"></use></svg>Orele manșelor</div>
+      <div id="ore-manse"></div>
+      <label class="f" style="margin-top:12px;">Nădire grea înainte de start (minute)</label>
+      <input inputmode="numeric" id="t-nadire" placeholder="ex: 10" onchange="setTimer()">
+      <p class="hint" id="ore-nadire-cand" style="margin-top:8px;"></p>
+      <button class="btn btn-ghost mt" onclick="testHorn()"><svg class="ui-ico" aria-hidden="true"><use href="#i-volume"></use></svg>Ascultă claxonul</button>
+      <button class="btn btn-danger mt" onclick="clearTimer()">Șterge orele</button>
+      <p class="hint">Pui orele o dată, aici, și nu mai apeși nimic toată ziua: cu 10 minute (sau câte alegi) înainte de start sună „ÎNCEPE NĂDIREA", la ora de start „START PESCUIT", <b>cu 30, 10, 5 și 1 minut înainte de final un claxon lung</b> cu cât a mai rămas, iar la final „STOP PESCUIT!". Cântărirea rămâne permisă și după stop — peștii prinși înainte de final se cântăresc după. Apasă „Ascultă claxonul" o dată înainte de concurs, și ca să-i verifici volumul, și ca să deblochezi sunetul pe telefon.</p>
     </div>
 
     <div class="card u1 lockhide">
@@ -3964,6 +3979,15 @@
     if(typeof state.scalaSectoare!=="boolean") state.scalaSectoare=false;
     if(typeof state.tandem!=="boolean") state.tandem=false;
     if(state.nadireMin===undefined || state.nadireMin===null) state.nadireMin=10;
+    /* Orele sunt ale MANȘELOR, fiecare cu ale ei. `startAt`/`endAt` rămân ceasul care
+       merge acum — pe ele le citesc bara de sus, panoul de pe Acasă și telefoanele care
+       privesc camera live. Concursurile de dinainte n-au câmpul ăsta: ceasul lor se mută
+       pe manșa căreia îi aparținea, altfel orele puse ieri ar părea pierdute. */
+    if(!state.oreManse || typeof state.oreManse!=="object" || Array.isArray(state.oreManse))
+      state.oreManse={};
+    if(!Object.keys(state.oreManse).length && (state.startAt || state.endAt))
+      state.oreManse[state.mansaCeas || state.manche || 1] =
+        {s:state.startAt||null, e:state.endAt||null};
     if(!(state.durataMin>0)) state.durataMin=0;
     if(typeof state.rules!=="string") state.rules="";
     if(typeof state.balta!=="string") state.balta="";
@@ -4103,7 +4127,14 @@
     window.scrollTo(0,0);
   }
   function setManche(mi){
-    state.manche=mi; save();
+    state.manche=mi;
+    /* Manșa nouă vine cu ceasul ei. Fără asta, „Treci la manșa 2" lăsa pe ecran orele
+       manșei 1 — demult trecute — și ziua părea încheiată înainte să înceapă. */
+    if(aplicaOreleMansei(mi)){
+      timerWasRunning=false; nadireAlerted=false; startAlerted=false;
+      resetWarnings(); startTimerLoop();
+    }
+    save();
     [1,2,3].forEach(function(i){ var b=document.getElementById("mc-"+i); if(b) b.classList.toggle("on", mi===i); });
     // „unde stă acum" e standul din manșa activă: altfel formularul de editare ar arăta
     // standul manșei trecute și l-ar scrie peste cel bun la prima salvare
@@ -6695,8 +6726,22 @@
     /* Ceasul rămas de la altă manșă e ca și cum n-ar fi: manșa asta n-a pornit încă.
        Concursurile de dinainte n-au însemnul, iar acolo rămâne purtarea veche. */
     var ceasStrain = state.mansaCeas && state.mansaCeas !== mi;
-    if(!state.startAt || stare === "neinceputa" || ceasStrain)
+    if(!state.startAt || ceasStrain)
       return {t:"▶️ Pornește manșa "+mi, a:"pornesteMansa()"};
+    /* Ora e pusă dinainte și n-a venit încă. Butonul spunea tot „Pornește manșa", iar
+       apăsat îți călca ora și sărea peste nădirea grea. Acum spune UNDE ești; drumul
+       rămâne același, fiindcă pornesteMansa() te întreabă înainte să calce ora — așa,
+       cine începe mai târziu decât scrie pe hârtie tot poate porni pe loc. */
+    if(stare === "neinceputa"){
+      var acum = nowSync();
+      var nd = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
+      var nadireAt = nd>0 ? (state.startAt - nd*60000) : null;
+      if(nadireAt && acum >= nadireAt)
+        return {t:"🎣 Nădire grea · mai sunt "+fmtDur(state.startAt-acum), a:"pornesteMansa()"};
+      return {t:"⏱ Manșa "+mi+" începe la "+hhmm(new Date(state.startAt))+
+                (nadireAt ? " · nădirea la "+hhmm(new Date(nadireAt)) : ""),
+              a:"pornesteMansa()"};
+    }
     return {t:"Cântărește · "+gata+" din "+P.length, a:"showView('cantar')"};
   }
   /* Tragerea la sorți se trece dintr-o poză sau dintr-un mesaj lipit — sertarul ei stă pe
@@ -7280,10 +7325,7 @@
     // dacă a intrat după final, nu mai sună claxonul de încheiere; dacă a intrat
     // în timpul concursului, timerTick pune la loc timerWasRunning și îl va suna
     if(!state.endAt || now>state.endAt) timerWasRunning=false;
-    var ts=document.getElementById("t-start"), te=document.getElementById("t-end"), tn=document.getElementById("t-nadire");
-    if(ts) ts.value = state.startAt ? toLocalInput(state.startAt) : "";
-    if(te) te.value = state.endAt ? toLocalInput(state.endAt) : "";
-    if(tn) tn.value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
+    deseneazaOre();
     timerTick();
   }
   function toLocalInput(ms){
@@ -7291,24 +7333,77 @@
     function p2(n){ return (n<10?"0":"")+n; }
     return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())+"T"+p2(d.getHours())+":"+p2(d.getMinutes());
   }
+  /* Un rând de ore pentru fiecare manșă. Se redesenează când se schimbă numărul de manșe,
+     ca să nu rămână pe ecran un rând al unei manșe care nu mai există. */
+  function deseneazaOre(){
+    var box=document.getElementById("ore-manse");
+    if(!box) return;
+    var n=numManse(), h="";
+    for(var i=1;i<=n;i++){
+      h+='<div class="ora-rand">'+
+           '<div class="ora-et">Manșa '+i+'</div>'+
+           '<div class="ora-linie"><label class="ora-cf" for="ora-s-'+i+'">Începe</label>'+
+             '<input type="datetime-local" id="ora-s-'+i+'" onchange="setTimer()"></div>'+
+           '<div class="ora-linie"><label class="ora-cf" for="ora-e-'+i+'">Se termină</label>'+
+             '<input type="datetime-local" id="ora-e-'+i+'" onchange="setTimer()"></div>'+
+         '</div>';
+    }
+    box.innerHTML=h;
+    umpleOre();
+  }
+  function umpleOre(){
+    var ore=state.oreManse||{};
+    for(var i=1;i<=3;i++){
+      var a=document.getElementById("ora-s-"+i), b=document.getElementById("ora-e-"+i);
+      var o=ore[i]||{};
+      if(a) a.value = o.s ? toLocalInput(o.s) : "";
+      if(b) b.value = o.e ? toLocalInput(o.e) : "";
+    }
+    var tn=document.getElementById("t-nadire");
+    if(tn) tn.value = (state.nadireMin===undefined||state.nadireMin===null) ? 10 : state.nadireMin;
+    scrieCandSunaNadirea();
+  }
+  /* Ceasul care merge e al manșei active. De-aia orele stau pe manșe, dar startAt/endAt
+     sunt mereu ale manșei de acum — altfel bara de sus ar arăta ora altei manșe. */
+  function aplicaOreleMansei(mi){
+    var o=(state.oreManse||{})[mi];
+    if(!o || (!o.s && !o.e)) return false;
+    state.startAt=o.s||null; state.endAt=o.e||null; state.mansaCeas=mi;
+    return true;
+  }
+  function scrieCandSunaNadirea(){
+    var el=document.getElementById("ore-nadire-cand");
+    if(!el) return;
+    var mi=state.manche||1, o=(state.oreManse||{})[mi];
+    var nd=(state.nadireMin===undefined||state.nadireMin===null)?10:state.nadireMin;
+    if(!o || !o.s){ el.textContent=""; return; }
+    el.innerHTML = "Manșa "+mi+": startul la <b>"+hhmm(new Date(o.s))+"</b>"+
+      (nd>0 ? ", nădirea la <b>"+hhmm(new Date(o.s-nd*60000))+"</b>" : ", fără nădire")+".";
+  }
   function setTimer(){
     if(guard()) return;
-    var s=document.getElementById("t-start").value, e=document.getElementById("t-end").value;
+    var n=numManse(), ore={};
+    for(var i=1;i<=n;i++){
+      var a=document.getElementById("ora-s-"+i), b=document.getElementById("ora-e-"+i);
+      var sv=a?a.value:"", ev=b?b.value:"";
+      if(sv || ev) ore[i]={s: sv?new Date(sv).getTime():null, e: ev?new Date(ev).getTime():null};
+    }
+    state.oreManse=ore;
     var nd=document.getElementById("t-nadire").value;
-    state.startAt = s ? new Date(s).getTime() : null;
-    state.endAt = e ? new Date(e).getTime() : null;
     state.nadireMin = nd!=="" ? Math.max(0, parseInt(nd,10)||0) : 10;
+    aplicaOreleMansei(state.manche||1);
     // queueSave, nu save: orele concursului trebuie să ajungă și pe telefoanele
     // care urmăresc camera live, altfel doar organizatorul vede timpul rămas
     queueSave(); timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings(); startTimerLoop();
-    if(state.endAt) toast("Cronometru setat");
+    scrieCandSunaNadirea(); improspateazaStatus();
+    if(state.endAt) toast("Orele puse");
   }
   function clearTimer(){
     if(guard()) return;
-    state.startAt=null; state.endAt=null; queueSave();
-    document.getElementById("t-start").value=""; document.getElementById("t-end").value="";
+    state.startAt=null; state.endAt=null; state.oreManse={}; queueSave();
+    umpleOre();
     timerWasRunning=false; nadireAlerted=false; startAlerted=false; resetWarnings();
-    startTimerLoop(); toast("Cronometru șters");
+    startTimerLoop(); improspateazaStatus(); toast("Orele șterse");
   }
   function fmtDur(ms){
     var s=Math.max(0,Math.floor(ms/1000));
