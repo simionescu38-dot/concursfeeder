@@ -264,4 +264,55 @@ console.log("\n=== 10. Alegerea de-o dată, strânsă în pliant ===");
     /Se poate schimba din Contul meu, la „Puncte la sectoare inegale"/.test(src), true);
 }
 
+/* ================================================================
+   11. Ce dai la ședința tehnică stă la Concursul, nu la Telefonul.
+
+   Linkul live pentru pescari și codul arbitrilor stăteau amândouă în cardul „Clasament
+   live pe alte telefoane", pe ușa Telefonului — adică la „ce se setează o dată". Dar
+   codul camerei și cheia se pun o dată; codurile astea se dau la FIECARE concurs,
+   dimineața, în fața oamenilor.
+
+   (Pliantul arbitrilor NU se vedea pe toate ușile, cum crezusem la prima citire: stătea
+   ÎNĂUNTRUL cardului de pe ușa u2, deci moștenea ușa lui. Verificat în browser.)
+   ================================================================ */
+console.log("\n=== 11. Codurile date oamenilor, la Concursul ===");
+{
+  const sync = set.slice(set.indexOf('id="card-sync"'),
+                         set.indexOf('id="card-sync"') + 2600);
+  const sed = set.slice(set.indexOf('id="pliant-sedinta"'),
+                        set.indexOf('id="pliant-sedinta"') + 3000);
+
+  t("pliantul ședinței stă după ușa Concursul",
+    /<div class="pliant mt u1 lockhide" id="pliant-sedinta">/.test(set), true);
+  t("…cu vorba lui, luată de pe pliantul vechi",
+    /La ședința tehnică <span class="rar">dimineața, la baltă<\/span>/.test(set), true);
+
+  /* Amândouă codurile au venit aici. */
+  t("linkul live e în el", /onclick="shareLiveLink\(\)"/.test(sed), true);
+  t("…și codul QR al lui", /id="live-qr-wrap"/.test(sed), true);
+  t("codul arbitrilor e în el", /onclick="faCodArbitri\(\)"/.test(sed), true);
+  t("…și codul QR al lor", /id="arb-qr-wrap"/.test(sed), true);
+
+  /* …și au plecat de unde erau. */
+  t("cardul Telefonului nu mai are linkul live", /shareLiveLink/.test(sync), false);
+  t("…nici codul arbitrilor", /faCodArbitri/.test(sync), false);
+  t("…iar pliantul vechi nu mai există nicăieri", /pliant-arbitri/.test(src), false);
+
+  /* Ce se setează o dată a rămas unde era. */
+  t("codul camerei a rămas la Telefonul", /id="sync-room"/.test(sync), true);
+  t("…cheia de scriere la fel", /id="sync-key"/.test(sync), true);
+  t("…și trimiterea de mână în cameră", /onclick="trimiteAcum\(\)"/.test(sync), true);
+  t("cardul lui trimite omul unde s-au mutat celelalte",
+    /Concursul → La ședința tehnică/.test(sync), true);
+
+  /* Fără codul camerei, butoanele n-au de unde scoate nimic: se spune pe loc. */
+  t("spune când lipsește codul camerei", /id="sedinta-fara-camera"/.test(set), true);
+  t("…iar semnul se aprinde chiar din codul camerei",
+    /fara\.style\.display = syncRoom \? "none" : "block";/.test(H.grabFunction(src, "updateLiveQr")), true);
+
+  /* Niciun card în plus pe nicio ușă: au venit ca pliant, nu ca încă un card. */
+  t("ușa Concursul are tot 8 carduri", ale("u1").length, 8);
+  t("ușa Telefonului are tot 6", ale("u2").length, 6);
+}
+
 t.raport();
