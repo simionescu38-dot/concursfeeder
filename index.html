@@ -1231,7 +1231,7 @@
 
     <div class="card u2 lockhide" id="card-sync">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-live"></use></svg>Clasament live pe alte telefoane</div>
-      <p class="hint" style="margin:0 0 10px;">Setează un cod de cameră și o cheie de scriere (o dată, pe telefonul organizatorului). De fiecare dată când cântărești, datele urcă automat în cloud. Trimite apoi linkul de mai jos celorlalți — ei văd clasamentul live, fără să poată modifica nimic.</p>
+      <p class="hint" style="margin:0 0 10px;">Setează un cod de cameră și o cheie de scriere — <b>o dată, pe telefonul organizatorului</b>. De fiecare dată când cântărești, datele urcă singure în cloud. Codurile pe care le dai oamenilor la baltă — linkul live pentru pescari și codul arbitrilor — stau la <b>Concursul → La ședința tehnică</b>, fiindcă alea le dai la fiecare concurs, nu o dată.</p>
       <label class="f">Cod cameră</label>
       <div class="row">
         <input id="sync-room" placeholder="ex: feedermoldova" oninput="saveSyncRoom(this.value)">
@@ -1245,27 +1245,8 @@
       </div>
       <p class="hint" id="cheie-info" style="margin:6px 0 0;"></p>
       <button class="btn btn-primary mt" onclick="trimiteAcum()"><svg class="ui-ico" aria-hidden="true"><use href="#i-cloud"></use></svg>Trimite datele acum în cameră</button>
-      <button class="btn btn-ghost mt" onclick="shareLiveLink()"><svg class="ui-ico" aria-hidden="true"><use href="#i-link"></use></svg>Trimite linkul live celorlalți</button>
       <p class="hint" id="sync-status" style="margin-top:8px;"></p>
       <p class="hint">Cheia de scriere rămâne doar pe telefonul tău — nu o pune în linkul trimis altora.</p>
-      <div id="live-qr-wrap" style="display:none; text-align:center; margin-top:14px;">
-        <div id="live-qr" style="display:inline-block; width:220px; max-width:100%; border-radius:12px; background:#fff; padding:8px; box-shadow:var(--shadow-sm);" role="img" aria-label="Cod QR spre clasamentul live"></div>
-        <p class="hint">Afișează codul ăsta la baltă — oricine îl scanează cu camera telefonului ajunge direct la clasamentul live.</p>
-      </div>
-
-      <div class="pliant mt" id="pliant-arbitri">
-        <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-arbitri')"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Codul arbitrilor <span class="rar">la ședința tehnică</span></button>
-        <div class="pliant-in" hidden>
-          <p class="hint" style="margin-top:0;">Arbitrii scanează codul ăsta cu telefoanele lor. Intră direct pe ecranul de cântărit, își aleg sectorul, și atât — nu pot schimba sectoarele, manșele, punctajul sau serverul.</p>
-          <button class="btn btn-primary" onclick="faCodArbitri()"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Fă codul arbitrilor</button>
-          <div id="arb-qr-wrap" style="display:none; text-align:center; margin-top:14px;">
-            <div id="arb-qr" style="display:inline-block; width:220px; max-width:100%; border-radius:12px; background:#fff; padding:8px; box-shadow:var(--shadow-sm);" role="img" aria-label="Cod QR pentru arbitri"></div>
-            <p class="hint" id="arb-qr-info" style="margin-top:8px;"></p>
-            <button class="btn btn-ghost mt" onclick="trimiteCodArbitri()"><svg class="ui-ico" aria-hidden="true"><use href="#i-link"></use></svg>Trimite linkul unui arbitru</button>
-          </div>
-          <p class="hint">Codul e al concursului ăstuia. Dacă îl vede cine nu trebuie, apeși din nou „Fă codul arbitrilor" — cel vechi nu mai merge din clipa aceea.</p>
-        </div>
-      </div>
     </div>
 
     <!-- Trei carduri de mecanică a serverului, care nu se ating la un concurs obișnuit.
@@ -1305,6 +1286,37 @@
       <div class="sec-title">Baza de pescari</div>
       <button class="btn btn-ghost" onclick="showView('pescari')">Deschide baza de pescari</button>
       <p class="hint" id="pescari-scurt">Fiecare pescar cu codul lui, o dată, pentru tot sezonul.</p>
+    </div>
+
+    <!-- Cele două coduri pe care le dai OAMENILOR, dimineața, în fața lor. Stăteau
+         amândouă în cardul „Clasament live pe alte telefoane", pe ușa Telefonului —
+         adică la „ce se setează o dată". Dar codul camerei și cheia se pun o dată;
+         codurile astea se dau la FIECARE concurs. Ce se setează o dată a rămas acolo;
+         ce dai din mână a venit aici, la Concursul, unde e restul pregătirii.
+         „La ședința tehnică" e vorba lui, luată chiar de pe pliantul arbitrilor. -->
+    <div class="pliant mt u1 lockhide" id="pliant-sedinta">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-sedinta')"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>La ședința tehnică <span class="rar">dimineața, la baltă</span></button>
+      <div class="pliant-in" hidden>
+        <p class="hint" id="sedinta-fara-camera" style="margin-top:0; display:none;">⚠ Întâi pune codul camerei, la <b>Telefonul → Clasament live pe alte telefoane</b>. Fără el, codurile astea n-au de unde ieși.</p>
+
+        <div class="sec-title" style="margin-top:0;">Pescarilor — clasamentul live</div>
+        <p class="hint" style="margin:0 0 10px;">Îl văd pe telefoanele lor, în timp real, fără să poată schimba nimic.</p>
+        <button class="btn btn-ghost" onclick="shareLiveLink()"><svg class="ui-ico" aria-hidden="true"><use href="#i-link"></use></svg>Trimite linkul live celorlalți</button>
+        <div id="live-qr-wrap" style="display:none; text-align:center; margin-top:14px;">
+          <div id="live-qr" style="display:inline-block; width:220px; max-width:100%; border-radius:12px; background:#fff; padding:8px; box-shadow:var(--shadow-sm);" role="img" aria-label="Cod QR spre clasamentul live"></div>
+          <p class="hint">Afișează codul ăsta la baltă — oricine îl scanează cu camera telefonului ajunge direct la clasamentul live.</p>
+        </div>
+
+        <div class="sec-title" style="margin-top:20px;">Arbitrilor — codul lor</div>
+        <p class="hint" style="margin:0 0 10px;">Arbitrii scanează codul ăsta cu telefoanele lor. Intră direct pe ecranul de cântărit, își aleg sectorul, și atât — nu pot schimba sectoarele, manșele, punctajul sau serverul.</p>
+        <button class="btn btn-primary" onclick="faCodArbitri()"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Fă codul arbitrilor</button>
+        <div id="arb-qr-wrap" style="display:none; text-align:center; margin-top:14px;">
+          <div id="arb-qr" style="display:inline-block; width:220px; max-width:100%; border-radius:12px; background:#fff; padding:8px; box-shadow:var(--shadow-sm);" role="img" aria-label="Cod QR pentru arbitri"></div>
+          <p class="hint" id="arb-qr-info" style="margin-top:8px;"></p>
+          <button class="btn btn-ghost mt" onclick="trimiteCodArbitri()"><svg class="ui-ico" aria-hidden="true"><use href="#i-link"></use></svg>Trimite linkul unui arbitru</button>
+        </div>
+        <p class="hint">Codul e al concursului ăstuia. Dacă îl vede cine nu trebuie, apeși din nou „Fă codul arbitrilor" — cel vechi nu mai merge din clipa aceea.</p>
+      </div>
     </div>
 
     <div class="card u2">
@@ -3370,6 +3382,10 @@
 
   function liveLink(){ return location.origin+location.pathname+"?room="+encodeURIComponent(syncRoom); }
   function updateLiveQr(){
+    /* Fără codul camerei, niciunul dintre codurile de la ședința tehnică n-are de unde
+       ieși. Se spune pe loc, acolo, nu se lasă omul să apese și să nu se întâmple nimic. */
+    var fara=document.getElementById("sedinta-fara-camera");
+    if(fara) fara.style.display = syncRoom ? "none" : "block";
     var wrap=document.getElementById("live-qr-wrap"), box=document.getElementById("live-qr");
     if(!wrap || !box) return;
     if(!syncRoom){ wrap.style.display="none"; return; }
