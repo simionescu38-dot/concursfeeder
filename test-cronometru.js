@@ -149,6 +149,12 @@ const FINAL = 1000 * MIN;
   t("o manșă fără ore nu clatină ceasul", vm.runInContext("aplicaOreleMansei(3)", m.ctx), false);
   t("…ceasul rămâne al manșei 2", m.ctx.state.startAt, START2);
 
+  /* Schimbarea numărului de manșe redesenează pe loc: pe ecranul „Fă concursul" butoanele
+     de manșe stau chiar deasupra orelor, iar un rând care apare abia la următoarea intrare
+     pe ecran e un rând pe care omul nu-l vede. */
+  t("alegerea manșelor redesenează orele",
+    /deseneazaOre\(\);/.test(grabFunction(src, "setNumManse")), true);
+
   /* Câte rânduri se desenează: unul pe manșă, nici unul în plus. */
   m.ctx.state.numManse = 3;
   m.ruleaza("deseneazaOre");
