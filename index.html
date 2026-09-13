@@ -237,6 +237,26 @@
   .p-total .val small{font-size:12px; font-weight:700; color:var(--muted);}
 
   .summary{display:flex; gap:8px; margin-bottom:10px;}
+  /* ---------- cum stă sectorul, chiar sub cântar ----------
+     Clasamentul era pe alt ecran, iar în manșă te duceai până acolo doar ca să vezi
+     unde a intrat cel pe care tocmai l-ai cântărit. Aici e sectorul în care ești, atât:
+     tot clasamentul se uită la final, nu în manșă, și ar împinge lista de pescari jos. */
+  .sect-live{background:var(--card); border:1px solid var(--line); border-radius:14px;
+             padding:11px 13px 8px; margin-bottom:10px;}
+  .sect-live .sl-t{font-size:11px; font-weight:800; letter-spacing:.12em;
+                   text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
+  .sect-live .sl-r{display:grid; grid-template-columns:22px 1fr auto; gap:9px;
+                   padding:6px 0; font-size:13.5px; align-items:baseline;}
+  .sect-live .sl-r + .sl-r{border-top:1px solid rgba(32,50,67,.55);}
+  .sect-live .sl-loc{color:var(--muted); font-weight:700; font-variant-numeric:tabular-nums;
+                     text-align:center;}
+  .sect-live .sl-nm{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .sect-live .sl-kg{font-weight:800; font-variant-numeric:tabular-nums;}
+  /* Cel tocmai cântărit se vede fără să-l cauți: ăsta e singurul motiv pentru care
+     te uitai la clasament în mijlocul manșei. */
+  .sect-live .sl-r.acum .sl-nm, .sect-live .sl-r.acum .sl-kg,
+  .sect-live .sl-r.acum .sl-loc{color:var(--teal);}
+  .sect-live .sl-rupt{border-top:1px dashed var(--line); margin-top:2px; padding-top:8px;}
   .stat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:8px 10px; box-shadow:var(--shadow-sm);}
   .stat .n{font-size:21px; font-weight:800;}
   .stat .l{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
@@ -682,6 +702,11 @@
     color:var(--muted); border-radius:12px; padding:9px 16px; font-size:13px; font-weight:700;
     font-family:inherit; cursor:pointer;
   }
+  /* Butonul are „hidden" scris în pagină încă de la început, dar `display:block` de mai sus
+     îl bate: un atribut nu e mai tare decât o regulă de clasă. Adică „Ies din arbitraj" s-a
+     văzut TOT timpul, și organizatorului, pe ecranul de cântar — un buton care n-are ce
+     căuta acolo și care, apăsat, îi strica singur camera. Găsit în poza de la 412px. */
+  .arb-iesire[hidden]{display:none;}
 
   /* cronometru */
   #timerBar{margin-top:8px; background:rgba(255,255,255,.16); border-radius:10px; padding:6px 12px; font-weight:800; font-size:14px; display:none; font-variant-numeric:tabular-nums;}
@@ -986,6 +1011,9 @@
       <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
     </div>
 
+    <!-- Clasamentul sectorului stă AICI, sub cifrele de sus, nu la capătul listei:
+         după o cântărire nu mai derulezi peste 33 de pescari ca să vezi ce s-a schimbat. -->
+    <div id="sectorul" class="sect-live" style="display:none;"></div>
     <div id="warn-stand" style="display:none;"></div>
     <div id="warn-sector" style="display:none;"></div>
     <div id="warn-cod" style="display:none;"></div>
@@ -4685,6 +4713,69 @@
   // Câți au ceva pe cântar în manșa la care lucrezi. Duminică lista celor 11 era trecută,
   // dar greutățile nu — și nimic de pe ecran nu spunea asta.
   function catiCantariti(){ return state.participants.filter(function(p){ return totalOf(p)>0; }).length; }
+  /* În ce sector ești ACUM. Arbitrul are unul singur, ales de el. Organizatorul umblă
+     prin toate, deci „unde ești" înseamnă unde ai cântărit ultima oară — nu o setare
+     pe care ar trebui s-o țină el minte. Dacă n-a cântărit nimeni încă, nu e niciun
+     sector „de acum", și blocul nici nu se desenează. */
+  function sectorulDeAcum(mi){
+    if(esteArbitru() && arbitruSector) return arbitruSector;
+    var cand=0, unde="";
+    (state.participants||[]).forEach(function(p){
+      var m=mOf(p, mi), t=(m.catchTimes||[]).concat(m.extraTimes||[]);
+      t.forEach(function(x){
+        if((+x||0) > cand){ cand=+x; unde=sectorOfM(p, mi)||""; }
+      });
+    });
+    return unde;
+  }
+
+  /* Primii cinci din sector, plus cel tocmai cântărit dacă n-a intrat între ei — ăla
+     e singurul motiv pentru care te uitai la clasament în mijlocul manșei. Patru, nu
+     tot sectorul: măsurat la 412px, șase rânduri fac blocul de 199px — aproape un sfert
+     de ecran, luat de la cântar. Cu patru, rămâne sub 170. */
+  function deseneazaSectorul(){
+    var box=document.getElementById("sectorul"); if(!box) return;
+    var ascunde=function(){ box.style.display="none"; box.innerHTML=""; };
+    var mi=state.manche||1;
+    var sec=sectorulDeAcum(mi);
+    if(!sec) return ascunde();
+    /* Doar cine ARE un rezultat în manșa asta: cântărit, sau lampă. Prinsă la probă, nu
+       la citit — cu tot sectorul înăuntru, la începutul manșei blocul era o listă de
+       zerouri cu un singur nume adevărat în vârf. Aia nu e clasament.
+       Cel trecut absent nu intră: el n-a pescuit, n-are ce loc să ocupe. */
+    var ai=(state.participants||[]).filter(function(p){
+      if((sectorOfM(p,mi)||"")!==sec) return false;
+      var st=stareaLaMansa(p, mi);
+      return st==="cantarit" || st==="zero";
+    });
+    if(ai.length<2) return ascunde();   // cu unul singur n-ai ce ordine să vezi
+
+    /* Cine a fost cântărit ultimul, ca să se vadă unde a intrat. */
+    var cand=0, ultim="";
+    ai.forEach(function(p){
+      var m=mOf(p, mi), t=(m.catchTimes||[]).concat(m.extraTimes||[]);
+      t.forEach(function(x){ if((+x||0) > cand){ cand=+x; ultim=p.id; } });
+    });
+
+    var sir=sortRankS(ai, mi);
+    var rand=function(p, loc, rupt){
+      return '<div class="sl-r'+(p.id===ultim?" acum":"")+(rupt?" sl-rupt":"")+'">'+
+             '<span class="sl-loc">'+loc+'</span>'+
+             '<span class="sl-nm">'+esc((standOfM(p,mi)||"–")+" "+nameOf(p))+'</span>'+
+             '<span class="sl-kg">'+esc(fmt(totalOfM(p,mi)))+'</span></div>';
+    };
+    var h='<div class="sl-t">Sector '+esc(sec)+' · manșa '+mi+'</div>';
+    var prim=sir.slice(0,4);
+    prim.forEach(function(p,i){ h+=rand(p, i+1); });
+    /* Cel tocmai cântărit, dacă a rămas în afara primilor cinci: cu locul lui adevărat,
+       despărțit printr-o linie, ca să nu pară al șaselea. */
+    if(ultim && !prim.some(function(p){ return p.id===ultim; })){
+      for(var i=4;i<sir.length;i++) if(sir[i].id===ultim){ h+=rand(sir[i], i+1, true); break; }
+    }
+    box.innerHTML=h;
+    box.style.display="";
+  }
+
   function improspateazaCantariti(){
     var el=document.getElementById("st-count"); if(!el) return;
     /* Arbitrul răspunde de sectorul lui, deci cifrele de sus sunt ale sectorului.
@@ -4944,6 +5035,7 @@
     var st=document.getElementById("st-total"); if(st) st.textContent=fmt(sumAll());
     improspateazaCantariti();
     improspateazaJurnal();
+    deseneazaSectorul();
   }
 
   /* ---------- cântare citite de pe poza cântarului ---------- */
@@ -6509,6 +6601,7 @@
     updateWarnSector();
     updateWarnCod();
     improspateazaCantariti();
+    deseneazaSectorul();
     document.getElementById("st-total").textContent = fmt(sumAll());
     if(state.participants.length===0){
       list.innerHTML='<div class="empty"><div class="big">🎣</div>Niciun participant încă.<br>Adaugă primul stand mai sus.</div>';
