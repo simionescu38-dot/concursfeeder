@@ -271,4 +271,48 @@ console.log("\n=== 5. Panoul de pe Acasă ===");
   t("pasul intră în semnătura panoului", /pasulUrmator\(\)\.t/.test(semn), true);
 }
 
+/* ================================================================
+   6. Butonul stă și pe ecranul de cântar.
+
+   „Nu vreau să mă plimb prin aplicație să amețesc." Panoul cu pasul următor era DOAR pe
+   Acasă, iar treaba se face la Cântar. Într-un concurs asta însemna patru drumuri
+   dus-întors între cele două ecrane — de fiecare dată doar ca să te uiți ce urmează.
+   ================================================================ */
+console.log("\n=== 6. Același buton, și la Cântar ===");
+{
+  const cantar = src.slice(src.indexOf('id="view-cantar"'), src.indexOf('id="view-rank"'));
+
+  t("are locul lui sus pe cântar", /<div id="status-cantar" class="pas-sus arbhide"><\/div>/.test(cantar), true);
+  t("…deasupra manșelor, nu jos", cantar.indexOf('id="status-cantar"') < cantar.indexOf('id="mc-1"'), true);
+  /* Arbitrii au un singur lucru de făcut. Un buton care le spune „publică rezultatul"
+     e ceva ce n-au voie oricum. */
+  t("arbitrii nu-l văd", /id="status-cantar" class="pas-sus arbhide"/.test(cantar), true);
+
+  const bp = H.grabFunction(src, "butonulPasului");
+  t("e același pas ca pe Acasă", /pasulUrmator\(\)/.test(bp), true);
+  t("…doar butonul, fără panoul din jur", /sl-cifre|sl-lider|sl-cap/.test(bp), false);
+  /* Cine doar privește clasamentul nu are ce apăsa. */
+  t("cu lacătul pus nu se arată", /if\(isLocked\(\)\) return "";/.test(bp), true);
+  t("textul trece prin esc()", /esc\(pas\.t\)/.test(bp), true);
+  /* „Un singur buton scos în față pe ecran." Pe Cântar, acela e deja „+ Adaugă la listă".
+     Al doilea buton plin ar face ca niciunul să nu mai fie cel important — de-aia ăsta e
+     contur. Se vede oricum primul: e lat cât ecranul și stă sus de tot. */
+  t("butonul de sus nu e al doilea buton plin",
+    /\.pas-sus \.sl-act\{[^}]*background:var\(--teal-soft\)/.test(src), true);
+  t("…dar e scos în evidență cu contur",
+    /\.pas-sus \.sl-act\{[^}]*border:1\.5px solid var\(--teal\)/.test(src), true);
+
+  const isp = H.grabFunction(src, "improspateazaStatus");
+  t("se umple odată cu cel de pe Acasă", /elC\.innerHTML=butonulPasului\(\);/.test(isp), true);
+  /* Dacă ar ieși devreme când lipsește panoul de pe Acasă, butonul de la Cântar n-ar mai
+     fi umplut niciodată pe un telefon care stă pe ecranul de cântar. */
+  t("nu iese devreme când unul dintre ele lipsește", /if\(!el && !elC\) return;/.test(isp), true);
+
+  t("se împrospătează la intrarea pe cântar",
+    /if\(v==="cantar"\)\{ renderList\(\); improspateazaStatus\(\); \}/.test(src), true);
+  /* Ceasul curge și cât cântărești: „🎣 Nădire grea · mai sunt 9:40" trebuie să scadă. */
+  t("…și cât curge ceasul, pe oricare dintre cele două ecrane",
+    /\(cant && cant\.classList\.contains\("active"\)\)\) improspateazaStatus\(\);/.test(src), true);
+}
+
 t.raport();
