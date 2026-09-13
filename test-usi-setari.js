@@ -193,4 +193,31 @@ console.log("\n=== 8. Saltul deschide ușa ===");
     /id="view-cal"[\s\S]*?id="card-cronometru"/.test(src), true);
 }
 
+/* ================================================================
+   9. Saltul aterizează SUB bara de sus, nu în spatele ei.
+
+   Antetul e `position:sticky; top:0`, deci un salt cu scrollIntoView({block:"start"})
+   duce ținta la y=0 — adică fix în spatele barei. „Fă concursul" ajungea pe cardul cu
+   numele, dar căsuța de scris rămânea acoperită: primul lucru vizibil era „Balta", și
+   omul credea că a nimerit aiurea. Măsurat în browser, pe fișierul livrat: −49px pe
+   telefon, −59px pe ecran lat.
+   ================================================================ */
+console.log("\n=== 9. Saltul nu intră sub bară ===");
+{
+  t("ținta saltului lasă loc barei",
+    /\.card, \.pliant, #event-form\{ scroll-margin-top:var\(--antet,\s*\d+px\); \}/.test(src), true);
+  /* Bara e mai înaltă pe ecran lat (93px pe telefon, 102px la 900px lățime), deci
+     înălțimea nu se scrie de mână — se măsoară. */
+  const m = H.grabFunction(src, "masoaraAntetul");
+  t("înălțimea barei se măsoară, nu se ghicește", /h\.offsetHeight/.test(m), true);
+  t("…și se pune acolo unde o citește regula", /setProperty\("--antet"/.test(m), true);
+  t("se măsoară la pornirea aplicației", /\(function\(\)\{(?:\s*\r?\n)?\s*masoaraAntetul\(\);/.test(src), true);
+  t("…și când se rotește telefonul",
+    /window\.addEventListener\("resize", masoaraAntetul\);/.test(src), true);
+  /* Dacă regula ar prinde doar cardurile, „Trage la sorți" — care sare la un pliant —
+     ar rămâne cu defectul. */
+  t("regula prinde și pliantele, unde sare tragerea la sorți",
+    /\.pliant[^{]*\{ scroll-margin-top/.test(src), true);
+}
+
 t.raport();
