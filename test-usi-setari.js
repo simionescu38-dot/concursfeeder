@@ -42,13 +42,14 @@ const ale = (u) => carduri().filter((c) => c.usa === u).map((c) => c.titlu);
 console.log("\n=== 1. Toate cardurile au ușa lor ===");
 {
   const toate = carduri();
-  /* 22, nu 21: „Orele manșelor" a venit din Calendar, unde stătea sub numele
-     „Cronometru concurs", cu „(opțional)" lângă ora de început — pe alt ecran decât cel
-     unde faci concursul, deși el e tocmai lucrul care face ziua să meargă fără tine. */
-  t("ecranul are tot atâtea carduri câte avea, plus ceasul venit din Calendar", toate.length, 22);
+  /* 21: ceasul a venit din Calendar (+1) — stătea acolo sub numele „Cronometru concurs",
+     cu „(opțional)" lângă ora de început — iar „Puncte la sectoare inegale" s-a strâns în
+     pliant (−1). Se alege o dată și rămâne tot sezonul — nu e ceva de hotărât la fiecare
+     etapă, deci nu mai stă ca un card întreg în drum. */
+  t("ecranul are tot atâtea carduri câte avea", toate.length, 21);
   t("niciunul nu a rămas fără ușă", toate.filter((c) => !c.usa).map((c) => c.titlu), []);
   t("nu s-a pierdut niciunul pe drum",
-    ale("u1").length + ale("u2").length + ale("u3").length, 22);
+    ale("u1").length + ale("u2").length + ale("u3").length, 21);
 }
 
 /* ================================================================
@@ -58,8 +59,7 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 {
   t("Concursul — ce se pregătește înainte de start", ale("u1"), [
     "Numele concursului", "Sectoare", "Manșe", "Orele manșelor", "Concurs pe echipe",
-    "Puncte la sectoare inegale", "Import participanți", "Cum se calculează",
-    "Baza de pescari",
+    "Import participanți", "Cum se calculează", "Baza de pescari",
   ]);
   /* Orele stau imediat după Manșe fiindcă sunt ALE manșelor — fiecare cu ale ei. */
   t("orele stau lângă manșe", ale("u1").indexOf("Orele manșelor"), ale("u1").indexOf("Manșe") + 1);
@@ -80,8 +80,8 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 console.log("\n=== 3. Câte carduri vezi odată ===");
 {
   const max = Math.max(ale("u1").length, ale("u2").length, ale("u3").length);
-  t("cel mai încărcat ecran are 9 carduri, nu 22", max, 9);
-  t("…adică mai puțin de jumătate din cât era", max * 2 < 22, true);
+  t("cel mai încărcat ecran are 8 carduri, nu 21", max, 8);
+  t("…adică mai puțin de jumătate din cât era", max * 2 < 21, true);
 }
 
 /* ================================================================
@@ -228,6 +228,40 @@ console.log("\n=== 9. Saltul nu intră sub bară ===");
      ar rămâne cu defectul. */
   t("regula prinde și pliantele, unde sare tragerea la sorți",
     /\.pliant[^{]*\{ scroll-margin-top/.test(src), true);
+}
+
+/* ================================================================
+   10. Ce se alege o dată se strânge, nu se șterge.
+
+   „Puncte la sectoare inegale" e o regulă a clubului: se alege o dată și rămâne tot
+   sezonul. Stătea ca un card întreg printre lucrurile pe care le atingi înainte de
+   FIECARE concurs. Acum e pliant — la o apăsare distanță, nu în drum.
+
+   NU s-a mutat pe altă ușă, fiindcă e o alegere a CONCURSULUI (se ține în starea lui și
+   pleacă la celelalte telefoane), nu una a telefonului.
+   ================================================================ */
+console.log("\n=== 10. Alegerea de-o dată, strânsă în pliant ===");
+{
+  t("nu mai e card", /<div class="card[^"]*"[^>]*>(?:\s*\r?\n)?\s*<div class="sec-title"[^>]*>[^<]*<\/svg>Puncte la sectoare inegale/.test(set), false);
+  t("…ci pliant", /id="pliant-puncte"/.test(set), true);
+  t("…cu numele neschimbat", /Puncte la sectoare inegale <span class="rar">/.test(set), true);
+  t("…și spune cât de rar", /<span class="rar">o dată, și rămâne<\/span>/.test(set), true);
+
+  /* Fără ușa lui, pliantul s-ar vedea pe toate trei — greșeala pe care o are „Codul
+     arbitrilor" și care urmează la rând. */
+  t("stă după ușa Concursul, ca tot ce e acolo",
+    /<div class="pliant mt u1 lockhide" id="pliant-puncte">/.test(set), true);
+
+  /* Butoanele n-au plecat nicăieri: doar au intrat sub capac. */
+  t("butonul „Locul 3 = 3 puncte” e în el",
+    /id="pliant-puncte"[\s\S]{0,700}id="sc-simplu"/.test(set), true);
+  t("…și cel „Îndreptat”", /id="pliant-puncte"[\s\S]{0,800}id="sc-scala"/.test(set), true);
+  t("cuprinsul stă închis până e apăsat",
+    /id="pliant-puncte"[\s\S]{0,400}<div class="pliant-in" hidden>/.test(set), true);
+
+  /* Regulamentul trimite omul la el pe nume: dacă numele s-ar schimba, drumul ar minți. */
+  t("regulamentul trimite tot la numele ăsta",
+    /Se poate schimba din Contul meu, la „Puncte la sectoare inegale"/.test(src), true);
 }
 
 t.raport();

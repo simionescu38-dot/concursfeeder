@@ -1179,13 +1179,20 @@
       <p class="hint"><b>Tandem:</b> la adăugare apare un câmp pentru partener, iar în clasament apar amândoi. Echipa e un singur concurent: un stand, un cântar, un loc în sector.</p>
     </div>
 
-    <div class="card u1 lockhide">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-scale"></use></svg>Puncte la sectoare inegale</div>
-      <div class="seg">
-        <button id="sc-simplu" class="on" onclick="setScalaSectoare(false)">Locul 3 = 3 puncte</button>
-        <button id="sc-scala" onclick="setScalaSectoare(true)">Îndreptat</button>
+    <!-- Alegerea asta se face o dată și rămâne așa tot sezonul — e o regulă a clubului, nu
+         ceva de hotărât la fiecare etapă. Stătea totuși ca un card întreg printre lucrurile
+         pe care le atingi înainte de fiecare concurs. Strâns în pliant, nu mutat pe altă
+         ușă: e o alegere a CONCURSULUI (se ține în starea lui și pleacă la celelalte
+         telefoane), nu una a telefonului. Nu se șterge nimic — se apasă și e acolo. -->
+    <div class="pliant mt u1 lockhide" id="pliant-puncte">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-puncte')"><svg class="ui-ico" aria-hidden="true"><use href="#i-scale"></use></svg>Puncte la sectoare inegale <span class="rar">o dată, și rămâne</span></button>
+      <div class="pliant-in" hidden>
+        <div class="seg">
+          <button id="sc-simplu" class="on" onclick="setScalaSectoare(false)">Locul 3 = 3 puncte</button>
+          <button id="sc-scala" onclick="setScalaSectoare(true)">Îndreptat</button>
+        </div>
+        <p class="hint"><b>Locul 3 = 3 puncte:</b> punctele rămân locurile din sector, oricât de mare e sectorul. <b>Îndreptat:</b> sectoarele mai mici se întind pe scala celui mai mare, ca ultimul dintr-un sector de 5 să ia tot cât ultimul dintr-unul de 6 — mai drept la sectoare foarte inegale, dar dă puncte cu zecimale (2,25 · 3,5). Când toate sectoarele au același număr de oameni, cele două variante dau exact aceleași puncte.</p>
       </div>
-      <p class="hint"><b>Locul 3 = 3 puncte:</b> punctele rămân locurile din sector, oricât de mare e sectorul. <b>Îndreptat:</b> sectoarele mai mici se întind pe scala celui mai mare, ca ultimul dintr-un sector de 5 să ia tot cât ultimul dintr-unul de 6 — mai drept la sectoare foarte inegale, dar dă puncte cu zecimale (2,25 · 3,5). Când toate sectoarele au același număr de oameni, cele două variante dau exact aceleași puncte.</p>
     </div>
 
     <div class="card u1 lockhide">
