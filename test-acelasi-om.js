@@ -133,8 +133,10 @@ const LISTA = JSON.parse(fs.readFileSync(path.join(H.RADACINA, "arhiva/acelasi-o
     });
 
     const ciufi = peOm[cheie(c, "Dragoș Carâmb")];
-    t("are acum două concursuri, nu două rânduri de câte unul",
-      ciufi ? ciufi.size : 0, 2);
+    /* „Dragoș Carâmb" apare acum și sub numele lui adevărat, în concursul din 4 septembrie —
+       până atunci era doar „Ciufi Man" și „Ciufy Man". Deci trei concursuri, un singur om. */
+    t("are acum trei concursuri, nu trei rânduri de câte unul",
+      ciufi ? ciufi.size : 0, 3);
     /* Poreclele au dispărut de tot din sezon: rândul lui e sub numele adevărat. */
     t("„Ciufi\"/„Ciufy\" nu mai sunt chei în sezon",
       Object.keys(peOm).filter(k => /ciuf/.test(k)).length, 0);
@@ -152,8 +154,10 @@ const LISTA = JSON.parse(fs.readFileSync(path.join(H.RADACINA, "arhiva/acelasi-o
     t("nu mai are un al doilea rând",
       Object.keys(peOm).filter(k => /tatiana|titiana/.test(k)).length, 1);
 
-    /* 55 de nume înainte; unind două perechi, rămân 53 de oameni. */
-    t("sezonul are doi oameni mai puțin, nu două rânduri", Object.keys(peOm).length, 53);
+    /* 99 de feluri de a scrie un nume în arhive; unindu-le, rămân 96 de oameni. Trei
+       uniri, nu două: la Carâmb se lipesc acum toate cele trei scrieri („Dragoș Carâmb",
+       „Ciufi Man", „Ciufy Man"), fiindcă a treia a apărut abia în septembrie. */
+    t("sezonul are trei oameni mai puțin, nu rânduri în plus", Object.keys(peOm).length, 96);
   }
 
   t.raport();

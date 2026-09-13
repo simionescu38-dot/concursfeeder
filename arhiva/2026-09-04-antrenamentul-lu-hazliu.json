@@ -1,0 +1,3099 @@
+{
+ "app": "concurs-pescuit",
+ "ver": 1,
+ "exportedAt": "2026-09-04T16:40:25.507Z",
+ "data": {
+  "name": "Antrenamentul lu' Hazliu ",
+  "sectors": [
+   "A",
+   "B",
+   "C"
+  ],
+  "participants": [
+   {
+    "id": "mtmflgjhh0nu",
+    "stand": "13",
+    "prenume": "Andrei",
+    "nume": "Muscalu",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       23.03
+      ],
+      "catchTimes": [
+       1788531800612
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "13",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 10
+   },
+   {
+    "id": "mtmfmdwoezrq",
+    "stand": "1",
+    "prenume": "Pescarul",
+    "nume": "Hazliu",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       4.8
+      ],
+      "catchTimes": [
+       1788531658373
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.81
+      ],
+      "extraTimes": [
+       1788507585056
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "1",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 51
+   },
+   {
+    "id": "mtmfonky3co1",
+    "stand": "18",
+    "prenume": "Vasile",
+    "nume": "Darie",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       6.44
+      ],
+      "catchTimes": [
+       1788531857731
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "18",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 108
+   },
+   {
+    "id": "mtmfpq7phf4k",
+    "stand": "6",
+    "prenume": "Daniel",
+    "nume": "Puschiu",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       2.12
+      ],
+      "catchTimes": [
+       1788531734181
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.78
+      ],
+      "extraTimes": [
+       1788517464541
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "6",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 81
+   },
+   {
+    "id": "mtmfq0ysqrci",
+    "stand": "5",
+    "prenume": "Ilie",
+    "nume": "Daniel",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       11.96
+      ],
+      "catchTimes": [
+       1788531716352
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       8.99,
+       6.52
+      ],
+      "extraTimes": [
+       1788502366798,
+       1788517372021
+      ],
+      "extraPhotos": [
+       null,
+       null
+      ],
+      "stand": "5",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 50
+   },
+   {
+    "id": "mtmfql2xq1ua",
+    "stand": "9",
+    "prenume": "Dragoș",
+    "nume": "Carâmb",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       15.59
+      ],
+      "catchTimes": [
+       1788531767470
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.53
+      ],
+      "extraTimes": [
+       1788504182428
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "9",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 6
+   },
+   {
+    "id": "mtmfrcucayjb",
+    "stand": "21",
+    "prenume": "Bogdan",
+    "nume": "Gemănar",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       27.84
+      ],
+      "catchTimes": [
+       1788531878836
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "21",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 80
+   },
+   {
+    "id": "mtmfrvk6dxr4",
+    "stand": "12",
+    "prenume": "Ciprian",
+    "nume": "Iacob",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       3.9
+      ],
+      "catchTimes": [
+       1788531790776
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       4.08
+      ],
+      "extraTimes": [
+       1788509519747
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "12",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 14
+   },
+   {
+    "id": "mtmfsgj7ul0n",
+    "stand": "7",
+    "prenume": "Dragoș",
+    "nume": "Gido",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       7.09
+      ],
+      "catchTimes": [
+       1788531743394
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.43,
+       4.96
+      ],
+      "extraTimes": [
+       1788509664076,
+       1788517324054
+      ],
+      "extraPhotos": [
+       null,
+       null
+      ],
+      "stand": "7",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 118
+   },
+   {
+    "id": "mtmfti5d7ba3",
+    "stand": "22",
+    "prenume": "Cristian",
+    "nume": "Epure",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       15.07
+      ],
+      "catchTimes": [
+       1788531936200
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       6.14
+      ],
+      "extraTimes": [
+       1788517486666
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "22",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 41
+   },
+   {
+    "id": "mtmfu5jjeg9v",
+    "stand": "3",
+    "prenume": "Cătălin",
+    "nume": "Pavel",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       7.02
+      ],
+      "catchTimes": [
+       1788531683544
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.53,
+       4.83,
+       4.9
+      ],
+      "extraTimes": [
+       1788517393992,
+       1788517414916,
+       1788521928908
+      ],
+      "extraPhotos": [
+       null,
+       null,
+       null
+      ],
+      "stand": "3",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 42
+   },
+   {
+    "id": "mtmfusz6byp8",
+    "stand": "14",
+    "prenume": "Nicu",
+    "nume": "Roman",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       17.46
+      ],
+      "catchTimes": [
+       1788531808146
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.71,
+       5.58
+      ],
+      "extraTimes": [
+       1788507880487,
+       1788509353919
+      ],
+      "extraPhotos": [
+       null,
+       null
+      ],
+      "stand": "14",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 9
+   },
+   {
+    "id": "mtmfvfme1khk",
+    "stand": "19",
+    "prenume": "Vlad",
+    "nume": "Lucacel",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       11.94
+      ],
+      "catchTimes": [
+       1788531863968
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "19",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 37
+   },
+   {
+    "id": "mtmfw4rpzawe",
+    "stand": "11",
+    "prenume": "Eduard",
+    "nume": "Lucacel",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       2.35
+      ],
+      "catchTimes": [
+       1788531782494
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "11",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 46
+   },
+   {
+    "id": "mtmfwr2witjn",
+    "stand": "15",
+    "prenume": "Gabriel",
+    "nume": "Melinte",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       22.4,
+       11.7
+      ],
+      "catchTimes": [
+       1788531820155,
+       1788531828707
+      ],
+      "catchPhotos": [
+       null,
+       null
+      ],
+      "extras": [
+       4.77
+      ],
+      "extraTimes": [
+       1788506569853
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "15",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 76
+   },
+   {
+    "id": "mtmfxcy8xrit",
+    "stand": "4",
+    "prenume": "Săndel",
+    "nume": "Hartopeanu",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       5.85
+      ],
+      "catchTimes": [
+       1788531704920
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.51,
+       5.55
+      ],
+      "extraTimes": [
+       1788502732324,
+       1788521896066
+      ],
+      "extraPhotos": [
+       null,
+       null
+      ],
+      "stand": "4",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 11
+   },
+   {
+    "id": "mtmfy0rjhf81",
+    "stand": "8",
+    "prenume": "Florin",
+    "nume": "Dospinescu",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       21.69
+      ],
+      "catchTimes": [
+       1788531752495
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "8",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 119
+   },
+   {
+    "id": "mtmfym9prt43",
+    "stand": "17",
+    "prenume": "Alexandru",
+    "nume": "Damian",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       8.67
+      ],
+      "catchTimes": [
+       1788531850809
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       5.37,
+       4.15
+      ],
+      "extraTimes": [
+       1788508044386,
+       1788522869473
+      ],
+      "extraPhotos": [
+       null,
+       null
+      ],
+      "stand": "17",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 78
+   },
+   {
+    "id": "mtmfzvd9lkob",
+    "stand": "2",
+    "prenume": "Bogdan",
+    "nume": "Blanariu",
+    "sector": "A",
+    "m": {
+     "1": {
+      "catches": [
+       3.94
+      ],
+      "catchTimes": [
+       1788531671666
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "2",
+      "sector": "A",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 77
+   },
+   {
+    "id": "mtmg0i5bpvjw",
+    "stand": "24",
+    "prenume": "Ștefan",
+    "nume": "Cantemir",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       33
+      ],
+      "catchTimes": [
+       1788531959494
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "24",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 54
+   },
+   {
+    "id": "mtmg11lr0561",
+    "stand": "20",
+    "prenume": "Matei",
+    "nume": "Horodincă",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       3.22
+      ],
+      "catchTimes": [
+       1788531870471
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       4.36
+      ],
+      "extraTimes": [
+       1788506686348
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "20",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 79
+   },
+   {
+    "id": "mtmg1kfbf11n",
+    "stand": "16",
+    "prenume": "Ștreanga",
+    "nume": "Ștefan",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       13.66
+      ],
+      "catchTimes": [
+       1788533563539
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [
+       6.04
+      ],
+      "extraTimes": [
+       1788520577049
+      ],
+      "extraPhotos": [
+       null
+      ],
+      "stand": "16",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 38
+   },
+   {
+    "id": "mtmg22j8alf4",
+    "stand": "10",
+    "prenume": "David",
+    "nume": "Carâmb",
+    "sector": "B",
+    "m": {
+     "1": {
+      "catches": [
+       9.72
+      ],
+      "catchTimes": [
+       1788531775232
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "10",
+      "sector": "B",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 7
+   },
+   {
+    "id": "mtmg2k5b0x85",
+    "stand": "23",
+    "prenume": "Ovidiu",
+    "nume": "Cozorici",
+    "sector": "C",
+    "m": {
+     "1": {
+      "catches": [
+       15.22
+      ],
+      "catchTimes": [
+       1788531944059
+      ],
+      "catchPhotos": [
+       null
+      ],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "23",
+      "sector": "C",
+      "stare": ""
+     },
+     "2": {
+      "catches": [],
+      "catchTimes": [],
+      "catchPhotos": [],
+      "extras": [],
+      "extraTimes": [],
+      "extraPhotos": [],
+      "stand": "",
+      "sector": ""
+     }
+    },
+    "msv": 1,
+    "cod": 106
+   }
+  ],
+  "manche": 1,
+  "numManse": 2,
+  "rules": "Regulament : \n\n1. Speciile care puncteaza sunt crapul comun , crapul oglindă,ctenul și carasul.Oricare alta specie capturata nu va puncta, si va fi eliberata imediat.\n\n2.  Durata concursului de pescuit este de 7 ore/ manșă.Daca motivele care nu au in vedere organizatorul cum ar fi fenomene meteo extreme si neprevazute, ori evenimente  care pun in pericol buna desfasurare a competitiei, ori viata si sanatatea participantilor, determina anularea concursului.  Acesta va fi amanat pana la intrunirea conditiilor optime de desfasurare a competitiei. Data ulterioara a concursului va fi comunicata de catre organizator tuturor participantilor; \n\n3. Concurentul are dreptul la un insotitor; \n\n4. Insotitorul nu are dreptul sa participe la niciuna din actiunile de pescuit; \n\n5. Concurentul poate folosi maxim 1 lanseta specifica tipului de pescuit la feeder, montata cu un singur carlig; \n\n6. Concurentul poate asambla pe mal, de rezerva, oricate bete doreste; \n\n7. Pe toata durata concursului pescarii si insotitorii sunt obligati sa aiba un comportament civilizat, fara a deranja persoanele din jurul lor ori personalul lacului. Incidentele generate pe fondul consumului excesiv de alcool nu vor fi tolerate.Pescarii si insotitorii sunt obligati sa pastreze curatenia pe toata durata concursului si sa lase locul curat la terminarea concursului; \n\n8. Sondarea se poate face doar cu plumb sau method.\n\n9. Lungimea maxima a lansetelor ce pot fi folosite este de 4.50m (15 ft); \n\n10. Se pot folosi momitoare de tip method sau hybrid.\n\n11.  Se poate folosi orice tip de nada  si momeala, exclus momeala vie și momelile din silicon.\n\n12. Nu este permis pescuitul doar cu plumb(acesta trebuie sa fie de tip method feeder); \n\n13. Este interzisa blocarea  method feeder-ului pe linia principala (monturile folosite trebuie sa permita eliberarea pestelui de method in cazul rupturii); \n\n14. Nadirea grea v a fi la aceasta competiție de la 8:50- 09:00(Fara cârlig atașat pe montura) din coș maxim 5/7 sau Method (fiecare cum decide) și cu fir textil full pe mulineta cu care se folosește coșul și nu aveți voie să aveți cârlig atașat pe el.Daca se nadeste din Method ,talpa methodului nu trebuie sa fie acoperită cu nada și se încarcă doar cu matriță.interzis nadirea din mână(nu ai voie sa arunci nada cu mâna)\n\n15. Nu este permisa folosirea avertizorilor electronici; \n\n16. Se pot utiliza monturi ce folosesc carlige cu momeala atasata(monturi cu “fir de par”) si monturi cu carlige cu momeala intepata. Momelile de carlig pot avea dimensiunea maxima de 12mm.(exclus momeli din silicon)\n\n17. Concurentii sunt obligati sa aiba juvelnic de minim 3 m(obligatoriu din material textil) si 2saci de pastrare.(recomandarea mea este sa aveti 2 sau 3 juvelnice)\n\n18. Se va face o cantarire la finalul concursului și doar cântare intermediare la peștii de 5kg plus.(peștii de 5kg plus se baga în sac și se anunță cântar).Nu se vor cântări juvelnice în timpul manșei.\n\n19. Concurentii sunt obligati sa pescuiasca doar in limitele propriului stand, fara a incomoda ceilalti concurenti. Pescuitul in afara standului atrage dupa sine depunctarea concurentului cu avertisment.\n\n20. Pescuitul este permis doar intre orele stabilite; \n\n21. In timpul concursului, participantilor le este interzis schimbul de nada cu alti concurenti si deasemenea le este interzisa introducerea de nada suplimentara pe standul de concurs. Cantitatea de nada pentru desfasurarea concursului pentru fiecare concurent se va introduce pe locul de pescuit inainte de startul competitiei .\n\n22. Orice abatere observata  trebuie comunicata arbitrului, care este singura autoritate ce poate decide sanctiuni; \n\n23. Daca dupa fluierul final, un concurent se afla in drill, are la dispozitie maxim 10 minute pentru a aduce pestele pe saltea. \n\n24. Utilizarea inaintasului textil nu este permis.\n\n25. Daca, in drill, pestele intra in standul vecin si agață linia acestuia, va puncta.Dacă agata și al 2-le-a stand acel peste nu v a puncta și v a fi eliberat imediat.\n\n26.Toți concurenți sunt obligați sa aibe cădiță de primire și spray antiseptic.\n\n27.Concurentul care părăsește standul are obligația să scoată montura din apa.\n\n28.Cantitatea maximă în juvelnic este de 25kg.\n\n29.Firul principal minim 0,25mm.\n\n30.La această competiție vom avea 4 arbitri (câte unul pe fiecare sector)\n\nIMPORTANT: prezența la festivitatea de premiere reprezinta o forma de respect fata de restul participantilor. Cu exceptia cazului vreunei urgente, concurentii care vor pleca inainte de premiere nu vor mai fi invitati sa participe la urmatoarele concursuri organizare de noi. \n\nLa prima constatare a incalcarii unuia sau mai multor puncte din regulament, arbitrul sau organizatorul va aplica un avertisment. \n\nLa al doilea avertisment concurentul va fi eliminat din concurs fara a avea dreptul sa puncteze cu pestii capturati pina in momentul constatarii situatiei. \n\nORGANIZATORUL ESTE EXONERAT DE ORICE RASPUNDERE PENTRU ACCIDENTE.",
+  "sponsors": [
+   {
+    "id": "mtky62ukx22a",
+    "nume": "FeederX",
+    "oferta": "",
+    "cod": "",
+    "link": ""
+   },
+   {
+    "id": "mtky6p2f79up",
+    "nume": "Wildfeeder",
+    "oferta": "",
+    "cod": "",
+    "link": ""
+   },
+   {
+    "id": "mtky71q6lpx9",
+    "nume": "Ibaits",
+    "oferta": "",
+    "cod": "",
+    "link": ""
+   },
+   {
+    "id": "mtky82vnr65z",
+    "nume": "Hammer",
+    "oferta": "",
+    "cod": "",
+    "link": ""
+   },
+   {
+    "id": "mtky892utbms",
+    "nume": "Vucbaits",
+    "oferta": "",
+    "cod": "",
+    "link": ""
+   }
+  ],
+  "scalaSectoare": false,
+  "nadireMin": 10,
+  "durataMin": 0,
+  "balta": "Balta din Oraș",
+  "numStanduri": "24",
+  "jurnal": [
+   {
+    "id": "mtcrh6q7flys",
+    "t": 1787910043471,
+    "pid": "mtcrfo3p2kp3",
+    "nume": "Sorin Ungureanu",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 23.41,
+    "inainte": 0,
+    "dupa": 23.41,
+    "cine": "de pe poză"
+   },
+   {
+    "id": "mtijktgo2w3q",
+    "t": 1788259573032,
+    "pid": "mtijktgn3wom",
+    "nume": "NICU ROMAN",
+    "stand": "2",
+    "sector": "A",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "2",
+    "inainte": "",
+    "dupa": "2",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgok9aq",
+    "t": 1788259573032,
+    "pid": "mtijktgox2i7",
+    "nume": "CIPRIAN IACOB",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "3",
+    "inainte": "",
+    "dupa": "3",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgokvh9",
+    "t": 1788259573032,
+    "pid": "mtijktgoc7nd",
+    "nume": "CRISTI ENACHE",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "4",
+    "inainte": "",
+    "dupa": "4",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgo6vrc",
+    "t": 1788259573032,
+    "pid": "mtijktgoeg42",
+    "nume": "DANIEL",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "5",
+    "inainte": "",
+    "dupa": "5",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgo611m",
+    "t": 1788259573033,
+    "pid": "mtijktgogpb8",
+    "nume": "ALEX ROTAIU",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "6",
+    "inainte": "",
+    "dupa": "6",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpn0vf",
+    "t": 1788259573033,
+    "pid": "mtijktgp51sa",
+    "nume": "STAN RUZILĂ",
+    "stand": "7",
+    "sector": "A",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "7",
+    "inainte": "",
+    "dupa": "7",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgp2xrh",
+    "t": 1788259573033,
+    "pid": "mtijktgp8ojl",
+    "nume": "COSTEL TATIANA",
+    "stand": "8",
+    "sector": "B",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "8",
+    "inainte": "",
+    "dupa": "8",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgprl0l",
+    "t": 1788259573033,
+    "pid": "mtijktgpqm9x",
+    "nume": "PAUL SELIG",
+    "stand": "9",
+    "sector": "B",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "9",
+    "inainte": "",
+    "dupa": "9",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgp31sz",
+    "t": 1788259573033,
+    "pid": "mtijktgpgp2h",
+    "nume": "CATALIN GROPA",
+    "stand": "10",
+    "sector": "B",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "10",
+    "inainte": "",
+    "dupa": "10",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpo0qm",
+    "t": 1788259573033,
+    "pid": "mtijktgp26kx",
+    "nume": "ALEX REBREGEN",
+    "stand": "11",
+    "sector": "B",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "11",
+    "inainte": "",
+    "dupa": "11",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpdvz0",
+    "t": 1788259573033,
+    "pid": "mtijktgplb3k",
+    "nume": "SORIN UNGUREANU",
+    "stand": "12",
+    "sector": "B",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "12",
+    "inainte": "",
+    "dupa": "12",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpcn33",
+    "t": 1788259573033,
+    "pid": "mtijktgp3syy",
+    "nume": "MIMI FEDOR",
+    "stand": "13",
+    "sector": "B",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "13",
+    "inainte": "",
+    "dupa": "13",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpfoyh",
+    "t": 1788259573033,
+    "pid": "mtijktgpbor1",
+    "nume": "PETRISOR VULPE",
+    "stand": "14",
+    "sector": "C",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "14",
+    "inainte": "",
+    "dupa": "14",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpjwb2",
+    "t": 1788259573033,
+    "pid": "mtijktgpgfuv",
+    "nume": "NICOLAS IACOB",
+    "stand": "15",
+    "sector": "C",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "15",
+    "inainte": "",
+    "dupa": "15",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgp0u5z",
+    "t": 1788259573033,
+    "pid": "mtijktgpg21a",
+    "nume": "CILI MAN",
+    "stand": "16",
+    "sector": "C",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "16",
+    "inainte": "",
+    "dupa": "16",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpbka9",
+    "t": 1788259573033,
+    "pid": "mtijktgp304z",
+    "nume": "SEBY STEFANESCU",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "17",
+    "inainte": "",
+    "dupa": "17",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijktgpvdji",
+    "t": 1788259573033,
+    "pid": "mtijktgpbmki",
+    "nume": "PAUL PELIN",
+    "stand": "18",
+    "sector": "C",
+    "m": 1,
+    "fel": "participant",
+    "act": "adaugat",
+    "kg": "18",
+    "inainte": "",
+    "dupa": "18",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitum9by",
+    "t": 1788259699218,
+    "pid": "mtijktgn3wom",
+    "nume": "NICU ROMAN",
+    "stand": "2",
+    "sector": "A",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "2",
+    "inainte": "2",
+    "dupa": "2",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnituu4tl",
+    "t": 1788259699218,
+    "pid": "mtijktgox2i7",
+    "nume": "CIPRIAN IACOB",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "3",
+    "inainte": "3",
+    "dupa": "3",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitu5dur",
+    "t": 1788259699218,
+    "pid": "mtijktgoc7nd",
+    "nume": "CRISTI ENACHE",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "4",
+    "inainte": "4",
+    "dupa": "4",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitupoqh",
+    "t": 1788259699218,
+    "pid": "mtijktgogpb8",
+    "nume": "ALEX ROTAIU",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "6",
+    "inainte": "6",
+    "dupa": "6",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnituybn2",
+    "t": 1788259699218,
+    "pid": "mtijktgp8ojl",
+    "nume": "COSTEL TATIANA",
+    "stand": "8",
+    "sector": "B",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "8",
+    "inainte": "8",
+    "dupa": "8",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitu8wjb",
+    "t": 1788259699218,
+    "pid": "mtijktgpqm9x",
+    "nume": "PAUL SELIG",
+    "stand": "9",
+    "sector": "B",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "9",
+    "inainte": "9",
+    "dupa": "9",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitutrws",
+    "t": 1788259699218,
+    "pid": "mtijktgplb3k",
+    "nume": "SORIN UNGUREANU",
+    "stand": "12",
+    "sector": "B",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "12",
+    "inainte": "12",
+    "dupa": "12",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitucgq6",
+    "t": 1788259699218,
+    "pid": "mtijktgp3syy",
+    "nume": "MIMI FEDOR",
+    "stand": "13",
+    "sector": "B",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "13",
+    "inainte": "13",
+    "dupa": "13",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitu3jjn",
+    "t": 1788259699218,
+    "pid": "mtijktgpbor1",
+    "nume": "PETRISOR VULPE",
+    "stand": "14",
+    "sector": "C",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "14",
+    "inainte": "14",
+    "dupa": "14",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitueyn2",
+    "t": 1788259699218,
+    "pid": "mtijktgpgfuv",
+    "nume": "NICOLAS IACOB",
+    "stand": "15",
+    "sector": "C",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "15",
+    "inainte": "15",
+    "dupa": "15",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnituyvxi",
+    "t": 1788259699218,
+    "pid": "mtijktgp304z",
+    "nume": "SEBY STEFANESCU",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "17",
+    "inainte": "17",
+    "dupa": "17",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtijnitun8kg",
+    "t": 1788259699218,
+    "pid": "mtijktgpbmki",
+    "nume": "PAUL PELIN",
+    "stand": "18",
+    "sector": "C",
+    "m": 1,
+    "fel": "stand",
+    "act": "tragere",
+    "kg": "18",
+    "inainte": "18",
+    "dupa": "18",
+    "cine": "tragerea de pe WhatsApp"
+   },
+   {
+    "id": "mtm86k4uvtkw",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lcrzy",
+    "nume": "Nicu Roman",
+    "stand": "12",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 9,
+    "inainte": "",
+    "dupa": 9,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4usvfy",
+    "t": 1788482296686,
+    "pid": "mtm7nr9kosj9",
+    "nume": "Muscalu Andrei",
+    "stand": "1",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 10,
+    "inainte": "",
+    "dupa": 10,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ukbb4",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lkb9i",
+    "nume": "Iacob Ciprian",
+    "stand": "8",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 14,
+    "inainte": "",
+    "dupa": 14,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4utlfk",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lewdw",
+    "nume": "Lucăcel Vlad",
+    "stand": "13",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 37,
+    "inainte": "",
+    "dupa": 37,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ujh5v",
+    "t": 1788482296686,
+    "pid": "mtm7nr9mdbuu",
+    "nume": "Ștefan Ștreangă",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 38,
+    "inainte": "",
+    "dupa": 38,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ue3he",
+    "t": 1788482296686,
+    "pid": "mtm7nr9ls65t",
+    "nume": "Cristian Epure",
+    "stand": "10",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 41,
+    "inainte": "",
+    "dupa": 41,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ugdon",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lc6w0",
+    "nume": "Cătălin Pavel",
+    "stand": "11",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 42,
+    "inainte": "",
+    "dupa": 42,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ugkpe",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lluq6",
+    "nume": "Lucăcel Eduard",
+    "stand": "14",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 46,
+    "inainte": "",
+    "dupa": 46,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4u5n3j",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lv5wf",
+    "nume": "Ilie Daniel",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 50,
+    "inainte": "",
+    "dupa": 50,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4uxepu",
+    "t": 1788482296686,
+    "pid": "mtm7nr9myriz",
+    "nume": "Ștefan Cantemir",
+    "stand": "20",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 54,
+    "inainte": "",
+    "dupa": 54,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ub82s",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lq8e3",
+    "nume": "Gabriel Melinte",
+    "stand": "15",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 76,
+    "inainte": "",
+    "dupa": 76,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4uoh7e",
+    "t": 1788482296686,
+    "pid": "mtm7nr9mbduv",
+    "nume": "Blanariu Bogdan",
+    "stand": "19",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 77,
+    "inainte": "",
+    "dupa": 77,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4uszsf",
+    "t": 1788482296686,
+    "pid": "mtm7nr9mdhsu",
+    "nume": "Alexandru Damian",
+    "stand": "18",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 78,
+    "inainte": "",
+    "dupa": 78,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4ucrqa",
+    "t": 1788482296686,
+    "pid": "mtm7nr9mokxl",
+    "nume": "Horodinca Matei",
+    "stand": "21",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 79,
+    "inainte": "",
+    "dupa": 79,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4uqw2e",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lsox5",
+    "nume": "Gemanar Bogdan",
+    "stand": "7",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 80,
+    "inainte": "",
+    "dupa": 80,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4u4gto",
+    "t": 1788482296686,
+    "pid": "mtm7nr9lrmqb",
+    "nume": "Daniel Puschiu",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 81,
+    "inainte": "",
+    "dupa": 81,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4up420",
+    "t": 1788482296686,
+    "pid": "mtm7nr9l54du",
+    "nume": "Ionuț Patronu",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 82,
+    "inainte": "",
+    "dupa": 82,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm86k4u5xpu",
+    "t": 1788482296686,
+    "pid": "mtm7nr9mgz3g",
+    "nume": "Cozorici Ovidiu",
+    "stand": "24",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 106,
+    "inainte": "",
+    "dupa": 106,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm88bfdq58z",
+    "t": 1788482378713,
+    "pid": "mtm7nr9mu2jj",
+    "nume": "David Carâmb",
+    "stand": "23",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 7,
+    "inainte": "",
+    "dupa": 7,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm88bfduytw",
+    "t": 1788482378713,
+    "pid": "mtm7nr9lu5pj",
+    "nume": "Pescarul Hazliu",
+    "stand": "2",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 51,
+    "inainte": "",
+    "dupa": 51,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm8bvfjttxq",
+    "t": 1788482544607,
+    "pid": "mtm7nr9l3u2m",
+    "nume": "Dragoș Carâmb",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 6,
+    "inainte": "",
+    "dupa": 6,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtm8dt3xry8n",
+    "t": 1788482634909,
+    "pid": "mtm7nr9lj71k",
+    "nume": "Săndel Hartopeanu",
+    "stand": "16",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 11,
+    "inainte": "",
+    "dupa": 11,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbapwrf",
+    "t": 1788495636646,
+    "pid": "mtmfql2xq1ua",
+    "nume": "Dragoș Carâmb",
+    "stand": "9",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 6,
+    "inainte": "",
+    "dupa": 6,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbah6ub",
+    "t": 1788495636646,
+    "pid": "mtmg22j8alf4",
+    "nume": "David Carâmb",
+    "stand": "10",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 7,
+    "inainte": "",
+    "dupa": 7,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbaqrfb",
+    "t": 1788495636646,
+    "pid": "mtmfusz6byp8",
+    "nume": "Nicu Roman",
+    "stand": "14",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 9,
+    "inainte": "",
+    "dupa": 9,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbap4ns",
+    "t": 1788495636646,
+    "pid": "mtmflgjhh0nu",
+    "nume": "Andrei Muscalu",
+    "stand": "13",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 10,
+    "inainte": "",
+    "dupa": 10,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hba40pb",
+    "t": 1788495636646,
+    "pid": "mtmfxcy8xrit",
+    "nume": "Săndel Hartopeanu",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 11,
+    "inainte": "",
+    "dupa": 11,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hba395r",
+    "t": 1788495636646,
+    "pid": "mtmfrvk6dxr4",
+    "nume": "Ciprian Iacob",
+    "stand": "12",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 14,
+    "inainte": "",
+    "dupa": 14,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbblyjw",
+    "t": 1788495636647,
+    "pid": "mtmfvfme1khk",
+    "nume": "Vlad Lucacel",
+    "stand": "19",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 37,
+    "inainte": "",
+    "dupa": 37,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbb4651",
+    "t": 1788495636647,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 42,
+    "inainte": "",
+    "dupa": 42,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbwnhe",
+    "t": 1788495636647,
+    "pid": "mtmfw4rpzawe",
+    "nume": "Eduard Lucacel",
+    "stand": "11",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 46,
+    "inainte": "",
+    "dupa": 46,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbrruw",
+    "t": 1788495636647,
+    "pid": "mtmfq0ysqrci",
+    "nume": "Ilie Daniel",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 50,
+    "inainte": "",
+    "dupa": 50,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbb3z54",
+    "t": 1788495636647,
+    "pid": "mtmfmdwoezrq",
+    "nume": "Pescarul Hazliu",
+    "stand": "1",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 51,
+    "inainte": "",
+    "dupa": 51,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbg3t9",
+    "t": 1788495636647,
+    "pid": "mtmg0i5bpvjw",
+    "nume": "Ștefan Cantemir",
+    "stand": "24",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 54,
+    "inainte": "",
+    "dupa": 54,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbp2t6",
+    "t": 1788495636647,
+    "pid": "mtmfwr2witjn",
+    "nume": "Gabriel Melinte",
+    "stand": "15",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 76,
+    "inainte": "",
+    "dupa": 76,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbij03",
+    "t": 1788495636647,
+    "pid": "mtmfzvd9lkob",
+    "nume": "Bogdan Blanariu",
+    "stand": "2",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 77,
+    "inainte": "",
+    "dupa": 77,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbtlb6",
+    "t": 1788495636647,
+    "pid": "mtmfym9prt43",
+    "nume": "Alexandru Damian",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 78,
+    "inainte": "",
+    "dupa": 78,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbrg4c",
+    "t": 1788495636647,
+    "pid": "mtmg11lr0561",
+    "nume": "Matei Horodincă",
+    "stand": "20",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 79,
+    "inainte": "",
+    "dupa": 79,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbe5ap",
+    "t": 1788495636647,
+    "pid": "mtmfrcucayjb",
+    "nume": "Bogdan Gemănar",
+    "stand": "21",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 80,
+    "inainte": "",
+    "dupa": 80,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbxchs",
+    "t": 1788495636647,
+    "pid": "mtmfpq7phf4k",
+    "nume": "Daniel Puschiu",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 81,
+    "inainte": "",
+    "dupa": 81,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbmgl9",
+    "t": 1788495636647,
+    "pid": "mtmg2k5b0x85",
+    "nume": "Ovidiu Cozorici",
+    "stand": "23",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 106,
+    "inainte": "",
+    "dupa": 106,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbe77e",
+    "t": 1788495636647,
+    "pid": "mtmfonky3co1",
+    "nume": "Vasile Darie",
+    "stand": "18",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 108,
+    "inainte": "",
+    "dupa": 108,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmg4hbbh5il",
+    "t": 1788495636647,
+    "pid": "mtmfsgj7ul0n",
+    "nume": "Dragoș Gido",
+    "stand": "7",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 118,
+    "inainte": "",
+    "dupa": 118,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmgbq814jae",
+    "t": 1788495974785,
+    "pid": "mtmg1kfbf11n",
+    "nume": "Ștreanga Ștefan",
+    "stand": "16",
+    "sector": "B",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 38,
+    "inainte": "",
+    "dupa": 38,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmgbq81jwvp",
+    "t": 1788495974785,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 41,
+    "inainte": "",
+    "dupa": 41,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmgbq817jos",
+    "t": 1788495974785,
+    "pid": "mtmfy0rjhf81",
+    "nume": "Florin Dospinescu",
+    "stand": "8",
+    "sector": "A",
+    "m": 1,
+    "fel": "cod",
+    "act": "pus",
+    "kg": 119,
+    "inainte": "",
+    "dupa": 119,
+    "cine": "din baza de pescari"
+   },
+   {
+    "id": "mtmk4qbypioa",
+    "t": 1788502366798,
+    "pid": "mtmfq0ysqrci",
+    "nume": "Ilie Daniel",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 8.99,
+    "inainte": 0,
+    "dupa": 8.99,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmkckdgzdql",
+    "t": 1788502732324,
+    "pid": "mtmfxcy8xrit",
+    "nume": "Săndel Hartopeanu",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.51,
+    "inainte": 0,
+    "dupa": 5.51,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtml7na4v93r",
+    "t": 1788504182428,
+    "pid": "mtmfql2xq1ua",
+    "nume": "Dragoș Carâmb",
+    "stand": "9",
+    "sector": "B",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.53,
+    "inainte": 0,
+    "dupa": 5.53,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmmmtfh7dxd",
+    "t": 1788506569853,
+    "pid": "mtmfwr2witjn",
+    "nume": "Gabriel Melinte",
+    "stand": "15",
+    "sector": "B",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.77,
+    "inainte": 0,
+    "dupa": 4.77,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmmpbbgnrmq",
+    "t": 1788506686348,
+    "pid": "mtmg11lr0561",
+    "nume": "Matei Horodincă",
+    "stand": "20",
+    "sector": "C",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.36,
+    "inainte": 0,
+    "dupa": 4.36,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmn8krkfn3x",
+    "t": 1788507585059,
+    "pid": "mtmfmdwoezrq",
+    "nume": "Pescarul Hazliu",
+    "stand": "1",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.81,
+    "inainte": 0,
+    "dupa": 5.81,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmnewq02uoy",
+    "t": 1788507880488,
+    "pid": "mtmfusz6byp8",
+    "nume": "Nicu Roman",
+    "stand": "14",
+    "sector": "B",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.71,
+    "inainte": 0,
+    "dupa": 5.71,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmnif6qjoxt",
+    "t": 1788508044386,
+    "pid": "mtmfym9prt43",
+    "nume": "Alexandru Damian",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.37,
+    "inainte": 0,
+    "dupa": 5.37,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmoahmnyqih",
+    "t": 1788509353919,
+    "pid": "mtmfusz6byp8",
+    "nume": "Nicu Roman",
+    "stand": "14",
+    "sector": "B",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.58,
+    "inainte": 5.71,
+    "dupa": 11.29,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmoe1kzlcta",
+    "t": 1788509519747,
+    "pid": "mtmfrvk6dxr4",
+    "nume": "Ciprian Iacob",
+    "stand": "12",
+    "sector": "B",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.08,
+    "inainte": 0,
+    "dupa": 4.08,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmoh4y4o42d",
+    "t": 1788509664076,
+    "pid": "mtmfsgj7ul0n",
+    "nume": "Dragoș Gido",
+    "stand": "7",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.43,
+    "inainte": 0,
+    "dupa": 5.43,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt1bfauffn",
+    "t": 1788517324054,
+    "pid": "mtmfsgj7ul0n",
+    "nume": "Dragoș Gido",
+    "stand": "7",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.96,
+    "inainte": 5.43,
+    "dupa": 10.39,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt2cfpcspo",
+    "t": 1788517372021,
+    "pid": "mtmfq0ysqrci",
+    "nume": "Ilie Daniel",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 6.52,
+    "inainte": 8.99,
+    "dupa": 15.51,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt2te0q4sc",
+    "t": 1788517393992,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.53,
+    "inainte": 0,
+    "dupa": 5.53,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt39j9vic4",
+    "t": 1788517414917,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.83,
+    "inainte": 5.53,
+    "dupa": 10.36,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt3ti2hs2k",
+    "t": 1788517440794,
+    "pid": "mtmfpq7phf4k",
+    "nume": "Daniel Puschiu",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.58,
+    "inainte": 0,
+    "dupa": 4.58,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt483y3p7u",
+    "t": 1788517459726,
+    "pid": "mtmfpq7phf4k",
+    "nume": "Daniel Puschiu",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "sters",
+    "kg": 4.58,
+    "inainte": 4.58,
+    "dupa": 0,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt4btpx5k6",
+    "t": 1788517464541,
+    "pid": "mtmfpq7phf4k",
+    "nume": "Daniel Puschiu",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.78,
+    "inainte": 0,
+    "dupa": 5.78,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmt4swawgxm",
+    "t": 1788517486666,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 6.14,
+    "inainte": 0,
+    "dupa": 6.14,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmuz1ga2zm8",
+    "t": 1788520577050,
+    "pid": "mtmg1kfbf11n",
+    "nume": "Ștreanga Ștefan",
+    "stand": "16",
+    "sector": "B",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 6.04,
+    "inainte": 0,
+    "dupa": 6.04,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmvl3eptw9d",
+    "t": 1788521606017,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 5.55,
+    "inainte": 10.36,
+    "dupa": 15.91,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmvrb7m3z4z",
+    "t": 1788521896066,
+    "pid": "mtmfxcy8xrit",
+    "nume": "Săndel Hartopeanu",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 5.55,
+    "inainte": 5.51,
+    "dupa": 11.059999999999999,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmvrhvob8ps",
+    "t": 1788521904708,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "sters",
+    "kg": 5.55,
+    "inainte": 15.91,
+    "dupa": 10.36,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmvs0jwt2u5",
+    "t": 1788521928908,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.9,
+    "inainte": 10.36,
+    "dupa": 15.26,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmvv5nwao1f",
+    "t": 1788522075500,
+    "pid": "mtmfym9prt43",
+    "nume": "Alexandru Damian",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 6.04,
+    "inainte": 5.37,
+    "dupa": 11.41,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmwbxydid3l",
+    "t": 1788522858661,
+    "pid": "mtmfym9prt43",
+    "nume": "Alexandru Damian",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "extra",
+    "act": "sters",
+    "kg": 6.04,
+    "inainte": 11.41,
+    "dupa": 5.37,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtmwc6ap7n6w",
+    "t": 1788522869473,
+    "pid": "mtmfym9prt43",
+    "nume": "Alexandru Damian",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "extra",
+    "act": "adaugat",
+    "kg": 4.15,
+    "inainte": 5.37,
+    "dupa": 9.52,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1kjuuh6mz",
+    "t": 1788531658374,
+    "pid": "mtmfmdwoezrq",
+    "nume": "Pescarul Hazliu",
+    "stand": "1",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 4.8,
+    "inainte": 5.81,
+    "dupa": 10.61,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1ku42uha6",
+    "t": 1788531671666,
+    "pid": "mtmfzvd9lkob",
+    "nume": "Bogdan Blanariu",
+    "stand": "2",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 3.94,
+    "inainte": 0,
+    "dupa": 3.94,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1l3a07m3n",
+    "t": 1788531683544,
+    "pid": "mtmfu5jjeg9v",
+    "nume": "Cătălin Pavel",
+    "stand": "3",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 7.02,
+    "inainte": 15.26,
+    "dupa": 22.28,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1ljrs4sds",
+    "t": 1788531704920,
+    "pid": "mtmfxcy8xrit",
+    "nume": "Săndel Hartopeanu",
+    "stand": "4",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 5.85,
+    "inainte": 11.059999999999999,
+    "dupa": 16.909999999999997,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1lslc5o6h",
+    "t": 1788531716352,
+    "pid": "mtmfq0ysqrci",
+    "nume": "Ilie Daniel",
+    "stand": "5",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 11.96,
+    "inainte": 15.51,
+    "dupa": 27.47,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1m6clp8xe",
+    "t": 1788531734181,
+    "pid": "mtmfpq7phf4k",
+    "nume": "Daniel Puschiu",
+    "stand": "6",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 2.12,
+    "inainte": 5.78,
+    "dupa": 7.9,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1mdgiwsyu",
+    "t": 1788531743394,
+    "pid": "mtmfsgj7ul0n",
+    "nume": "Dragoș Gido",
+    "stand": "7",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 7.09,
+    "inainte": 10.39,
+    "dupa": 17.48,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1mkhbk7pr",
+    "t": 1788531752495,
+    "pid": "mtmfy0rjhf81",
+    "nume": "Florin Dospinescu",
+    "stand": "8",
+    "sector": "A",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 21.69,
+    "inainte": 0,
+    "dupa": 21.69,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1mw1aw7ze",
+    "t": 1788531767470,
+    "pid": "mtmfql2xq1ua",
+    "nume": "Dragoș Carâmb",
+    "stand": "9",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 15.59,
+    "inainte": 5.53,
+    "dupa": 21.12,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1n20wk978",
+    "t": 1788531775232,
+    "pid": "mtmg22j8alf4",
+    "nume": "David Carâmb",
+    "stand": "10",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 9.72,
+    "inainte": 0,
+    "dupa": 9.72,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1n7mmjn76",
+    "t": 1788531782494,
+    "pid": "mtmfw4rpzawe",
+    "nume": "Eduard Lucacel",
+    "stand": "11",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 2.35,
+    "inainte": 0,
+    "dupa": 2.35,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1ne0o2uho",
+    "t": 1788531790776,
+    "pid": "mtmfrvk6dxr4",
+    "nume": "Ciprian Iacob",
+    "stand": "12",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 3.9,
+    "inainte": 4.08,
+    "dupa": 7.98,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1nllwijf7",
+    "t": 1788531800612,
+    "pid": "mtmflgjhh0nu",
+    "nume": "Andrei Muscalu",
+    "stand": "13",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 23.03,
+    "inainte": 0,
+    "dupa": 23.03,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1nrf6byvg",
+    "t": 1788531808146,
+    "pid": "mtmfusz6byp8",
+    "nume": "Nicu Roman",
+    "stand": "14",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 17.46,
+    "inainte": 11.29,
+    "dupa": 28.75,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1o0orxy9p",
+    "t": 1788531820155,
+    "pid": "mtmfwr2witjn",
+    "nume": "Gabriel Melinte",
+    "stand": "15",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 22.4,
+    "inainte": 4.77,
+    "dupa": 27.169999999999998,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1o7ab85mc",
+    "t": 1788531828707,
+    "pid": "mtmfwr2witjn",
+    "nume": "Gabriel Melinte",
+    "stand": "15",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 11.7,
+    "inainte": 27.169999999999998,
+    "dupa": 38.86999999999999,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1oga9ibp8",
+    "t": 1788531840369,
+    "pid": "mtmg1kfbf11n",
+    "nume": "Ștreanga Ștefan",
+    "stand": "16",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 3.66,
+    "inainte": 6.04,
+    "dupa": 9.7,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1ooc9xur5",
+    "t": 1788531850809,
+    "pid": "mtmfym9prt43",
+    "nume": "Alexandru Damian",
+    "stand": "17",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 8.67,
+    "inainte": 9.52,
+    "dupa": 18.189999999999998,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1otojfzxq",
+    "t": 1788531857731,
+    "pid": "mtmfonky3co1",
+    "nume": "Vasile Darie",
+    "stand": "18",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 6.44,
+    "inainte": 0,
+    "dupa": 6.44,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1oyhsmv9h",
+    "t": 1788531863968,
+    "pid": "mtmfvfme1khk",
+    "nume": "Vlad Lucacel",
+    "stand": "19",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 11.94,
+    "inainte": 0,
+    "dupa": 11.94,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1p3ifx8vx",
+    "t": 1788531870471,
+    "pid": "mtmg11lr0561",
+    "nume": "Matei Horodincă",
+    "stand": "20",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 3.22,
+    "inainte": 4.36,
+    "dupa": 7.58,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1p9ys93xi",
+    "t": 1788531878836,
+    "pid": "mtmfrcucayjb",
+    "nume": "Bogdan Gemănar",
+    "stand": "21",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 27.84,
+    "inainte": 0,
+    "dupa": 27.84,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1pfpt4qqm",
+    "t": 1788531886289,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 15.04,
+    "inainte": 6.14,
+    "dupa": 21.18,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1pzu2xvtv",
+    "t": 1788531912362,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 15.22,
+    "inainte": 21.18,
+    "dupa": 36.4,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1q8ncdbum",
+    "t": 1788531923784,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "sters",
+    "kg": 15.04,
+    "inainte": 36.4,
+    "dupa": 21.36,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1qdqgzqqe",
+    "t": 1788531930376,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "sters",
+    "kg": 15.22,
+    "inainte": 21.36,
+    "dupa": 6.14,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1qi88uinz",
+    "t": 1788531936200,
+    "pid": "mtmfti5d7ba3",
+    "nume": "Cristian Epure",
+    "stand": "22",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 15.07,
+    "inainte": 6.14,
+    "dupa": 21.21,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1qoaj0ux9",
+    "t": 1788531944059,
+    "pid": "mtmg2k5b0x85",
+    "nume": "Ovidiu Cozorici",
+    "stand": "23",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 15.22,
+    "inainte": 0,
+    "dupa": 15.22,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn1r07a201l",
+    "t": 1788531959494,
+    "pid": "mtmg0i5bpvjw",
+    "nume": "Ștefan Cantemir",
+    "stand": "24",
+    "sector": "C",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 33,
+    "inainte": 0,
+    "dupa": 33,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn2paw0n0sh",
+    "t": 1788533559648,
+    "pid": "mtmg1kfbf11n",
+    "nume": "Ștreanga Ștefan",
+    "stand": "16",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "sters",
+    "kg": 3.66,
+    "inainte": 9.7,
+    "dupa": 6.04,
+    "cine": "Organizator"
+   },
+   {
+    "id": "mtn2pdw3eod4",
+    "t": 1788533563539,
+    "pid": "mtmg1kfbf11n",
+    "nume": "Ștreanga Ștefan",
+    "stand": "16",
+    "sector": "B",
+    "m": 1,
+    "fel": "captura",
+    "act": "adaugat",
+    "kg": 13.66,
+    "inainte": 6.04,
+    "dupa": 19.7,
+    "cine": "Organizator"
+   }
+  ],
+  "pozeTrecute": [
+   "178514-5nwy0r"
+  ],
+  "startAt": 1788498000000,
+  "endAt": 1788523200000,
+  "pushOn": true,
+  "voiceOn": true
+ }
+}
