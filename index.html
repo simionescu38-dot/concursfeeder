@@ -945,23 +945,23 @@
     <div id="list"></div>
     <button type="button" class="arb-iesire" id="arb-iesire" hidden onclick="iesDinArbitru()">Ies din arbitraj</button>
 
-    <div class="pliant mt lockhide" id="pliant-cantare">
-      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-cantare')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec cântarele de pe WhatsApp <span class="rar">toate deodată</span></button>
+    <!-- Aducerea pescarilor în concurs stătea în Contul meu, la setări — deși înscrierea
+         se face AICI, pe ecranul de cântar, unde e și butonul „+ Adaugă la listă". Cine
+         avea lista pe WhatsApp o lipea abia după ce dădea de ea, două ecrane mai încolo.
+         Ascuns și la arbitri, ca tragerea: ei cântăresc, nu înscriu.
+         Pliantele stau acum în ordinea zilei: aduci pescarii, tragi la sorți, cântărești,
+         te uiți în jurnal. Înainte, cântarele erau primele și tragerea a doua. -->
+    <div class="pliant mt lockhide arbhide" id="pliant-import">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-import')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Aduc pescarii dintr-o listă <span class="rar">o dată, la înscriere</span></button>
       <div class="pliant-in" hidden>
-        <textarea id="cnt-text" rows="6" placeholder="Lipește mesajul de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu 12,340&#10;2 Vasile Popescu 8,150&#10;3 6,700"></textarea>
-        <p class="hint">Un pescar pe linie: <b>stand, nume, kg</b>. Merge și numai cu standul, și numai cu numele. Greutatea e ultimul număr de pe rând. Apasă întâi <b>Verifică</b> — nimic nu intră până nu vezi ce am înțeles.</p>
+        <textarea id="imp-text" rows="6" placeholder="Un participant pe linie, ex:&#10;1, Ion Popescu, A&#10;2, Vasile Ionescu, A&#10;Gheorghe Marin, B"></textarea>
+        <p class="hint">Un participant pe linie. Separi cu virgulă sau tab: <b>stand, nume, sector</b>. Standul și sectorul sunt opționale. Sectoarele noi se creează automat. Apasă întâi <b>Verifică</b> — nimic nu intră până nu vezi ce am înțeles.</p>
         <div class="row">
-          <button class="btn btn-ghost" onclick="verificaCantare()">Verifică</button>
-          <button class="btn btn-ghost" onclick="treceCantare()">Trece cântarele</button>
+          <button class="btn btn-ghost" onclick="previewImport()">Verifică</button>
+          <button class="btn btn-ghost" onclick="doImport()">Aduc pescarii</button>
         </div>
-        <p class="hint" id="cnt-preview"></p>
-        <p class="hint" style="margin-top:14px;">Sau, dacă ți-a venit o <b>poză</b> a foii: o deschizi aici și scrii de pe ea, fără să mai ieși din aplicație. (Din meniul „Distribuie" al telefonului ajunge singură.)</p>
-        <div class="row">
-          <button class="btn btn-ghost" onclick="document.getElementById('poza-fis').click()">Alege o poză</button>
-          <button class="btn btn-ghost" onclick="document.getElementById('poza-cam').click()">Fotografiază foaia</button>
-        </div>
-        <input type="file" id="poza-fis" accept="image/*" multiple style="display:none;" onchange="pozeDinTelefon(this)">
-        <input type="file" id="poza-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozeDinTelefon(this)">
+        <p class="hint" id="imp-preview"></p>
+        <p class="hint">Ăsta îi <b>aduce în concurs</b> pe cei care nu sunt încă. Ca să muți pe standuri oameni deja înscriși, e pliantul de dedesubt, „Trec tragerea la sorți".</p>
       </div>
     </div>
     <div class="pliant mt lockhide arbhide" id="pliant-tragere">
@@ -983,6 +983,25 @@
         </div>
         <input type="file" id="trg-fis" accept="image/*" style="display:none;" onchange="pozaTragerii(this)">
         <input type="file" id="trg-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozaTragerii(this)">
+      </div>
+    </div>
+    <div class="pliant mt lockhide" id="pliant-cantare">
+      <button type="button" class="pliant-cap" aria-expanded="false" onclick="plianteaza('pliant-cantare')"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Trec cântarele de pe WhatsApp <span class="rar">toate deodată</span></button>
+      <div class="pliant-in" hidden>
+        <textarea id="cnt-text" rows="6" placeholder="Lipește mesajul de pe grup, un pescar pe linie:&#10;1 Mihai Ionescu 12,340&#10;2 Vasile Popescu 8,150&#10;3 6,700"></textarea>
+        <p class="hint">Un pescar pe linie: <b>stand, nume, kg</b>. Merge și numai cu standul, și numai cu numele. Greutatea e ultimul număr de pe rând. Apasă întâi <b>Verifică</b> — nimic nu intră până nu vezi ce am înțeles.</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="verificaCantare()">Verifică</button>
+          <button class="btn btn-ghost" onclick="treceCantare()">Trece cântarele</button>
+        </div>
+        <p class="hint" id="cnt-preview"></p>
+        <p class="hint" style="margin-top:14px;">Sau, dacă ți-a venit o <b>poză</b> a foii: o deschizi aici și scrii de pe ea, fără să mai ieși din aplicație. (Din meniul „Distribuie" al telefonului ajunge singură.)</p>
+        <div class="row">
+          <button class="btn btn-ghost" onclick="document.getElementById('poza-fis').click()">Alege o poză</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('poza-cam').click()">Fotografiază foaia</button>
+        </div>
+        <input type="file" id="poza-fis" accept="image/*" multiple style="display:none;" onchange="pozeDinTelefon(this)">
+        <input type="file" id="poza-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozeDinTelefon(this)">
       </div>
     </div>
     <div class="pliant mt" id="pliant-jurnal">
@@ -1195,18 +1214,7 @@
       </div>
     </div>
 
-    <div class="card u1 lockhide">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Import participanți</div>
-      <textarea id="imp-text" rows="6" placeholder="Un participant pe linie, ex:&#10;1, Ion Popescu, A&#10;2, Vasile Ionescu, A&#10;Gheorghe Marin, B"></textarea>
-      <p class="hint">Un participant pe linie. Separi cu virgulă sau tab: <b>stand, nume, sector</b>. Standul și sectorul sunt opționale. Sectoarele noi se creează automat.</p>
-      <div class="row">
-        <button class="btn btn-ghost" onclick="previewImport()">Verifică</button>
-        <button class="btn btn-ghost" onclick="doImport()">Importă</button>
-      </div>
-      <p class="hint" id="imp-preview"></p>
-    </div>
-
-    <div class="card u1">
+        <div class="card u1">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-rules"></use></svg>Cum se calculează</div>
       <p class="hint">
         <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra.</b> CMMC (cel mai mare pește) se calculează automat din peștii extra, în tab-ul Statistici.
