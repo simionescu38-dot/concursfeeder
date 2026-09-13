@@ -42,14 +42,16 @@ const ale = (u) => carduri().filter((c) => c.usa === u).map((c) => c.titlu);
 console.log("\n=== 1. Toate cardurile au ușa lor ===");
 {
   const toate = carduri();
-  /* De la 21, cât era: ceasul a venit din Calendar (+1) — stătea acolo sub numele
-     „Cronometru concurs", cu „(opțional)" lângă ora de început; „Puncte la sectoare
-     inegale" s-a strâns în pliant (−1), fiindcă se alege o dată și rămâne tot sezonul;
-     iar „Import participanți" a plecat la Cântar (−1), unde se face înscrierea. */
-  t("ecranul are tot atâtea carduri câte avea", toate.length, 20);
+  /* De la 21, cât era: „Puncte la sectoare inegale" s-a strâns în pliant (−1), fiindcă se
+     alege o dată și rămâne tot sezonul; „Import participanți" a plecat la Cântar (−1),
+     unde se face înscrierea; iar cele patru lucruri care FAC un concurs — numele și
+     balta, sectoarele, manșele, orele — au plecat pe ecranul lor, „Fă concursul", și au
+     lăsat în urmă un singur card care-l deschide (−4 +1, ceasul venit din Calendar
+     plecând odată cu ele). */
+  t("ecranul are tot atâtea carduri câte avea", toate.length, 17);
   t("niciunul nu a rămas fără ușă", toate.filter((c) => !c.usa).map((c) => c.titlu), []);
   t("nu s-a pierdut niciunul pe drum",
-    ale("u1").length + ale("u2").length + ale("u3").length, 20);
+    ale("u1").length + ale("u2").length + ale("u3").length, 17);
 }
 
 /* ================================================================
@@ -57,12 +59,11 @@ console.log("\n=== 1. Toate cardurile au ușa lor ===");
    ================================================================ */
 console.log("\n=== 2. Ce e după fiecare ușă ===");
 {
-  t("Concursul — ce se pregătește înainte de start", ale("u1"), [
-    "Numele concursului", "Sectoare", "Manșe", "Orele manșelor", "Concurs pe echipe",
-    "Cum se calculează", "Baza de pescari",
+  t("Concursul — ce mai rămâne aici, după ce pregătirea a plecat pe ecranul ei", ale("u1"), [
+    "Concursul de acum", "Concurs pe echipe", "Cum se calculează", "Baza de pescari",
   ]);
-  /* Orele stau imediat după Manșe fiindcă sunt ALE manșelor — fiecare cu ale ei. */
-  t("orele stau lângă manșe", ale("u1").indexOf("Orele manșelor"), ale("u1").indexOf("Manșe") + 1);
+  /* Cardul care deschide ecranul e primul: e drumul înapoi spre pregătire. */
+  t("drumul spre «Fă concursul» e primul", ale("u1")[0], "Concursul de acum");
   t("Telefonul — ce se setează o dată", ale("u2"), [
     "Sincronizare & backup", "Clasament live pe alte telefoane",
     "Notificări live (doar Android/Chrome)", "Anunț vocal la cântar",
@@ -80,8 +81,8 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
 console.log("\n=== 3. Câte carduri vezi odată ===");
 {
   const max = Math.max(ale("u1").length, ale("u2").length, ale("u3").length);
-  t("cel mai încărcat ecran are 7 carduri, nu 20", max, 7);
-  t("…adică mai puțin de jumătate din cât era", max * 2 < 20, true);
+  t("cel mai încărcat ecran are 7 carduri, nu 17", max, 7);
+  t("…adică mai puțin de jumătate din cât era", max * 2 < 17, true);
 }
 
 /* ================================================================
@@ -199,8 +200,9 @@ console.log("\n=== 8. Saltul deschide ușa ===");
   t("ceasul nu mai stă în Calendar",
     /id="view-cal"[\s\S]*?id="card-cronometru"/.test(
       src.slice(src.indexOf('id="view-cal"'), src.indexOf('id="view-rank"'))), false);
-  t("…ci în Contul meu, pe ușa Concursul",
-    /<div class="card u1 lockhide" id="card-cronometru">/.test(src), true);
+  /* Ceasul a plecat mai departe, odată cu celelalte trei, pe ecranul „Fă concursul". */
+  t("…ci pe ecranul «Fă concursul»",
+    /id="view-nou"[\s\S]*?id="card-cronometru"/.test(src), true);
 }
 
 /* ================================================================
@@ -311,7 +313,7 @@ console.log("\n=== 11. Codurile date oamenilor, la Concursul ===");
     /fara\.style\.display = syncRoom \? "none" : "block";/.test(H.grabFunction(src, "updateLiveQr")), true);
 
   /* Niciun card în plus pe nicio ușă: au venit ca pliant, nu ca încă un card. */
-  t("ușa Concursul are 7 carduri", ale("u1").length, 7);
+  t("ușa Concursul are 4 carduri", ale("u1").length, 4);
   t("ușa Telefonului are tot 6", ale("u2").length, 6);
 }
 
@@ -354,6 +356,56 @@ console.log("\n=== 12. Pliantele de la Cântar, în ordinea zilei ===");
     /id="pliant-import"[\s\S]{0,2400}aduce în concurs/.test(cantar), true);
   t("…și trimite la tragere pentru cei deja înscriși",
     /id="pliant-import"[\s\S]{0,2600}Trec tragerea la sorți/.test(cantar), true);
+}
+
+/* ================================================================
+   13. „Fă concursul" are ecranul lui.
+
+   Butonul de pe Acasă ducea în Contul meu, printre setări. Chiar aterizat pe cardul bun,
+   omul vedea un ecran plin și credea că a nimerit aiurea — de aici a pornit tot: „este
+   foarte încâlcită".
+
+   Cardurile sunt ACELEAȘI, mutate. Nu copiate: două locuri pentru același lucru e tocmai
+   ce am scos din aplicație în cele cinci mutări de dinainte.
+   ================================================================ */
+console.log("\n=== 13. Ecranul «Fă concursul» ===");
+{
+  const nou = src.slice(src.indexOf('id="view-nou"'), src.indexOf('<!-- SETĂRI -->'));
+
+  t("ecranul există", /<section class="view" id="view-nou">/.test(src), true);
+  t("are drum înapoi la Acasă", /id="view-nou">[\s\S]{0,300}showView\('part'\)/.test(src), true);
+
+  /* Exact lucrurile care fac un concurs, în ordinea în care se pun. */
+  const titluri = (nou.match(/<div class="sec-title"[^>]*>([\s\S]*?)<\/div>/g) || [])
+    .map((x) => x.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim());
+  t("are exact cele patru lucruri care fac un concurs", titluri,
+    ["Numele concursului", "Sectoare", "Manșe", "Orele manșelor"]);
+
+  /* …și un buton la capăt care duce mai departe, nu te lasă în aer. */
+  t("se termină cu drumul spre pescari",
+    /onclick="showView\('cantar'\)"[\s\S]{0,120}Gata · trecem la pescari/.test(nou), true);
+  t("…iar el e singurul scos în față pe ecran",
+    (nou.match(/btn-primary/g) || []).length, 1);
+
+  /* Mutate, nu copiate: nicăieri altundeva în pagină. */
+  ["card-nume", "card-cronometru"].forEach(function (id) {
+    t("«" + id + "» e o singură dată în toată pagina",
+      (src.match(new RegExp('id="' + id + '"', "g")) || []).length, 1);
+  });
+  t("căsuța numelui nu e în două locuri",
+    (src.match(/id="set-name"/g) || []).length, 1);
+  t("…nici rândurile de ore", (src.match(/id="ore-manse"/g) || []).length, 1);
+  t("…nici numărul de standuri", (src.match(/id="set-standuri"/g) || []).length,
+    (src.match(/id="set-standuri"/g) || []).length);
+
+  /* Drumul înapoi: din Contul meu se ajunge la el, altfel numele nu s-ar mai putea drege. */
+  t("din Contul meu se ajunge înapoi la el",
+    /id="card-concursul"[\s\S]{0,400}onclick="showView\('nou'\)"/.test(set), true);
+
+  /* Bara de jos rămâne aprinsă pe Contul meu, ca la Baza de pescari. */
+  t("bara de jos știe de ecranul nou", /nou:"set"/.test(src), true);
+  /* Rândurile de ore se fac din cod: la intrare trebuie aduse la zi. */
+  t("orele se desenează la intrarea pe ecran", /if\(v==="nou"\) deseneazaOre\(\);/.test(src), true);
 }
 
 t.raport();

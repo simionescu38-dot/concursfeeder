@@ -218,7 +218,7 @@ console.log("\n=== 3. Cine intră în numărătoare ===");
 console.log("\n=== 4. Fiecare buton are un drum ===");
 {
   const drumuri = [
-    [{}, "meniuGo('set','card-nume')"],
+    [{}, "showView('nou')"],
     [{ name: "Cupa" }, "showView('cantar')"],
     [{ name: "Cupa", participants: [pescar("a")] }, "laTragere()"],
     [{ name: "Cupa", participants: [pescar("a", "1")] }, "pornesteMansa()"],
@@ -240,7 +240,11 @@ console.log("\n=== 4. Fiecare buton are un drum ===");
       t("funcția " + f + " există în aplicație",
         new RegExp("function\\s+" + f + "\\s*\\(").test(src), true);
     });
-  t("cardul spre care sare «Fă concursul» există", /id="card-nume"/.test(src), true);
+  /* „Fă concursul" nu mai duce în setări, ci pe ecranul lui: acolo stau exact lucrurile
+     care se pun, în ordinea în care se pun. Cardul cu numele e primul de pe el. */
+  t("ecranul spre care sare «Fă concursul» există", /id="view-nou"/.test(src), true);
+  t("…iar cardul cu numele e pe el",
+    /id="view-nou"[\s\S]{0,900}id="card-nume"/.test(src), true);
   t("…și cel spre care sare «Publică rezultatul»", /id="card-final"/.test(src), true);
   t("…care e chiar cardul cu Am terminat concursul",
     /id="card-final"[\s\S]{0,600}amTerminatConcursul\(\)/.test(src), true);

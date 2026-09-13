@@ -1125,6 +1125,66 @@
     </div>
   </section>
 
+  <!-- FĂ CONCURSUL -->
+  <!-- „Fă concursul" de pe Acasă ducea în Contul meu, printre setări. Chiar aterizat pe
+       cardul bun, omul vedea un ecran de opt carduri și credea că a nimerit aiurea.
+       Acum are ecranul lui, cu exact lucrurile care se pun, în ordinea în care se pun, și
+       un buton la capăt care duce mai departe. Cardurile sunt ACELEAȘI, mutate — nu
+       copiate: două locuri pentru același lucru e tocmai ce am scos din aplicație. -->
+  <section class="view" id="view-nou">
+    <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
+<div class="card" id="card-nume">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Numele concursului</div>
+      <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
+      <label class="f" style="margin-top:12px;">Balta</label>
+      <input id="set-balta" placeholder="ex: Remus Lake" oninput="saveBalta(this.value)">
+      <p class="hint">Numele bălții, scris la fel de fiecare dată. După el se grupează standurile în clasamentul de sezon — ca „cel mai productiv stand" să fie al bălții, nu un amestec de la toate.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Sectoare</div>
+      <div class="sectors-list" id="sectors-list"></div>
+      <div class="row">
+        <input id="in-newsec" placeholder="ex: A, B, C..." maxlength="12">
+        <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="addSector()">Adaugă</button>
+      </div>
+      <label class="f" style="margin-top:12px;">Număr de standuri la baltă</label>
+      <input id="in-standuri" inputmode="numeric" placeholder="= nr. participanți" oninput="setNumStanduri(this.value)">
+      <p class="hint" id="sec-preview" style="margin-top:8px;"></p>
+      <p class="hint">Standurile se împart pe sectoare în ordine, după intervalele de mai sus, iar sectorul se completează singur când scrii standul unui pescar. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
+    </div>
+
+    <div class="card lockhide">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșe</div>
+      <div class="seg">
+        <button id="nm-2" class="on" onclick="setNumManse(2)">2 manșe</button>
+        <button id="nm-3" onclick="setNumManse(3)">3 manșe</button>
+      </div>
+      <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
+    </div>
+
+    <!-- Ceasul stătea în Calendar, cu „(opțional)" scris lângă ora de început — adică pe
+         alt ecran decât cel unde faci concursul, și cu o vorbă care spunea că nu contează.
+         El e tocmai lucrul care face ziua să meargă fără tine: nădirea, startul, claxoanele
+         de final și stopul sună singure dacă orele sunt puse. Acum stă aici, lângă manșe,
+         fiindcă orele SUNT ale manșelor — fiecare cu ale ei. -->
+    <div class="card lockhide" id="card-cronometru">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-clock"></use></svg>Orele manșelor</div>
+      <div id="ore-manse"></div>
+      <label class="f" style="margin-top:12px;">Nădire grea înainte de start (minute)</label>
+      <input inputmode="numeric" id="t-nadire" placeholder="ex: 10" onchange="setTimer()">
+      <p class="hint" id="ore-nadire-cand" style="margin-top:8px;"></p>
+      <button class="btn btn-ghost mt" onclick="testHorn()"><svg class="ui-ico" aria-hidden="true"><use href="#i-volume"></use></svg>Ascultă claxonul</button>
+      <button class="btn btn-danger mt" onclick="clearTimer()">Șterge orele</button>
+      <p class="hint">Pui orele o dată, aici, și nu mai apeși nimic toată ziua: cu 10 minute (sau câte alegi) înainte de start sună „ÎNCEPE NĂDIREA", la ora de start „START PESCUIT", <b>cu 30, 10, 5 și 1 minut înainte de final un claxon lung</b> cu cât a mai rămas, iar la final „STOP PESCUIT!". Cântărirea rămâne permisă și după stop — peștii prinși înainte de final se cântăresc după. Apasă „Ascultă claxonul" o dată înainte de concurs, și ca să-i verifici volumul, și ca să deblochezi sunetul pe telefon.</p>
+    </div>
+
+    <div class="card">
+      <button class="btn btn-primary" onclick="showView('cantar')"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Gata · trecem la pescari</button>
+      <p class="hint" style="margin-top:10px;">Restul — echipe, puncte la sectoare inegale, baza de pescari, codurile de la ședința tehnică — stau în <b>Contul meu → Concursul</b>. Nu-ți trebuie ca să începi.</p>
+    </div>
+  </section>
+
   <!-- SETĂRI -->
   <section class="view" id="view-set">
     <div class="usi" id="usi-set">
@@ -1143,53 +1203,13 @@
       <p class="hint" style="margin-top:8px;">Aplicația se actualizează singură — verifică la fiecare deschidere și se reîncarcă atunci când apare ceva nou. Butonul e doar pentru cazul în care nu vrei să aștepți.</p>
     </div>
 
-    <div class="card u1" id="card-nume">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Numele concursului</div>
-      <input id="set-name" placeholder="ex: Cupa Remus Lake – etapa 1" oninput="saveCompName(this.value)">
-      <label class="f" style="margin-top:12px;">Balta</label>
-      <input id="set-balta" placeholder="ex: Remus Lake" oninput="saveBalta(this.value)">
-      <p class="hint">Numele bălții, scris la fel de fiecare dată. După el se grupează standurile în clasamentul de sezon — ca „cel mai productiv stand" să fie al bălții, nu un amestec de la toate.</p>
+    <div class="card u1" id="card-concursul">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Concursul de acum</div>
+      <button class="btn btn-ghost" onclick="showView('nou')">Deschide „Fă concursul"</button>
+      <p class="hint" id="concursul-scurt">Numele, balta, sectoarele, manșele și orele — toate la un loc, în ordinea în care se pun.</p>
     </div>
 
-    <div class="card u1 lockhide">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Sectoare</div>
-      <div class="sectors-list" id="sectors-list"></div>
-      <div class="row">
-        <input id="in-newsec" placeholder="ex: A, B, C..." maxlength="12">
-        <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="addSector()">Adaugă</button>
-      </div>
-      <label class="f" style="margin-top:12px;">Număr de standuri la baltă</label>
-      <input id="in-standuri" inputmode="numeric" placeholder="= nr. participanți" oninput="setNumStanduri(this.value)">
-      <p class="hint" id="sec-preview" style="margin-top:8px;"></p>
-      <p class="hint">Standurile se împart pe sectoare în ordine, după intervalele de mai sus, iar sectorul se completează singur când scrii standul unui pescar. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
-    </div>
-
-    <div class="card u1 lockhide">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșe</div>
-      <div class="seg">
-        <button id="nm-2" class="on" onclick="setNumManse(2)">2 manșe</button>
-        <button id="nm-3" onclick="setNumManse(3)">3 manșe</button>
-      </div>
-      <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
-    </div>
-
-    <!-- Ceasul stătea în Calendar, cu „(opțional)" scris lângă ora de început — adică pe
-         alt ecran decât cel unde faci concursul, și cu o vorbă care spunea că nu contează.
-         El e tocmai lucrul care face ziua să meargă fără tine: nădirea, startul, claxoanele
-         de final și stopul sună singure dacă orele sunt puse. Acum stă aici, lângă manșe,
-         fiindcă orele SUNT ale manșelor — fiecare cu ale ei. -->
-    <div class="card u1 lockhide" id="card-cronometru">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-clock"></use></svg>Orele manșelor</div>
-      <div id="ore-manse"></div>
-      <label class="f" style="margin-top:12px;">Nădire grea înainte de start (minute)</label>
-      <input inputmode="numeric" id="t-nadire" placeholder="ex: 10" onchange="setTimer()">
-      <p class="hint" id="ore-nadire-cand" style="margin-top:8px;"></p>
-      <button class="btn btn-ghost mt" onclick="testHorn()"><svg class="ui-ico" aria-hidden="true"><use href="#i-volume"></use></svg>Ascultă claxonul</button>
-      <button class="btn btn-danger mt" onclick="clearTimer()">Șterge orele</button>
-      <p class="hint">Pui orele o dată, aici, și nu mai apeși nimic toată ziua: cu 10 minute (sau câte alegi) înainte de start sună „ÎNCEPE NĂDIREA", la ora de start „START PESCUIT", <b>cu 30, 10, 5 și 1 minut înainte de final un claxon lung</b> cu cât a mai rămas, iar la final „STOP PESCUIT!". Cântărirea rămâne permisă și după stop — peștii prinși înainte de final se cântăresc după. Apasă „Ascultă claxonul" o dată înainte de concurs, și ca să-i verifici volumul, și ca să deblochezi sunetul pe telefon.</p>
-    </div>
-
-    <div class="card u1 lockhide">
+        <div class="card u1 lockhide">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Concurs pe echipe</div>
       <div class="seg">
         <button id="td-individual" class="on" onclick="setTandem(false)">Fiecare singur</button>
@@ -4095,7 +4115,7 @@
   // ---------- views ----------
   // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
   // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
-  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set"};
+  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set", nou:"set"};
   /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
      în browserul de probă, iar ce nu se poate proba nu se livrează. */
   /* ---------- cele trei uși din „Contul meu" ----------
@@ -4155,6 +4175,9 @@
     if(v==="reg") renderReg();
     if(v==="spons") renderSpons();
     if(v==="pescari") renderPescari();
+    /* Rândurile de ore se fac din cod, unul pe manșă. Dacă numărul manșelor s-a schimbat
+       de când a fost desenat ultima oară, ecranul trebuie să le aducă la zi la intrare. */
+    if(v==="nou") deseneazaOre();
     window.scrollTo(0,0);
   }
   function setManche(mi){
@@ -4177,6 +4200,10 @@
     state.numManse=n; save();
     document.getElementById("nm-2").classList.toggle("on", n===2);
     document.getElementById("nm-3").classList.toggle("on", n===3);
+    /* Orele au un rând pe manșă. Pe ecranul „Fă concursul" butoanele de manșe stau chiar
+       deasupra lor: alegi 3 manșe și trebuie să apară pe loc al treilea rând, nu la
+       următoarea intrare pe ecran. */
+    deseneazaOre();
     updateManseButtons();
     renderList(); if(document.getElementById("view-rank").classList.contains("active")) renderRank();
     toast("Concurs cu "+n+" manșe");
@@ -6739,7 +6766,7 @@
     if(!P.length){
       return (state.name||"").trim()
         ? {t:"Înscrie pescarii", a:"showView('cantar')"}
-        : {t:"Fă concursul", a:"meniuGo('set','card-nume')"};
+        : {t:"Fă concursul", a:"showView('nou')"};
     }
     var mi = state.manche||1;
     if(!P.some(function(p){ return standOfM(p, mi); }))
