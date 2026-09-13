@@ -1419,6 +1419,8 @@
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-cloud"></use></svg>Adu concursul din cameră</div>
       <p class="hint" style="margin:0 0 10px;">Ia concursul de pe server și îl pune pe telefonul ăsta. Îți arată întâi ce e în cameră și ce ai acum, și te întreabă înainte să înlocuiască. Ce e acum pe telefon se pune deoparte — îl întorci cu „Adu înapoi ce era".</p>
       <button class="btn btn-ghost" onclick="aduDinCamera()"><svg class="ui-ico" aria-hidden="true"><use href="#i-download"></use></svg>Adu concursul din cameră</button>
+      <p class="hint" style="margin:10px 0 10px;">Invers: scoate din cameră un concurs care n-are ce căuta acolo. Pe telefon nu se atinge nimic.</p>
+      <button class="btn btn-ghost" onclick="golesteCamera()"><svg class="ui-ico" aria-hidden="true"><use href="#i-trash"></use></svg>Golește camera</button>
     </div>
 
     <div class="card u3">
@@ -3668,6 +3670,61 @@
         toast(state.participants.length+" pescari aduși din cameră");
       })
       .catch(function(){ toast("Nu răspunde serverul"); });
+  }
+  /* Perechea lui aduDinCamera: acolo camera vine pe telefon, aici camera rămâne goală.
+     A trebuit pe 13 septembrie: în cameră ajunsese un concurs care n-avea ce căuta acolo,
+     iar de pe telefon nu se putea scrie peste el.
+     Cheia e `baseRev`: se citește revizia CHIAR ACUM și se scrie cu ea. Cu o revizie
+     veche serverul contopește, adică pune la loc exact pescarii tocmai scoși — în
+     unsprezece scrieri la rând asta s-a și întâmplat. Pe lângă asta, toți pescarii din
+     cameră pleacă și ca `sterse`: dacă apucă să scrie altcineva între citire și scriere,
+     contopirea îi sare în loc să-i învie.
+     La capăt se citește înapoi și se numără. Un „gata” spus fără să fie gata e mai rău
+     decât o eroare — așa s-a pierdut o oră pe 22 august. */
+  function golesteCamera(){
+    if(guard()) return;
+    if(!syncRoom){ toast("Setează întâi un cod de cameră"); return; }
+    if(!syncKey){ toast("Setează întâi cheia de scriere"); return; }
+    toast("Mă uit în cameră…");
+    var adresa = API_BASE+"/api/state?room="+encodeURIComponent(syncRoom);
+    var citeste = function(){ return fetch(adresa).then(function(r){ return r.json(); }); };
+    citeste().then(function(j){
+      if(!j || !j.ok){ toast("Nu răspunde serverul"); return; }
+      var d = j.data || {};
+      var lista = Array.isArray(d.participants) ? d.participants : [];
+      if(!lista.length){ syncRevSalveaza(j.rev); toast("Camera „"+syncRoom+"” e deja goală"); return; }
+      if(!confirm(
+        "În camera „"+syncRoom+"” este:\n"+
+        "   "+(((d.name||"").trim()) || "concurs fără nume")+"\n"+
+        "   "+lista.length+" pescari\n\n"+
+        "Îl scot din cameră. Cine deschide clasamentul live nu mai vede nimic acolo.\n"+
+        "Pe telefonul ăsta nu se atinge nimic.\n\n"+
+        "Golești camera „"+syncRoom+"”?"
+      )) return;
+      var gropi = lista.map(function(p){ return p && p.id; }).filter(Boolean).map(String);
+      fetch(adresa, {
+        method:"PUT",
+        headers:{"Content-Type":"application/json","x-write-key":syncKey},
+        body: JSON.stringify({
+          data:{ name:"", sectors:["A","B","C"], participants:[], rules:"",
+                 sponsors:[], numManse:2, balta:"", jurnal:[] },
+          baseRev: j.rev,
+          sterse: gropi
+        })
+      }).then(function(r){ return r.json(); }).then(function(k){
+        if(!k || !k.ok){ toast("N-a mers: "+((k && k.error) || "eroare la server")); return; }
+        return citeste().then(function(v){
+          var ramasi = (v && v.ok && v.data && Array.isArray(v.data.participants))
+                       ? v.data.participants.length : 0;
+          if(ramasi){ toast("N-a mers — în cameră au rămas "+ramasi+" pescari"); return; }
+          syncRevSalveaza((v && v.rev) || k.rev);
+          sterseSync = [];
+          syncPaused = false; syncProblem = "";
+          updateRoomInfo(); updateUploadBar(); updateLiveQr();
+          toast("Camera „"+syncRoom+"” e goală");
+        });
+      }).catch(function(){ toast("Nu răspunde serverul"); });
+    }).catch(function(){ toast("Nu răspunde serverul"); });
   }
   function fmtHistDate(iso){
     try{
