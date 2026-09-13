@@ -77,6 +77,22 @@ console.log("\n=== 2. Ce e după fiecare ușă ===");
   /* Frați: unul aduce de pe telefon, celălalt din cameră. Stau unul lângă altul. */
   t("cele două „adu” stau alături",
     ale("u3").indexOf("Adu concursul din cameră"), ale("u3").indexOf("Adu înapoi ce era") + 1);
+
+  /* „Golește camera" a intrat ca BUTON în cardul lui aduDinCamera, nu ca un card nou:
+     sunt același lucru privit din două părți — camera vine pe telefon, sau camera rămâne
+     goală. Un card în plus ar fi mărit tocmai ecranul pe care l-am strâns. */
+  const cardulCamerei = /<div class="card u3 lockhide">\s*<div class="sec-title">[^<]*<svg[\s\S]*?Adu concursul din cameră<\/div>([\s\S]*?)<\/div>\s*\r?\n\s*\r?\n/.exec(src);
+  t("cardul „Adu concursul din cameră” se găsește", !!cardulCamerei, true);
+  t("…și ține amândouă butoanele",
+    (cardulCamerei ? cardulCamerei[1] : "").match(/onclick="(aduDinCamera|golesteCamera)\(\)"/g),
+    ['onclick="aduDinCamera()"', 'onclick="golesteCamera()"']);
+  t("…„Adu” e primul, „Golește” al doilea",
+    (cardulCamerei ? cardulCamerei[1] : "").indexOf("aduDinCamera()")
+      < (cardulCamerei ? cardulCamerei[1] : "").indexOf("golesteCamera()"), true);
+  /* Regula lui: un singur buton scos în față pe ecran. Aici sunt amândouă de contur. */
+  t("niciunul nu e scos în față",
+    /class="btn btn-ghost" onclick="golesteCamera\(\)"/.test(src), true);
+  t("numărul cardurilor n-a crescut", carduri().length, 18);
 }
 
 /* ================================================================
