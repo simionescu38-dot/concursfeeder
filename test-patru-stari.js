@@ -296,17 +296,33 @@ console.log("\n=== 5c. Rândul de sub «Am terminat concursul» ===");
   t("…și nu mai scrie nimic", c.__el["necantarite"].innerHTML, "");
 }
 
-console.log("\n=== 5d. Sfârșitul de concurs întreabă, cu standurile pe nume ===");
+console.log("\n=== 5d. Standurile nelămurite s-au mutat la Verificarea concursului ===");
 {
-  /* Nu se blochează de tot: la baltă, cel mai rău lucru e un buton care nu mai merge
-     deloc. Se întreabă — dar cu numele și standurile scrise, ca răspunsul să fie dat
-     în cunoștință de cauză. */
-  t("întrebarea numără standurile nelămurite",
-    /standuriNecantarite\(\)[\s\S]{0,900}Salvezi totuși așa\?/.test(src), true);
-  t("…le scrie pe manșe, cu stand și nume",
-    /"Manșa "\+x\.mi\+": "\+x\.oameni\.map/.test(src), true);
+  /* Era un ZID: o fereastră lungă, cu toate standurile înșirate, fix în clipa în care
+     omul voia să închidă ziua. Se citea în picioare, la baltă, cu telefonul într-o mână
+     — deci se apăsa peste. Pe 7 septembrie s-a apăsat peste, iar „Cupa Pescarul Hazliu"
+     a intrat în sezon cu 12 pescari fără stand și 0 kg.
+     Acum întrebarea vine mai devreme, pe un ecran unde e loc. */
+  t("zidul de la sfârșitul de concurs a dispărut", /Salvezi totuși așa\?/.test(src), false);
+  t("…și nici cel cu concursul gol", /Chiar îl salvezi gol\?/.test(src), false);
+
+  t("standurile nelămurite sunt acum o verificare portocalie",
+    /standuriNecantarite\(\)\.forEach[\s\S]{0,200}"portocaliu"/.test(src), true);
   t("…și spune ce pățesc dacă rămân așa",
-    /intră.{0,30}cu 0 kg și[\s\S]{0,80}ultimul loc din sector/.test(src), true);
+    /intr[ăa] cu 0 kg [șs]i iau ultimul loc din sector/.test(src), true);
+  t("…dar NU opresc publicarea: portocaliul nu blochează",
+    /stare: rosii \? "rosu" : \(portocalii \? "portocaliu" : "verde"\)/.test(src), true);
+
+  /* Rândul de sub „Am terminat concursul" promitea că sfârșitul de concurs le cere
+     întâi. Acum nu le mai cere, deci nu mai promite — trimite unde chiar se văd. */
+  t("rândul de pe Clasament nu mai promite ce nu se mai întâmplă",
+    /sfârșitul de concurs le cere întâi/.test(src), false);
+  t("…ci trimite la Verificarea concursului",
+    /Standuri nelămurite<\/b> — le vezi pe toate la Verificarea concursului/.test(src), true);
+
+  /* Poarta rămasă: ce STRICĂ rezultatul nu trece, fără întrebare și fără ocolire. */
+  t("sfârșitul de concurs e oprit de roșu",
+    /var vf=verificaConcursul\(\);[\s\S]{0,320}showView\("verific"\)/.test(src), true);
 }
 
 /* ================================================================

@@ -40,18 +40,24 @@ function pescar(id, stand, kg, stare, mansa) {
 /** contextul cu funcțiile adevărate de care depinde pasul următor */
 function pornire(stare) {
   const ctx = {
-    console,
-    state: Object.assign({ manche: 1, numManse: 2, name: "", startAt: null, endAt: null,
-                           participants: [] }, stare || {}),
+    console, Math, String, Array, Object,
+    state: Object.assign({ manche: 1, numManse: 2, name: "", balta: "Balta", startAt: null,
+                           endAt: null, participants: [] }, stare || {}),
     nowSync: () => ACUM,
     arbitruMode: false, arbitruSector: "",
     ensureManche() {}, manseRange: () => [1, 2, 3],
+    /* Pasul de la capătul zilei trece prin semafor, deci proba are nevoie și de el.
+       Camera lipsește dinadins: fără ea nu e nimic de trimis, iar probele de aici sunt
+       despre ORDINEA pașilor, nu despre sincronizare. */
+    PRAG_KG: 50, syncRoom: "", syncKey: "", syncPaused: false, syncBusy: false,
+    syncLastOk: "12:40", arbNetrimis: false,
   };
   vm.createContext(ctx);
   vm.runInContext([
-    "num", "mOf", "standOfM", "sectorOfM", "cantOfM", "extraOfM", "totalOfM",
+    "num", "fmt", "mOf", "standOfM", "sectorOfM", "cantOfM", "extraOfM", "totalOfM",
     "stareaLaMansa", "arbGata", "numManse", "stareaMansei", "p2", "hhmm", "fmtDur",
-    "pasulUrmator",
+    "nameOf", "nelamurit", "standuriNecantarite", "mancheDisputata", "mansaTrasa",
+    "faraStandLaMansa", "verificaConcursul", "pasulUrmator",
   ].map((n) => H.grabFunction(src, n)).join("\n"), ctx);
   vm.runInContext(/var STARI_MANSA=\{[^}]*\};/.exec(src)[0], ctx);
   return ctx;
@@ -90,10 +96,12 @@ console.log("\n=== 1. Ziua de concurs, pas cu pas ===");
             participants: [pescar("a", "1", [3.2]), pescar("b", "2", [5])] }).t,
     "Treci la manșa 2");
 
-  t("ultima manșă, toți cântăriți → publică",
+  /* Era saltul direct la publicare. Acum trece prin semafor — iar butonul spune ce a
+     găsit acolo, ca pasul să nu fie orb. Pe verde e o atingere în plus și atât. */
+  t("ultima manșă, toți cântăriți, totul curat → verifică și publică",
     pasul({ name: "Cupa", numManse: 2, manche: 2, startAt: ACUM - 4 * ORA, endAt: ACUM - 60000,
             participants: [pescar("a", "1", [3.2], null, 2), pescar("b", "2", [5], null, 2)] }).t,
-    "Publică rezultatul");
+    "Verifică și publică");
 }
 
 /* ================================================================
@@ -202,14 +210,17 @@ console.log("\n=== 3. Cine intră în numărătoare ===");
                        participants: p });
 
   t("lampa se socotește lămurită",
-    pasul(cu([pescar("a", "1", [3]), pescar("b", "2", [], "zero")])).t, "Publică rezultatul");
+    pasul(cu([pescar("a", "1", [3]), pescar("b", "2", [], "zero")])).t, "Verifică și publică");
 
   t("cine e sărit peste, nu",
     pasul(cu([pescar("a", "1", [3]), pescar("b", "2", [], "sarit")])).t, "Cântărește · 1 din 2");
 
   /* Cine n-a extras stand în manșa asta n-a fost la ea: nu se așteaptă nimeni după el. */
+  /* Cel fără stand nu ține cântarul pe loc — dar ÎL vede semaforul, fiindcă exact el e
+     cel care dispare din clasament. Pasul spune cifra, nu doar „verifică". */
   t("cine n-a fost la manșă nu ține pe loc cântarul",
-    pasul(cu([pescar("a", "1", [3]), pescar("b", "", [])])).t, "Publică rezultatul");
+    pasul(cu([pescar("a", "1", [3]), pescar("b", "", [])])).t,
+    "⛔ Verifică concursul · 1 lucru de reparat");
 }
 
 /* ================================================================
@@ -227,7 +238,7 @@ console.log("\n=== 4. Fiecare buton are un drum ===");
     [{ name: "Cupa", numManse: 2, startAt: ACUM - 4 * ORA, endAt: ACUM - 60000,
        participants: [pescar("a", "1", [3])] }, "treciLaMansa(2)"],
     [{ name: "Cupa", numManse: 1, startAt: ACUM - 4 * ORA, endAt: ACUM - 60000,
-       participants: [pescar("a", "1", [3])] }, "meniuGo('rank','card-final')"],
+       participants: [pescar("a", "1", [3])] }, "showView('verific')"],
   ];
   drumuri.forEach(function (d) {
     const p = pasul(d[0]);
@@ -245,8 +256,12 @@ console.log("\n=== 4. Fiecare buton are un drum ===");
   t("ecranul spre care sare «Fă concursul» există", /id="view-nou"/.test(src), true);
   t("…iar cardul cu numele e pe el",
     /id="view-nou"[\s\S]{0,900}id="card-nume"/.test(src), true);
-  t("…și cel spre care sare «Publică rezultatul»", /id="card-final"/.test(src), true);
-  t("…care e chiar cardul cu Am terminat concursul",
+  /* Ecranul de verificare e ultima răscruce: de acolo se publică, nu de pe Cântar. */
+  t("…și ecranul spre care sare «Verifică și publică»", /id="view-verific"/.test(src), true);
+  t("…care duce mai departe la cardul de sfârșit de concurs",
+    /id="view-verific"[\s\S]{0,900}verific-buton/.test(src) &&
+    /meniuGo\(\\?'rank\\?',\\?'card-final\\?'\)/.test(src), true);
+  t("…iar acela e chiar cardul cu Am terminat concursul",
     /id="card-final"[\s\S]{0,600}amTerminatConcursul\(\)/.test(src), true);
 }
 

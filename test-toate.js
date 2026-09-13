@@ -18,6 +18,7 @@ const TESTE = [
   ["Cheile camerei", "test-chei-camera.js"],
   ["Modul arbitru", "test-arbitru.js"],
   ["Ușile din Contul meu", "test-usi-setari.js"],
+  ["Semaforul de verificare", "test-semafor.js"],
   ["Ce urmează, pe Acasă", "test-ce-urmeaza.js"],
   ["Tandem în sezon", "test-tandem-sezon.js"],
   ["Standuri, după medie", "test-standuri-medie.js"],

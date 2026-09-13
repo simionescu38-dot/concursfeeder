@@ -57,6 +57,39 @@
      alături pe un telefon de 412px își ciuntesc textul — se vedea „12:C" în loc de ora
      întreagă. O oră tăiată e mai rea decât un rând în plus. `min-width:0` lasă căsuța să
      se strângă: fără el, o coloană de grilă nu coboară sub lățimea conținutului ei. */
+  /* ---------- semaforul de verificare ----------
+     Trei culori care NU sunt accentul aplicației: teal-ul înseamnă „apasă aici", iar un
+     verdict care împrumută culoarea butoanelor s-ar citi ca încă un buton. */
+  .far{border-radius:16px; padding:19px 17px; border:1.5px solid; text-align:center; margin-bottom:14px;}
+  .far .glob{width:60px; height:60px; border-radius:50%; margin:0 auto 13px;
+             display:grid; place-items:center; font-size:27px; font-weight:800;}
+  .far .verdict{font-size:19.5px; font-weight:800; line-height:1.2; margin-bottom:5px;}
+  .far .detaliu{font-size:13.5px; color:var(--muted); line-height:1.42;}
+  .far.v{border-color:rgba(61,220,132,.45); background:#0e2c1d;}
+  .far.v .glob{background:rgba(61,220,132,.17); color:#3ddc84;}
+  .far.v .verdict{color:#3ddc84;}
+  .far.p{border-color:rgba(242,184,75,.45); background:#352a16;}
+  .far.p .glob{background:rgba(242,184,75,.17); color:#f2b84b;}
+  .far.p .verdict{color:#f2b84b;}
+  .far.r{border-color:rgba(255,107,107,.45); background:#341519;}
+  .far.r .glob{background:rgba(255,107,107,.17); color:#ff6b6b;}
+  .far.r .verdict{color:#ff6b6b;}
+  .vrand{display:grid; grid-template-columns:22px 1fr; gap:11px; align-items:start;
+         background:var(--card); border:1px solid var(--line); border-radius:13px;
+         padding:12px 13px; margin-bottom:9px;}
+  .vrand.r{border-color:rgba(255,107,107,.4);}
+  .vrand.p{border-color:rgba(242,184,75,.35);}
+  .vpic{font-size:15px; line-height:1.3; text-align:center;}
+  .vpic.r{color:#ff6b6b;} .vpic.p{color:#f2b84b;} .vpic.v{color:#3ddc84;}
+  .vrand-t{font-size:14.5px; font-weight:700; line-height:1.3;}
+  .vrand-d{font-size:12.8px; color:var(--muted); margin-top:3px; line-height:1.42;}
+  .vrand button{margin-top:9px; font-size:12.5px; font-weight:800; color:var(--teal);
+                border:1px solid rgba(25,211,209,.4); background:var(--teal-soft);
+                border-radius:9px; padding:6px 11px; font-family:inherit; cursor:pointer;}
+  /* Pe roșu butonul de publicare e STINS, nu însoțit de un avertisment. Un avertisment
+     se apasă peste — exact asta s-a întâmplat pe 7 septembrie. */
+  .btn.stins{background:var(--card); color:#6b7f92; border:1px solid var(--line);
+             box-shadow:none; cursor:not-allowed;}
   .ora-rand{margin-bottom:16px;}
   .ora-rand .ora-et{font-size:12px; font-weight:800; letter-spacing:.05em;
                     text-transform:uppercase; color:var(--muted); margin-bottom:7px;}
@@ -1197,6 +1230,19 @@
     <div class="card">
       <button class="btn btn-primary" onclick="showView('cantar')"><svg class="ui-ico" aria-hidden="true"><use href="#i-users"></use></svg>Gata · trecem la pescari</button>
       <p class="hint" style="margin-top:10px;">Restul — echipe, puncte la sectoare inegale, baza de pescari, codurile de la ședința tehnică — stau în <b>Contul meu → Concursul</b>. Nu-ți trebuie ca să începi.</p>
+    </div>
+  </section>
+
+  <!-- VERIFICAREA CONCURSULUI — ultima răscruce înainte de publicare.
+       Nu e un card în „Contul meu": e un pas din zi, la care ajungi de pe Cântar,
+       de la butonul „ce urmează", după ce ai cântărit tot. -->
+  <section class="view" id="view-verific">
+    <button class="btn-link" onclick="showView('cantar')">‹ Înapoi la Cântar</button>
+    <div class="card">
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-flag"></use></svg>Verificarea concursului</div>
+      <div id="verific-far"></div>
+      <div id="verific-lista"></div>
+      <div id="verific-buton"></div>
     </div>
   </section>
 
@@ -3726,6 +3772,219 @@
       }).catch(function(){ toast("Nu răspunde serverul"); });
     }).catch(function(){ toast("Nu răspunde serverul"); });
   }
+  /* ---------- verificarea concursului ----------
+     „Trebuie să prevină greșelile." Până acum aplicația întreba, la sfârșit de concurs,
+     printr-o fereastră lungă, în picioare, la baltă — iar o fereastră se apasă peste.
+     Pe 7 septembrie asta s-a și întâmplat: „Cupa Pescarul Hazliu" a intrat în sezon cu 12
+     pescari fără stand și 0 kg.
+     Aici se uită peste tot concursul ÎNAINTE, pe un ecran unde ai loc, și desparte
+     limpede: roșu = rezultatul ar ieși greșit, deci butonul de publicare e stins;
+     portocaliu = uită-te o dată, dar tot tu hotărăști.
+     Nimic nu se repară singur. Fiecare rând are butonul lui, care duce ACOLO. */
+
+  /* Manșa la care s-a tras: măcar unul are stand. Fără asta, un concurs proaspăt — la
+     care nimeni n-are încă stand, fiindcă tragerea nu s-a făcut — ar ieși tot roșu. */
+  function mansaTrasa(mi){
+    return state.participants.some(function(p){ return !!standOfM(p, mi); });
+  }
+  /* Cine n-are stand ȘI nu e trecut absent. Distincția contează: cel trecut absent e un
+     răspuns, nu o scăpare — el are voie să n-aibă stand. */
+  function faraStandLaMansa(p, mi){
+    if(standOfM(p, mi)) return false;
+    return mOf(p, mi).stare !== "absent";
+  }
+
+  function verificaConcursul(){
+    var P = state.participants || [];
+    var g = [];
+    var pune = function(nivel, t, d, a, at){ g.push({nivel:nivel, t:t, d:d, a:a||"", at:at||""}); };
+    var nume = function(p){ return (standOfM(p, 1) || "fără stand") + " " + nameOf(p); };
+    var primii = function(arr, n){
+      var l = arr.slice(0, n).map(function(x){ return x; });
+      return l.join(", ") + (arr.length > n ? " și încă " + (arr.length - n) : "");
+    };
+
+    if(!P.length){
+      pune("rosu", "Nu e niciun pescar pe telefon",
+           "Lista e goală. Fără pescari n-ai ce publica.",
+           "showView('cantar')", "Deschide Cântar");
+      return {stare:"rosu", gasite:g, rosii:1, portocalii:0};
+    }
+
+    var manse = manseRange().filter(mancheDisputata);
+    if(!manse.length) manse = [1];
+
+    /* ---- ROȘU 1: pescari fără stand, la o manșă la care s-a tras ---- */
+    manse.forEach(function(mi){
+      var lipsa = P.filter(function(p){ return faraStandLaMansa(p, mi); });
+      if(!lipsa.length) return;
+      pune("rosu",
+        lipsa.length + (lipsa.length === 1 ? " pescar n-are stand" : " pescari n-au stand") +
+          (manse.length > 1 ? " la manșa " + mi : ""),
+        primii(lipsa.map(nameOf), 4) + ". Fără stand nu intră în niciun sector, deci " +
+          (lipsa.length === 1 ? "n-are" : "n-au") + " loc în clasament.",
+        "laTragere()", "Deschide tragerea la sorți");
+    });
+
+    /* ---- ROȘU 2: același stand la doi oameni, în aceeași manșă ---- */
+    manse.forEach(function(mi){
+      var vazut = {}, dubluri = [];
+      P.forEach(function(p){
+        var st = standOfM(p, mi); if(!st) return;
+        st = String(st);
+        if(vazut[st]){ if(dubluri.indexOf(st) < 0) dubluri.push(st); }
+        else vazut[st] = true;
+      });
+      if(!dubluri.length) return;
+      pune("rosu",
+        "Standul " + primii(dubluri, 4) + " e dat de două ori" + (manse.length > 1 ? ", la manșa " + mi : ""),
+        "Doi oameni la același stand. Unul din ei e la locul greșit, iar clasamentul sectorului iese strâmb.",
+        "laTragere()", "Deschide tragerea la sorți");
+    });
+
+    /* ---- ROȘU 3: niciun kilogram în tot concursul ---- */
+    var cuCantar = P.filter(function(p){ return totalOfM(p, "total") > 1e-9; }).length;
+    if(!cuCantar)
+      pune("rosu", "Niciun kilogram trecut",
+        P.length + " pescari, 0 kg. Aproape întotdeauna asta înseamnă cântăriri netrecute, nu pește neprins.",
+        "showView('cantar')", "Deschide Cântar");
+
+    /* ---- PORTOCALIU 1: standuri nelămurite (mutat de la sfârșitul de concurs) ---- */
+    standuriNecantarite().forEach(function(x){
+      pune("portocaliu",
+        x.oameni.length + (x.oameni.length === 1 ? " stand nelămurit" : " standuri nelămurite") +
+          " la manșa " + x.mi,
+        primii(x.oameni.map(function(p){ return standOfM(p, x.mi) || nameOf(p); }), 6) +
+          ". Spune pentru fiecare: a prins ceva, lampă, sau absent. Altfel intră cu 0 kg și iau ultimul loc din sector.",
+        "showView('cantar')", "Deschide Cântar");
+    });
+
+    /* ---- PORTOCALIU 2: cântăriri peste prag ---- */
+    var mari = [];
+    P.forEach(function(p){
+      manseRange().forEach(function(mi){
+        var m = mOf(p, mi);
+        (m.catches || []).forEach(function(v){ if((+v || 0) > PRAG_KG) mari.push(fmt(v) + " kg la " + nume(p)); });
+        (m.extras  || []).forEach(function(v){ if((+v || 0) > PRAG_KG) mari.push(fmt(v) + " kg la " + nume(p)); });
+      });
+    });
+    if(mari.length)
+      pune("portocaliu",
+        mari.length === 1 ? "O cântărire peste " + PRAG_KG + " kg" : mari.length + " cântăriri peste " + PRAG_KG + " kg",
+        primii(mari, 3) + ". Poate fi adevărată — uită-te o dată la ea și treci mai departe.",
+        "showView('cantar')", "Deschide Cântar");
+
+    /* ---- PORTOCALIU 3: două cântăriri identice, la sub un minut, la același stand.
+       Aplicația golește căsuța după fiecare salvare, deci un al doilea apăsat n-are ce
+       citi — dar cine bate cifra din nou nu e oprit de nimic. Aici se prinde. ---- */
+    var gemeni = [];
+    P.forEach(function(p){
+      manseRange().forEach(function(mi){
+        var m = mOf(p, mi), c = m.catches || [], t = m.catchTimes || [];
+        for(var i = 0; i < c.length; i++) for(var j = i + 1; j < c.length; j++){
+          if(Math.abs((+c[i] || 0) - (+c[j] || 0)) > 1e-9) continue;
+          if(!t[i] || !t[j] || Math.abs(t[i] - t[j]) > 60000) continue;
+          gemeni.push(fmt(c[i]) + " kg la " + nume(p));
+        }
+      });
+    });
+    if(gemeni.length)
+      pune("portocaliu",
+        gemeni.length === 1 ? "Două cântăriri identice, la sub un minut" : gemeni.length + " perechi de cântăriri identice",
+        primii(gemeni, 3) + ". Ori a prins doi la fel, ori ți-a sărit degetul pe buton.",
+        "showView('cantar')", "Deschide Cântar");
+
+    /* ---- PORTOCALIU 4: numele și balta ---- */
+    var lipsesc = [];
+    if(!(state.name || "").trim())  lipsesc.push("numele concursului");
+    if(!(state.balta || "").trim()) lipsesc.push("balta");
+    if(lipsesc.length)
+      pune("portocaliu", "Lipsește " + lipsesc.join(" și "),
+        "Fără baltă, același lac iese în două clasamente de sezon diferite — iar fără nume nu-l mai recunoști la iarnă.",
+        "showView('nou')", "Deschide „Fă concursul”");
+
+    /* ---- PORTOCALIU 5: telefonul are ceva netrimis în cameră.
+       Singurul lucru de pe ecran care se poate strica DUPĂ ce ai terminat de cântărit. ---- */
+    if(syncRoom && syncKey){
+      if(syncPaused)
+        pune("portocaliu", "Sincronizarea e oprită",
+          "Camera „" + syncRoom + "” nu mai primește nimic de pe telefonul ăsta. Cine se uită la clasamentul live vede date vechi.",
+          "meniuGo('set','card-sync')", "Deschide Clasament live");
+      else if(arbNetrimis || syncBusy || !syncLastOk)
+        pune("portocaliu", "Telefonul are ceva netrimis în cameră",
+          "Nu tot ce e pe telefon a ajuns în camera „" + syncRoom + "”. Mai așteaptă câteva secunde și intră din nou aici.",
+          "meniuGo('set','card-sync')", "Deschide Clasament live");
+    }
+
+    var rosii = g.filter(function(x){ return x.nivel === "rosu"; }).length;
+    var portocalii = g.length - rosii;
+    return {
+      stare: rosii ? "rosu" : (portocalii ? "portocaliu" : "verde"),
+      gasite: g, rosii: rosii, portocalii: portocalii
+    };
+  }
+
+  function deseneazaVerificarea(){
+    var far = document.getElementById("verific-far");
+    var lista = document.getElementById("verific-lista");
+    var buton = document.getElementById("verific-buton");
+    if(!far || !lista || !buton) return;
+    var v = verificaConcursul();
+    var P = state.participants || [];
+
+    if(v.stare === "verde"){
+      var kg = P.reduce(function(a, p){ return a + totalOfM(p, "total"); }, 0);
+      far.innerHTML =
+        '<div class="far v"><div class="glob">✓</div>' +
+        '<div class="verdict">Totul e în regulă</div>' +
+        '<div class="detaliu">' + P.length + ' pescari · ' + numManse() + ' manșe · ' + esc(fmt(kg)) + ' kg<br>' +
+        'Toate standurile lămurite.</div></div>';
+      /* Pe verde nu se înșiră toate verificările: nimeni nu citește o listă de bife, iar
+         una lungă face din ecranul ăsta încă un pas prin care treci obosit. Trei rânduri. */
+      lista.innerHTML =
+        '<div class="vrand"><div class="vpic v">✓</div><div>' +
+          '<div class="vrand-t">Toți au stand și sector</div>' +
+          '<div class="vrand-d">În toate manșele trase, fără dubluri.</div></div></div>' +
+        '<div class="vrand"><div class="vpic v">✓</div><div>' +
+          '<div class="vrand-t">Niciun stand nelămurit</div>' +
+          '<div class="vrand-d">Fiecare are ori cântar, ori lampă, ori absent.</div></div></div>' +
+        (syncRoom && syncKey
+          ? '<div class="vrand"><div class="vpic v">✓</div><div>' +
+            '<div class="vrand-t">Tot ce e pe telefon e și în cameră</div>' +
+            '<div class="vrand-d">Ultima trimitere: ' + esc(syncLastOk) + '.</div></div></div>'
+          : '');
+    } else {
+      var rosu = v.stare === "rosu";
+      var n = rosu ? v.rosii : v.portocalii;
+      far.innerHTML =
+        '<div class="far ' + (rosu ? 'r' : 'p') + '"><div class="glob">' + (rosu ? '✕' : '!') + '</div>' +
+        '<div class="verdict">' + (rosu ? 'Nu se publică așa' : 'Se poate publica') + '</div>' +
+        '<div class="detaliu">' +
+          (rosu
+            ? n + (n === 1 ? ' lucru strică rezultatul.' : ' lucruri strică rezultatul.') +
+              '<br>Le repari de aici, dintr-o atingere.'
+            : n + (n === 1 ? ' lucru merită o privire.' : ' lucruri merită o privire.') +
+              '<br>Niciunul nu oprește publicarea.') +
+        '</div></div>';
+      /* Roșiile primele: dacă sunt, alea sunt treaba de acum. */
+      var ord = v.gasite.filter(function(x){ return x.nivel === "rosu"; })
+                 .concat(v.gasite.filter(function(x){ return x.nivel !== "rosu"; }));
+      lista.innerHTML = ord.map(function(x){
+        var c = x.nivel === "rosu" ? "r" : "p";
+        return '<div class="vrand ' + c + '"><div class="vpic ' + c + '">' +
+               (c === "r" ? "■" : "▲") + '</div><div>' +
+               '<div class="vrand-t">' + esc(x.t) + '</div>' +
+               '<div class="vrand-d">' + esc(x.d) + '</div>' +
+               (x.a ? '<button type="button" onclick="' + x.a + '">' + esc(x.at) + '</button>' : '') +
+               '</div></div>';
+      }).join("");
+    }
+
+    buton.innerHTML = (v.stare === "rosu")
+      ? '<button type="button" class="btn stins" disabled>Publică rezultatele</button>'
+      : '<button type="button" class="btn btn-primary" onclick="meniuGo(\'rank\',\'card-final\')">Publică rezultatele</button>';
+  }
+
   function fmtHistDate(iso){
     try{
       var d=new Date(iso);
@@ -4252,7 +4511,7 @@
   // ---------- views ----------
   // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
   // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
-  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set", nou:"set"};
+  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set", nou:"set", verific:"cantar"};
   /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
      în browserul de probă, iar ce nu se poate proba nu se livrează. */
   /* ---------- cele trei uși din „Contul meu" ----------
@@ -4315,6 +4574,9 @@
     /* Rândurile de ore se fac din cod, unul pe manșă. Dacă numărul manșelor s-a schimbat
        de când a fost desenat ultima oară, ecranul trebuie să le aducă la zi la intrare. */
     if(v==="nou") deseneazaOre();
+    /* Verdictul e despre concursul de acum. Desenat o singură dată, ar rămâne pe
+       roșu după ce tocmai ai reparat ce-ți cerea — adică exact invers decât trebuie. */
+    if(v==="verific") deseneazaVerificarea();
     window.scrollTo(0,0);
   }
   function setManche(mi){
@@ -6656,7 +6918,7 @@
     var lipsa=standuriNecantarite();
     if(!lipsa.length){ el.innerHTML=""; el.style.display="none"; return; }
     el.style.display="";
-    el.innerHTML='⚠️ <b>Standuri nelămurite</b> — sfârșitul de concurs le cere întâi:<br>'+
+    el.innerHTML='⚠️ <b>Standuri nelămurite</b> — le vezi pe toate la Verificarea concursului:<br>'+
       lipsa.map(function(x){
         return "Manșa "+x.mi+": "+x.oameni.map(function(p){
           return "<b>"+(esc(standOfM(p,x.mi))||"fără stand")+"</b> "+esc(nameOf(p));
@@ -6913,9 +7175,17 @@
     var gata = P.filter(arbGata).length;
     if(gata >= P.length){
       if(mi < numManse()) return {t:"Treci la manșa "+(mi+1), a:"treciLaMansa("+(mi+1)+")"};
-      /* Nu doar „du-te la Clasament": pe ecranul acela sunt mai multe lucruri, iar
-         butonul căutat e jos. Saltul aterizează chiar pe cardul lui. */
-      return {t:"Publică rezultatul", a:"meniuGo('rank','card-final')"};
+      /* Înainte era saltul direct la publicare. Acum trece prin verificare: pe verde
+         e o atingere în plus și atât, iar pe roșu e singurul lucru care a oprit
+         vreodată un concurs greșit să ajungă în sezon. Butonul spune ce a găsit, ca
+         să nu fie un pas orb. */
+      var vf = verificaConcursul();
+      if(vf.stare === "verde") return {t:"Verifică și publică", a:"showView('verific')"};
+      if(vf.stare === "rosu")
+        return {t:"⛔ Verifică concursul · "+vf.rosii+(vf.rosii===1?" lucru de reparat":" lucruri de reparat"),
+                a:"showView('verific')"};
+      return {t:"Verifică concursul · "+vf.portocalii+(vf.portocalii===1?" de lămurit":" de lămurit"),
+              a:"showView('verific')"};
     }
     if(stare === "live") return {t:"🏁 Gata, s-a terminat manșa", a:"opresteMansa()"};
     /* Ceasul rămas de la altă manșă e ca și cum n-ar fi: manșa asta n-a pornit încă.
@@ -8165,28 +8435,19 @@
       st.style.fontWeight="700";
     };
     if(!state.participants.length){ spune("⚠ Nu e niciun participant pe telefon. Deschide Cântar și verifică lista întâi.", true); return; }
-    // Un concurs în care n-a cântărit NIMENI înseamnă, aproape întotdeauna, că
-    // greutățile n-au fost trecute — nu că n-a prins nimeni nimic. Dus așa în sezon,
-    // acoperă rezultatele adevărate, cum s-a și întâmplat pe 23 august.
-    var cuCantar=state.participants.filter(function(p){ return totalOfM(p,"total")>0; }).length;
-    /* Un stand necântărit nu e un zero: e o întrebare fără răspuns. Dus așa în sezon,
-       omul ia ultimul loc din sector, cu puncte cu tot, pentru o manșă la care poate a
-       prins. Se întreabă, cu standurile scrise pe nume — nu se blochează de tot: la
-       baltă, cel mai rău lucru e un buton care nu mai merge deloc. */
-    var lipsa=standuriNecantarite();
-    if(lipsa.length){
-      var cati=lipsa.reduce(function(a,x){ return a+x.oameni.length; }, 0);
-      var listat=lipsa.map(function(x){
-        return "Manșa "+x.mi+": "+x.oameni.map(function(p){
-          return (standOfM(p,x.mi)||"fără stand")+" "+nameOf(p);
-        }).join(", ");
-      }).join("\n");
-      if(!confirm(cati+" "+(cati===1?"stand n-a fost lămurit":"standuri n-au fost lămurite")+":\n\n"+listat+
-                  "\n\nDus așa în sezon, "+(cati===1?"el intră":"ei intră")+" cu 0 kg și "+
-                  (cati===1?"ia":"iau")+" ultimul loc din sector.\n\nDeschide Cântar și spune pentru fiecare: "+
-                  "a prins ceva, lampă, sau absent.\n\nSalvezi totuși așa?")) return;
+    /* Aici era un zid: o fereastră lungă, cu toate standurile nelămurite înșirate, fix
+       în clipa în care omul voia să închidă ziua. Se citea în picioare, la baltă, cu
+       telefonul într-o mână — deci se apăsa peste. Pe 7 septembrie s-a apăsat peste.
+       Întrebările s-au mutat pe ecranul de verificare, unde e loc și timp. Aici a rămas
+       doar poarta: ce strică rezultatul nu trece, și nu există „salvez totuși".
+       Cine ajunge direct pe Clasament, fără să treacă pe la verificare, e oprit tot
+       aici — și dus acolo. */
+    var vf=verificaConcursul();
+    if(vf.stare==="rosu"){
+      spune("⚠ "+vf.rosii+(vf.rosii===1?" lucru strică":" lucruri strică")+" rezultatul. Te duc la Verificarea concursului.", true);
+      showView("verific");
+      return;
     }
-    if(!cuCantar && !confirm("Niciun pescar n-are cântar trecut — concursul ar intra în Clasamentul de sezon cu 0 kg.\n\nDe obicei asta înseamnă că greutățile n-au fost trecute încă: deschide Cântar și verifică.\n\nChiar îl salvezi gol?")) return;
     if(!syncKey){ spune("⚠ Îți trebuie cheia de scriere — Contul meu, la Clasament live pe alte telefoane.", true); return; }
     if(!ceriCoduri()) return;
     if(!ceriBalta()) return;
