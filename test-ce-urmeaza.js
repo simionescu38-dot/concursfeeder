@@ -50,7 +50,8 @@ function pornire(stare) {
   vm.createContext(ctx);
   vm.runInContext([
     "num", "mOf", "standOfM", "sectorOfM", "cantOfM", "extraOfM", "totalOfM",
-    "stareaLaMansa", "arbGata", "numManse", "stareaMansei", "pasulUrmator",
+    "stareaLaMansa", "arbGata", "numManse", "stareaMansei", "p2", "hhmm", "fmtDur",
+    "pasulUrmator",
   ].map((n) => H.grabFunction(src, n)).join("\n"), ctx);
   vm.runInContext(/var STARI_MANSA=\{[^}]*\};/.exec(src)[0], ctx);
   return ctx;
@@ -146,6 +147,50 @@ console.log("\n=== 2b. Ceasul e al manșei lui ===");
             startAt: ACUM - 5 * ORA, endAt: ACUM - ORA,
             participants: [pescar("a", "1", [], null, 2), pescar("b", "2", [], null, 2)] }).t,
     "Cântărește · 0 din 2");
+}
+
+/* ================================================================
+   2c. Ora pusă dinainte nu se mai calcă.
+
+   Butonul spunea „Pornește manșa" și când ora era pusă dinainte și n-a venit încă —
+   iar apăsat, îți călca ora și sărea peste nădirea grea. Acum spune UNDE ești. Drumul
+   rămâne același: pornesteMansa() întreabă înainte să calce ora, deci cine începe mai
+   târziu decât scrie pe hârtie tot poate porni pe loc.
+   ================================================================ */
+console.log("\n=== 2c. Cele 10 minute de nădire grea ===");
+{
+  const cuOra = (peste, nadire) => ({
+    name: "Cupa", numManse: 1, manche: 1, mansaCeas: 1,
+    nadireMin: nadire === undefined ? 10 : nadire,
+    startAt: ACUM + peste, endAt: ACUM + peste + 4 * ORA,
+    participants: [pescar("a", "1"), pescar("b", "2")],
+  });
+
+  t("cu o oră înainte, spune când începe și când sună nădirea",
+    pasul(cuOra(ORA)).t, "⏱ Manșa 1 începe la 10:00 · nădirea la 09:50");
+
+  /* În cele 10 minute de nădire, butonul arată nădirea, nu pornirea. */
+  t("în nădire, butonul spune nădire",
+    pasul(cuOra(6 * 60000)).t, "🎣 Nădire grea · mai sunt 0:06:00");
+
+  /* Fără nădire, rămâne doar ora de start. */
+  t("cu nădirea pe zero, doar ora de start",
+    pasul(cuOra(ORA, 0)).t, "⏱ Manșa 1 începe la 10:00");
+
+  /* Drumul e tot pornirea: ea întreabă înainte să calce ora pusă. */
+  ["⏱", "🎣"].forEach(function (semn, i) {
+    const p = pasul(cuOra(i === 0 ? ORA : 6 * 60000));
+    t("„" + semn + "” duce tot la pornire, care întreabă întâi", p.a, "pornesteMansa()");
+  });
+  t("pornirea chiar întreabă înainte să calce ora",
+    /O pornești acum, la/.test(H.grabFunction(src, "pornesteMansa")), true);
+
+  /* Ceasul altei manșe rămâne ca și cum n-ar fi: acolo se pornește, nu se așteaptă. */
+  t("ceasul altei manșe nu ține loc de oră pusă",
+    pasul({ name: "Cupa", numManse: 2, manche: 2, mansaCeas: 1,
+            startAt: ACUM + ORA, endAt: ACUM + 5 * ORA,
+            participants: [pescar("a", "1", [], null, 2), pescar("b", "2", [], null, 2)] }).t,
+    "▶️ Pornește manșa 2");
 }
 
 /* ================================================================
