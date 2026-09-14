@@ -20,6 +20,7 @@ const TESTE = [
   ["Ușile din Contul meu", "test-usi-setari.js"],
   ["Semaforul de verificare", "test-semafor.js"],
   ["Clasamentul sectorului, sub cântar", "test-sectorul.js"],
+  ["Scara concursului", "test-scara.js"],
   ["Ce urmează, pe Acasă", "test-ce-urmeaza.js"],
   ["Tandem în sezon", "test-tandem-sezon.js"],
   ["Standuri, după medie", "test-standuri-medie.js"],
