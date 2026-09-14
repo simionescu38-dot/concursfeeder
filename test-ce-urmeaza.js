@@ -306,7 +306,15 @@ console.log("\n=== 6. Butonul de pe Cântar a ieșit ===");
   /* Toate drumurile din cod care duceau la cântar ajung acum în scară, pe treapta lui —
      altfel ar fi aterizat pe un ecran din care s-a mutat tot. */
   t("«showView(\'cantar\')» duce în scară, pe treapta a patra",
-    /if\(v==="cantar" && !esteArbitru\(\)\)\{ showView\("part"\); scaraDeschide\(4, true\); return; \}/.test(src), true);
+    /if\(v==="cantar" && !esteArbitru\(\)\)\{[\s\S]{0,500}scaraDeschide\(4, true\); return;/.test(src), true);
+  /* `showView("part")` iese din funcție, deci ramura care desena lista nu se mai atinge pe
+     drumul ăsta: fără desenare aici, cine venea spre cântar găsea lista goală. */
+  t("…și desenează lista pe drumul ăla",
+    /showView\("part"\); renderList\(\); scaraDeschide\(4, true\);/.test(src), true);
+  /* Ecranul de cântar e depozitul: pentru organizator s-a mutat tot în scară. Cine iese
+     din arbitraj trebuie dus în scară, altfel rămâne pe un ecran gol. */
+  t("ieșirea din arbitraj duce în scară, nu pe un ecran gol",
+    /function iesDinArbitru[\s\S]{0,1200}showView\("part"\);[\s\S]{0,80}Ai ieșit din arbitraj/.test(src), true);
   /* Arbitrul n-are scară: la el, cântarul rămâne ecranul lui, întreg. */
   t("…dar arbitrul rămâne pe ecranul lui", /if\(v==="part" && esteArbitru\(\)\)\{ v="cantar"; \}/.test(src), true);
   t("…și scara nici nu se desenează pentru el",

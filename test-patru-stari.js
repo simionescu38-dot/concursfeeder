@@ -27,7 +27,7 @@ const t = H.creeazaVerificator();
 const FUNCTII = ["uid", "esc", "fmt", "fmtPts", "numManse", "manseRange", "emptyManche",
   "ensureManche", "mOf", "sectorOfM", "standOfM", "mancheDeAfisat", "nameOf", "numeAfisat", "tandem", "nameKey",
   "standKey", "byStand", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM", "cmmcAward",
-  "scalaSectoare", "scrieInJurnal", "mancheDisputata",
+  "scalaSectoare", "scrieInJurnal", "cineLucreaza", "esteArbitru", "mancheDisputata",
   "stareaLaMansa", "nelamurit", "standuriNecantarite", "absentLaMansa", "pointsMapS",
   "stariHtml", "puneStarea", "stergeStarea", "improspateazaNecantarite",
   "sortByPointsS", "sortRankS", "rankRows"];
@@ -67,6 +67,9 @@ function pornire(optiuni) {
   /* numele celor patru stări se iau din fișierul livrat, nu se scriu a doua oară aici */
   vm.runInContext(src.match(/var STARI_MANSA=\{[^}]*\};/)[0], ctx);
   vm.runInContext("var rankScope=1, rankMode='sec', finMethod='pct';", ctx);
+  /* Jurnalul întreabă acum cine lucrează. Aici e organizatorul: probele astea sunt despre
+     stările pescarului, nu despre arbitri. */
+  vm.runInContext("var arbitruMode=false, arbitruSector='';", ctx);
   FUNCTII.forEach(f => vm.runInContext(H.grabFunction(src, f), ctx));
   return ctx;
 }

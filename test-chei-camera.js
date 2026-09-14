@@ -30,6 +30,9 @@ if (!listaCampuri) throw new Error("nu găsesc CAMPURI_CANTAR în worker/index.j
 vm.runInContext(listaCampuri[0], sandbox);
 /* `const` nu se agață de obiectul contextului — se citește ca expresie. */
 const CAMPURI = vm.runInContext("CAMPURI_CANTAR", sandbox);
+/* Din scrierea arbitrului se păstrează cântăririle — și, de-acum, rândurile lui de
+   jurnal, altfel tocmai cântăririle făcute de arbitri lipseau din „cine, ce și când". */
+vm.runInContext(H.grabFunction(src, "unesteJurnalele"), sandbox);
 vm.runInContext(H.grabFunction(src, "doarCantaririle"), sandbox);
 
 /** o manșă cu standul și sectorul ei, plus cântăririle date */

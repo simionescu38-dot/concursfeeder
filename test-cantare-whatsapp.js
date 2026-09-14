@@ -257,8 +257,12 @@ console.log("\n=== 7. Ce se scrie în concurs ===");
   /* Peste o lună, la o contestație, trebuie să se vadă care cântar a fost trecut la baltă
      și care lipit de pe grup. */
   t("…și cu de unde a venit", j[0].cine, "de pe WhatsApp");
-  t("cântarele trecute de mână rămân „Organizator\"",
-    /cine: cine\|\|"Organizator"/.test(H.grabFunction(src, "scrieInJurnal")), true);
+  /* „Organizator" nu mai e scris de-a gata: se întreabă cine lucrează. Cântarele trecute
+     de mână de organizator rămân ale lui; cele trecute de un arbitru poartă sectorul lui. */
+  t("jurnalul întreabă cine lucrează, nu presupune",
+    /cine: cine \|\| cineLucreaza\(\)/.test(H.grabFunction(src, "scrieInJurnal")), true);
+  t("…iar cel de la tastatură e tot organizatorul",
+    /if\(!esteArbitru\(\)\) return "Organizator";/.test(H.grabFunction(src, "cineLucreaza")), true);
 }
 
 /* ================================================================

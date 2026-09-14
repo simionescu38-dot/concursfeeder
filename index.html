@@ -2721,6 +2721,10 @@
     document.body.classList.remove("arb");
     var bi=document.getElementById("arb-iesire"); if(bi) bi.hidden=true;
     arbBara(); renderList(); updateLockUI();
+    /* Ecranul de cântar e depozitul: pentru organizator, ce era în el s-a mutat în scară.
+       Fără rândul ăsta, cine ieșea din arbitraj rămânea pe un ecran GOL, fără nimic care
+       să-i spună unde s-a dus totul. Prins la probă, nu la citit. */
+    showView("part");
     toast("Ai ieșit din arbitraj");
   }
 
@@ -4625,7 +4629,12 @@
        duceau acolo — și sunt multe, din tot codul — ajung acum în scară, deschisă pe
        treapta lui. Așa nu s-a rupt niciunul.
        Arbitrul face drumul invers: el n-are scară, deci „Concursul" îl duce la cântar. */
-    if(v==="cantar" && !esteArbitru()){ showView("part"); scaraDeschide(4, true); return; }
+    if(v==="cantar" && !esteArbitru()){
+      /* `showView("part")` iese din funcție, deci ramura de mai jos care desena lista nu
+         se mai atinge pe drumul ăsta. Fără rândul de aici, cine venea spre cântar găsea
+         lista goală. Prins la probă, nu la citit. */
+      showView("part"); renderList(); scaraDeschide(4, true); return;
+    }
     if(v==="part" && esteArbitru()){ v="cantar"; }
     var el=document.getElementById("view-"+v);
     if(!el) return;
@@ -4899,13 +4908,25 @@
      alt stand sau scos din listă mai târziu, rândul din jurnal tot spune cine și de unde.
      „inainte" și „dupa" sunt totalul lui pe manșa aceea, ca rândul să se citească exact
      cum se vede pe cântar: 15,420 kg → 15,920 kg. */
+  /* Cine face schimbarea. „Să se vadă cine a modificat, ce și când" — „ce" și „când"
+     erau de mult în jurnal, „cine" scria mereu „Organizator", inclusiv când cântărea un
+     arbitru de pe telefonul lui.
+     Arbitrul n-are nume în aplicație: intră cu un cod și își alege un sector. Deci
+     sectorul ESTE numele lui la baltă — „arbitrul de pe C". Nu i se cere să tasteze
+     nimic: un câmp de nume la intrare ar fi un pas în plus, pus la baltă, în picioare,
+     de un om care are un singur lucru de făcut. */
+  function cineLucreaza(){
+    if(!esteArbitru()) return "Organizator";
+    return arbitruSector ? ("Arbitru · sector " + arbitruSector) : "Arbitru";
+  }
+
   function scrieInJurnal(p, mi, fel, act, kg, inainte, dupa, cine){
     if(!Array.isArray(state.jurnal)) state.jurnal=[];
     state.jurnal.push({
       id: uid(), t: Date.now(), pid: p.id, nume: nameOf(p),
       stand: standOfM(p, mi)||"", sector: sectorOfM(p, mi)||"", m: mi,
       fel: fel, act: act, kg: kg, inainte: inainte, dupa: dupa,
-      cine: cine||"Organizator"
+      cine: cine || cineLucreaza()
     });
   }
   function addCatchCore(id, photo){
@@ -7503,6 +7524,11 @@
                   fără ele, scara ar rămâne desenată cum era acum un sfert de oră.
                   Fiecare bucată separat — lipite cu „|" ar strica tocmai despărțitorul. */
                scaraDeschisa, (state.name||""), (state.balta||""), currentArchiveId||"",
+               /* Cine e la telefon schimbă TOT ecranul: arbitrul n-are scară, iar
+                  nodurile ei se întorc în depozit, la el. Fără asta aici, semnătura
+                  rămânea aceeași, scara nu se redesena, iar arbitrul nimerea peste un
+                  ecran de cântar GOL. */
+               esteArbitru()?("arb:"+arbitruSector):"org",
                /* Pasul rămâne ULTIMUL: așa se poate citi înapoi din semnătură. */
                pasulUrmator().t];
     /* Pe manșa încheiată, panoul arată câștigătorii pe sectoare și cel mai mare pește.
