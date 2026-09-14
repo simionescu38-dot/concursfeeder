@@ -267,7 +267,10 @@ function concurs(oameni, o) {
     grabFunction(src, "num"),
     /var STARI_MANSA=\{[^}]*\};/.exec(src)[0],
     "function ensureManche(){} function manseRange(){ return [1,2,3]; }",
-    "var arbitruMode=false, arbitruSector='';"
+    "var arbitruMode=false, arbitruSector='';",
+    /* Semnătura ține minte și starea SCĂRII: treapta deschisă de mână, numele și balta,
+       arhiva. Fără ele, scara ar rămâne desenată cum era acum un sfert de oră. */
+    "var scaraDeschisa=0, currentArchiveId='';"
   ].join("\n"), ctx);
   // [nume, sector, stand, kg, pesteExtra?]
   ctx.state.participants = oameni.map(function (om, i) {
@@ -386,9 +389,10 @@ console.log("\n=== 15. Semnătura prinde și rezumatul ===");
   // cât manșa e în desfășurare, semnătura n-are de ce să care sectoarele
   const viu = concurs([["Ana", "A", "1", 5.0]], { acum: 1500 });   // între startAt și endAt
   t("manșa e în desfășurare", viu.ruleaza("stareaMansei()"), "live");
-  /* Opt bucăți, nu șapte: pasul următor a intrat în semnătură, ca panoul să nu rămână
-     cu butonul vechi după tragerea la sorți. Sectoarele tot nu se cară cât e manșa vie. */
-  t("…iar semnătura rămâne scurtă", viu.ruleaza("semnaturaStatus()").split("|").length, 8);
+  /* Douăsprezece bucăți: pasul următor a intrat ca panoul să nu rămână cu butonul vechi
+     după tragerea la sorți, iar de la scară au mai intrat patru — treapta deschisă de
+     mână, numele, balta și arhiva. Sectoarele tot nu se cară cât e manșa vie. */
+  t("…iar semnătura rămâne scurtă", viu.ruleaza("semnaturaStatus()").split("|").length, 12);
   t("…și poartă pasul următor",
     viu.ruleaza("semnaturaStatus()").split("|").pop(), viu.ruleaza("pasulUrmator().t"));
 }

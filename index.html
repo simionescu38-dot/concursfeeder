@@ -395,6 +395,35 @@
      NU plin, ci contur: pe ecranul ăsta „+ Adaugă la listă" e deja butonul plin, iar două
      butoane pline unul sub altul înseamnă că niciunul nu mai e cel important. Se vede
      oricum primul — e lat cât ecranul și stă sus de tot. */
+  /* ---------- scara concursului ----------
+     „Un singur ecran de lucru, cu pașii în ordinea în care se întâmplă pe baltă."
+     Panoul de dinainte spunea doar ce urmează ACUM. Ziua întreagă — ce s-a făcut, unde
+     ești, ce mai e — nu se vedea nicăieri, iar omul trebuia s-o țină în cap.
+     Pasul de acum e deschis; cei terminați se strâng într-un rând, cu ce au adunat scris
+     în el; cei care urmează se văd, dar sunt goi: fără ei, ecranul ar fi o pagină
+     interminabilă — exact ce am scos din „Contul meu". */
+  .scara{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .treapta{border:1px solid var(--line); border-radius:14px; background:var(--card);
+           overflow:hidden; text-align:left;}
+  .tr-cap{display:grid; grid-template-columns:24px 1fr auto; gap:11px; align-items:center;
+          width:100%; padding:12px 13px; background:none; border:0; color:inherit;
+          font-family:inherit; text-align:left; cursor:pointer;}
+  .tr-nr{width:24px; height:24px; border-radius:50%; display:grid; place-items:center;
+         font-size:12px; font-weight:800; background:var(--card-2, #122031); color:var(--muted);}
+  .tr-t{display:block; font-size:15px; font-weight:700; line-height:1.25;}
+  .tr-rez{display:block; font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.4;}
+  .tr-sg{font-size:13px; color:var(--muted);}
+  .treapta.gata{background:transparent;}
+  .treapta.gata .tr-nr{background:rgba(61,220,132,.16); color:#3ddc84;}
+  /* Treapta de acum: singura scoasă în față, ca ochiul să cadă pe ea fără s-o caute. */
+  .treapta.acum{border-color:rgba(25,211,209,.5);
+                box-shadow:0 0 0 1px rgba(25,211,209,.18), 0 14px 34px -24px rgba(25,211,209,.5);}
+  .treapta.acum .tr-nr{background:var(--teal); color:#04222a;}
+  .treapta.acum .tr-t{font-size:16px; font-weight:800;}
+  .treapta.urmeaza{background:transparent; border-style:dashed; opacity:.7;}
+  .treapta.urmeaza .tr-t{font-weight:600; color:var(--muted);}
+  .tr-in{padding:0 13px 13px;}
+  .tr-in .sl{margin:0;}
   .pas-sus{margin:0 0 12px;}
   .pas-sus .sl-act{margin-top:0; background:var(--teal-soft); color:var(--teal-d);
     border:1.5px solid var(--teal); box-shadow:none;}
@@ -959,7 +988,10 @@
          concursul chiar acum, apoi uneltele, iar la urmă cifrele despre alte concursuri.
          Titlul mare și fraza de prezentare au fost scoase — cine a deschis aplicația știe
          ce e; numele stă oricum în bara de sus. -->
-    <div id="status-live"></div>
+    <!-- Scara concursului. Ia locul panoului „ce urmează": acela spunea doar pasul de
+         acum, iar restul zilei — ce s-a făcut, ce mai e — trebuia ținut în cap. Cifrele
+         vii ale manșei n-au dispărut: au intrat în treapta a patra, unde le e locul. -->
+    <div id="scara" class="scara"></div>
 
     <div class="hero">
       <div class="mg-wrap" id="meniu-grila" style="width:100%;"></div>
@@ -7439,7 +7471,13 @@
        tragerea la sorți, de pildă, nu se schimbă nici starea, nici capturile, nici
        kilogramele — dar butonul trebuie să nu mai spună „Trage la sorți". */
     var parti=[stare, mi, state.participants.length, isLocked()?1:0,
-               cateCapturi(mi), fmt(kg), leaderId()||"", pasulUrmator().t];
+               cateCapturi(mi), fmt(kg), leaderId()||"",
+               /* Treapta deschisă de mână, și tot ce schimbă starea treptelor scării:
+                  fără ele, scara ar rămâne desenată cum era acum un sfert de oră.
+                  Fiecare bucată separat — lipite cu „|" ar strica tocmai despărțitorul. */
+               scaraDeschisa, (state.name||""), (state.balta||""), currentArchiveId||"",
+               /* Pasul rămâne ULTIMUL: așa se poate citi înapoi din semnătură. */
+               pasulUrmator().t];
     /* Pe manșa încheiată, panoul arată câștigătorii pe sectoare și cel mai mare pește.
        Ăștia se schimbă fără ca totalul, capturile sau liderul să se miște: e destul ca
        doi oameni din același sector să facă schimb de kilograme. Fără ei aici, pe ecran
@@ -7460,18 +7498,136 @@
     var pas=pasulUrmator();
     return '<button type="button" class="sl-act" onclick="'+pas.a+'">'+esc(pas.t)+'</button>';
   }
+  /* ---------- scara concursului ----------
+     Șase trepte, în ordinea de pe baltă. Fiecare știe singură dacă e gata și ce a adunat;
+     nimic nu se ține minte pe undeva, deci nimic nu poate rămâne în urmă față de concurs. */
+
+  /* 0 = treapta se alege singură: prima care nu e gata. Altfel, cea atinsă de om — ca un
+     pas terminat să poată fi redeschis pentru corecturi, fără să se piardă locul. */
+  var scaraDeschisa = 0;
+  function scaraDeschide(n){
+    scaraDeschisa = (scaraDeschisa === n) ? 0 : n;
+    statusSemn = "";           // semnătura veche ar opri redesenarea
+    improspateazaStatus();
+  }
+
+  function treptele(){
+    var P = state.participants || [];
+    var mi = state.manche || 1;
+    var nm = numManse();
+    var nume = (state.name || "").trim(), balta = (state.balta || "").trim();
+
+    /* 1. Concursul */
+    var t1 = {
+      nr:1, t:"Concursul", gata: !!(nume && balta),
+      rez: nume
+        ? (balta || "fără baltă") + " · " + nm + " manșe · " + (state.sectors || []).length + " sectoare"
+        : "Nici numele, nici balta",
+      a:"showView('nou')", at:"Deschide „Fă concursul”"
+    };
+
+    /* 2. Pescarii */
+    var absenti = P.filter(function(p){ return mOf(p, mi).stare === "absent"; }).length;
+    var t2 = {
+      nr:2, t:"Pescarii", gata: P.length > 0,
+      rez: P.length
+        ? P.length + " înscriși" + (absenti ? " · " + absenti + (absenti===1?" absent":" absenți") : "")
+        : "Niciunul încă",
+      a:"showView('cantar')", at:"Deschide Cântar"
+    };
+
+    /* 3. Standurile — ale manșei de acum. Cel trecut absent n-are nevoie de stand. */
+    var cuStand = P.filter(function(p){ return !!standOfM(p, mi); }).length;
+    var ceruti  = P.filter(function(p){ return mOf(p, mi).stare !== "absent"; }).length;
+    var t3 = {
+      nr:3, t:"Standurile" + (nm > 1 ? " · manșa " + mi : ""),
+      gata: P.length > 0 && cuStand >= ceruti,
+      rez: P.length ? ("trase · " + cuStand + " din " + ceruti) : "Întâi pescarii",
+      a:"laTragere()", at:"Deschide tragerea la sorți"
+    };
+
+    /* 4. Manșa — treapta în care se stă toată ziua. Corpul ei e chiar panoul de dinainte:
+       ceasul, cifrele, liderul și butonul pasului. */
+    var gataToti = P.length > 0 && P.filter(arbGata).length >= P.length;
+    var t4 = {
+      nr:4, t:"Manșa " + mi + " · cântărirea",
+      gata: gataToti && mi >= nm,
+      rez: P.length ? (P.filter(arbGata).length + " din " + P.length + " · " +
+                       fmt(P.reduce(function(a,x){ return a + totalOfM(x, mi); }, 0)) + " kg")
+                    : "Întâi pescarii",
+      corp: statusLiveHtml
+    };
+
+    /* 5. Verificarea — semaforul. */
+    var vf = P.length ? verificaConcursul() : null;
+    var t5 = {
+      nr:5, t:"Verifici rezultatele",
+      gata: !!vf && vf.stare === "verde",
+      rez: !vf ? "Întâi pescarii"
+           : vf.stare === "verde" ? "Totul e în regulă"
+           : vf.stare === "rosu"  ? (vf.rosii + (vf.rosii===1?" lucru strică":" lucruri strică") + " rezultatul")
+           : (vf.portocalii + (vf.portocalii===1?" lucru de lămurit":" lucruri de lămurit")),
+      a:"showView('verific')", at:"Deschide verificarea"
+    };
+
+    /* 6. Publicarea. */
+    var t6 = {
+      nr:6, t:"Publici și arhivezi",
+      gata: !!currentArchiveId,
+      rez: currentArchiveId ? "Salvat în Clasamentul de sezon" : "Încă nepublicat",
+      a:"meniuGo('rank','card-final')", at:"Deschide sfârșitul de concurs"
+    };
+
+    return [t1, t2, t3, t4, t5, t6];
+  }
+
+  function deseneazaScara(){
+    var box = document.getElementById("scara"); if(!box) return;
+    /* Cine doar privește clasamentul n-are ce face cu pașii organizatorului. */
+    if(isLocked() || viewerMode){ box.innerHTML=""; box.style.display="none"; return; }
+    box.style.display="";
+    var tr = treptele();
+    /* Treapta de acum: prima care nu e gata. Dacă toate sunt, ultima — acolo se termină ziua. */
+    var acum = 0;
+    for(var i=0;i<tr.length;i++) if(!tr[i].gata){ acum = tr[i].nr; break; }
+    if(!acum) acum = tr[tr.length-1].nr;
+    if(scaraDeschisa) acum = scaraDeschisa;
+
+    box.innerHTML = tr.map(function(x){
+      var deschis = x.nr === acum;
+      var cls = deschis ? "acum" : (x.gata ? "gata" : "urmeaza");
+      var h = '<div class="treapta '+cls+'">'+
+        '<button type="button" class="tr-cap" onclick="scaraDeschide('+x.nr+')">'+
+          '<span class="tr-nr">'+(x.gata ? "✓" : x.nr)+'</span>'+
+          '<span><span class="tr-t">'+esc(x.t)+'</span>'+
+            (deschis ? '' : '<span class="tr-rez">'+esc(x.rez)+'</span>')+'</span>'+
+          '<span class="tr-sg">'+(deschis ? "▾" : "›")+'</span>'+
+        '</button>';
+      if(deschis){
+        h += '<div class="tr-in">';
+        /* Treapta a patra își pune panoul întreg: ceasul, cifrele, liderul, butonul.
+           Celelalte, un rând de rezumat și butonul care duce acolo unde se face. */
+        h += x.corp ? x.corp()
+           : '<div class="sl astept"><div class="sl-pas">'+esc(x.rez)+'</div>'+
+             '<button type="button" class="sl-act" onclick="'+x.a+'">'+esc(x.at)+'</button></div>';
+        h += '</div>';
+      }
+      return h + '</div>';
+    }).join("");
+  }
+
   function improspateazaStatus(){
-    var el=document.getElementById("status-live");
+    var el=document.getElementById("scara");
     var elC=document.getElementById("status-cantar");
     if(!el && !elC) return;
     var semn=semnaturaStatus();
     if(semn===statusSemn){
-      /* doar ceasul curge: se împrospătează pe loc, fără să se redeseneze tot */
+      /* doar ceasul curge: se împrospătează pe loc, fără să se redeseneze toată scara */
       if(el){ var ceas=el.querySelector(".sl-ceas"); if(ceas) ceas.textContent="⏱ "+textCeas(); }
       return;
     }
     statusSemn=semn;
-    if(el) el.innerHTML=statusLiveHtml();
+    if(el) deseneazaScara();
     if(elC) elC.innerHTML=butonulPasului();
   }
   /** cât ține o manșă, în minute: întâi cât s-a pus ultima oară, apoi cât e pe ceasul
