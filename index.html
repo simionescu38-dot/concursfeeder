@@ -1011,17 +1011,20 @@
   <section class="view" id="view-cantar">
     <div id="arb-bara" class="arb-bara" hidden></div>
     <div class="lockbar"><svg class="ui-ico" aria-hidden="true"><use href="#i-lock"></use></svg>Mod vizualizare – doar organizatorul poate modifica (lacătul de sus + PIN).</div>
-    <!-- „Ce urmează" stătea doar pe Acasă, iar treaba se face aici. Într-un concurs asta
-         înseamnă patru drumuri dus-întors între cele două ecrane, de fiecare dată doar ca
-         să te uiți ce urmează. Acum butonul e și aici: rămâi pe cântar toată ziua.
-         Arbitrii nu-l văd — ei au un singur lucru de făcut, cântăresc. -->
-    <div id="status-cantar" class="pas-sus arbhide"></div>
-    <div class="seg arbhide">
+    <!-- Aici stătea butonul „ce urmează". A ieșit: cântarul e acum ÎN scară, iar treapta
+         lui poartă chiar butonul acela. Două uși spre același lucru, pe același ecran, e
+         tocmai ce scoatem din aplicație de la o vreme.
+         DEPOZITUL: ce e înăuntru se mută în treapta deschisă din scară și se întoarce aici
+         când se închide. Nodurile sunt ACELEAȘI, nu copii — un id nu poate fi în două
+         locuri, iar o listă desenată de două ori s-ar desincroniza la prima cântărire.
+         Arbitrul nu vede scara deloc, deci pentru el totul rămâne aici, în ordinea asta. -->
+    <div id="depozit">
+    <div class="seg arbhide" id="seg-manse">
       <button id="mc-1" class="on" onclick="setManche(1)"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșa 1</button>
       <button id="mc-2" onclick="setManche(2)"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșa 2</button>
       <button id="mc-3" onclick="setManche(3)" style="display:none;"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșa 3</button>
     </div>
-    <div class="card lockhide arbhide">
+    <div class="card lockhide arbhide" id="card-adauga">
       <div class="sec-title">Adaugă participant</div>
       <div class="row" style="margin-bottom:8px;">
         <div class="w-stand"><label class="f">Stand</label><input id="in-stand" inputmode="numeric" placeholder="Nr" oninput="sectorDinStand(this, document.getElementById('in-sector'))"></div>
@@ -1038,7 +1041,7 @@
       <button class="btn btn-primary" onclick="addParticipant()">+ Adaugă la listă</button>
     </div>
 
-    <div class="summary">
+    <div class="summary" id="sumar-cantar">
       <div class="stat"><div class="n num" id="st-count">0</div><div class="l">Cântăriți</div></div>
       <div class="stat"><div class="n num" id="st-total">0</div><div class="l">Total captură (kg)</div></div>
     </div>
@@ -1049,9 +1052,8 @@
     <div id="warn-stand" style="display:none;"></div>
     <div id="warn-sector" style="display:none;"></div>
     <div id="warn-cod" style="display:none;"></div>
-    <div class="searchbox"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume, stand sau cod…" oninput="renderList()"></div>
+    <div class="searchbox" id="cutie-cauta"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume, stand sau cod…" oninput="renderList()"></div>
     <div id="list"></div>
-    <button type="button" class="arb-iesire" id="arb-iesire" hidden onclick="iesDinArbitru()">Ies din arbitraj</button>
 
     <!-- Aducerea pescarilor în concurs stătea în Contul meu, la setări — deși înscrierea
          se face AICI, pe ecranul de cântar, unde e și butonul „+ Adaugă la listă". Cine
@@ -1112,10 +1114,15 @@
         <input type="file" id="poza-cam" accept="image/*" capture="environment" style="display:none;" onchange="pozeDinTelefon(this)">
       </div>
     </div>
+    <!-- Jurnalul („cine a modificat, ce și când") ține de cântărire: merge cu ea. -->
     <div class="pliant mt" id="pliant-jurnal">
       <button type="button" class="pliant-cap" aria-expanded="false" onclick="deschideJurnal()"><svg class="ui-ico" aria-hidden="true"><use href="#i-notebook"></use></svg>Jurnalul cântăririlor <span class="rar">nu se șterge</span></button>
       <div class="pliant-in" hidden><div id="jurnalBody"></div></div>
     </div>
+    </div><!-- /depozit -->
+    <!-- Butonul arbitrului stă în AFARA depozitului: el nu se mută niciodată în scară,
+         fiindcă scara e a organizatorului, iar arbitrul n-o vede. -->
+    <button type="button" class="arb-iesire" id="arb-iesire" hidden onclick="iesDinArbitru()">Ies din arbitraj</button>
   </section>
 
   <!-- CÂNTARE DE PE POZĂ — nu are tab: se ajunge din „Distribuie" al telefonului sau din
@@ -1745,11 +1752,13 @@
   </div>
 </div>
 
+<!-- Trei butoane, nu cinci. Cântarul și Clasamentul erau uși spre lucruri care sunt acum
+     TREPTE în scară — iar același drum în două locuri nu ajută pe nimeni. Rămâne ce nu
+     încape în scară: calendarul regional (alte concursuri) și contul.
+     Arbitrul are bara lui: el vede tot cântarul, fără scară. -->
 <nav class="tabs">
-  <button id="tab-part" class="on" onclick="showView('part')"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-home"></use></svg></span>Acasă</button>
-  <button id="tab-cantar" onclick="showView('cantar')"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-scale"></use></svg></span>Cântar</button>
+  <button id="tab-part" class="on" onclick="showView('part')"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-scale"></use></svg></span>Concursul</button>
   <button id="tab-cal" onclick="showView('cal')"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-calendar"></use></svg></span>Calendar</button>
-  <button id="tab-rank" onclick="showView('rank')"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-trophy"></use></svg></span>Clasament</button>
   <button id="tab-set" onclick="showView('set')"><span class="ic"><svg class="app-icon" aria-hidden="true"><use href="#i-user"></use></svg></span>Contul meu</button>
 </nav>
 
@@ -4571,7 +4580,10 @@
   // ---------- views ----------
   // ecranele deschise din grilă (strategie, regulament, sponsori) nu au buton
   // propriu în bara de jos — acolo rămâne aprins „Acasă", de unde s-a intrat
-  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"cantar", pescari:"set", nou:"set", verific:"cantar"};
+  /* Bara are trei butoane; tot ce nu e buton se agață de cel din care a venit.
+     „Concursul" e casa scării, deci și a tuturor ecranelor care sunt trepte în ea. */
+  var TAB_PARINTE={strat:"part", reg:"part", spons:"part", poze:"part", pescari:"set",
+                   nou:"part", verific:"part", rank:"part", cantar:"part"};
   /* Carduri strânse sub un singur rând. Nu <details>: comportarea lui nu se poate proba
      în browserul de probă, iar ce nu se poate proba nu se livrează. */
   /* ---------- cele trei uși din „Contul meu" ----------
@@ -4609,6 +4621,12 @@
     el.classList.toggle("deschis", seDeschide);
   }
   function showView(v){
+    /* Cântarul nu mai are ecran al lui: e treapta a patra din scară. Toate drumurile care
+       duceau acolo — și sunt multe, din tot codul — ajung acum în scară, deschisă pe
+       treapta lui. Așa nu s-a rupt niciunul.
+       Arbitrul face drumul invers: el n-are scară, deci „Concursul" îl duce la cântar. */
+    if(v==="cantar" && !esteArbitru()){ showView("part"); scaraDeschide(4, true); return; }
+    if(v==="part" && esteArbitru()){ v="cantar"; }
     var el=document.getElementById("view-"+v);
     if(!el) return;
     document.querySelectorAll(".view").forEach(function(x){x.classList.remove("active");});
@@ -5068,6 +5086,12 @@
     improspateazaCantariti();
     improspateazaJurnal();
     deseneazaSectorul();
+    /* Scara ține cântarul în treapta ei, deci butonul pasului e chiar sub mâna omului:
+       trebuie să se schimbe ODATĂ cu cântărirea, nu la următoarea bătaie de ceas. Prins
+       la probă: cântăream ultimul pescar și butonul mai zicea o secundă „Pornește manșa
+       2". Doar antetele treptelor se rescriu — nodurile mutate nu se ating, deci căsuța
+       în care scrii nu-și pierde degetul. */
+    improspateazaStatus();
   }
 
   /* ---------- cântare citite de pe poza cântarului ---------- */
@@ -7337,7 +7361,10 @@
   /* Tragerea la sorți se trece dintr-o poză sau dintr-un mesaj lipit — sertarul ei stă pe
      Cântar. Se deschide singur, altfel omul ajunge pe ecranul bun și tot nu vede unde. */
   function laTragere(){
-    showView("cantar");
+    /* Tragerea are treapta ei în scară, a treia. Arbitrul n-are scară: la el, pliantul e
+       tot pe ecranul de cântar, unde a fost dintotdeauna. */
+    if(esteArbitru()) showView("cantar");
+    else { showView("part"); scaraDeschide(3, true); }
     setTimeout(function(){
       var el=document.getElementById("pliant-tragere");
       if(!el) return;
@@ -7493,11 +7520,6 @@
   }
   /* Numai butonul, fără panoul din jurul lui: atât îi trebuie ecranului de cântar, unde
      starea se vede oricum din listă și din bara de ceas de sus. */
-  function butonulPasului(){
-    if(isLocked()) return "";
-    var pas=pasulUrmator();
-    return '<button type="button" class="sl-act" onclick="'+pas.a+'">'+esc(pas.t)+'</button>';
-  }
   /* ---------- scara concursului ----------
      Șase trepte, în ordinea de pe baltă. Fiecare știe singură dacă e gata și ce a adunat;
      nimic nu se ține minte pe undeva, deci nimic nu poate rămâne în urmă față de concurs. */
@@ -7505,8 +7527,12 @@
   /* 0 = treapta se alege singură: prima care nu e gata. Altfel, cea atinsă de om — ca un
      pas terminat să poată fi redeschis pentru corecturi, fără să se piardă locul. */
   var scaraDeschisa = 0;
-  function scaraDeschide(n){
-    scaraDeschisa = (scaraDeschisa === n) ? 0 : n;
+  /* `tine` = deschide-o și ține-o deschisă, fără să comute. Drumurile venite din cod
+     (cântarul, tragerea) cer treapta lor: un comutator le-ar închide-o din greșeală
+     tocmai când omul tocmai a cerut-o. */
+  function scaraDeschide(n, tine){
+    scaraDeschisa = (!tine && scaraDeschisa === n) ? 0 : n;
+    scaraAuto = scaraDeschisa;   // închisă de om → alegerea automată o ia de la capăt
     statusSemn = "";           // semnătura veche ar opri redesenarea
     improspateazaStatus();
   }
@@ -7581,54 +7607,127 @@
     return [t1, t2, t3, t4, t5, t6];
   }
 
+  /* Ce se MUTĂ în fiecare treaptă. Nodurile sunt aceleași, nu copii: un id nu poate fi în
+     două locuri, iar o listă desenată de două ori s-ar desincroniza la prima cântărire.
+     Treptele 2 și 4 cer amândouă lista — dar una singură e deschisă odată, deci nu se
+     ceartă niciodată pe ea. */
+  var MUTA = {
+    2: ["card-adauga", "pliant-import", "cutie-cauta", "list"],
+    3: ["pliant-tragere"],
+    4: ["seg-manse", "sumar-cantar", "sectorul", "warn-stand", "warn-sector", "warn-cod",
+        "cutie-cauta", "list", "pliant-jurnal"]
+  };
+  /* Ordinea în care se întorc acasă. Contează: arbitrul nu vede scara, deci pentru el
+     ecranul de cântar e chiar depozitul — dacă s-ar întoarce amestecate, i s-ar amesteca
+     ecranul. */
+  var ORDINE_DEPOZIT = ["seg-manse", "card-adauga", "sumar-cantar", "sectorul",
+    "warn-stand", "warn-sector", "warn-cod", "cutie-cauta", "list",
+    "pliant-import", "pliant-tragere", "pliant-jurnal"];
+
+  var scaraPozitia = 0;      // în ce treaptă stau acum nodurile mutate
+  var scaraAuto = 0;         // ultima treaptă aleasă de aplicație, nu de om
+
+  /* Mutarea se face DOAR când se schimbă treapta deschisă. Altfel, la fiecare cântărire
+     s-ar re-agăța lista în DOM — iar căsuța în care tocmai scrii și-ar pierde degetul. */
+  function mutaInTreapta(nr){
+    if(scaraPozitia === nr) return;
+    var dep = document.getElementById("depozit");
+    if(dep) ORDINE_DEPOZIT.forEach(function(id){
+      var el = document.getElementById(id); if(el) dep.appendChild(el);
+    });
+    scaraPozitia = 0;
+    var ids = MUTA[nr]; if(!ids) return;
+    var gazda = document.getElementById("tr-in-" + nr); if(!gazda) return;
+    ids.forEach(function(id){
+      var el = document.getElementById(id); if(el) gazda.appendChild(el);
+    });
+    scaraPozitia = nr;
+  }
+
+  /* Cojile se fac O SINGURĂ DATĂ. Dacă s-ar reface la fiecare desenare, nodurile mutate
+     înăuntru ar fi șterse odată cu ele — și, la fiecare cântărire, lista ar dispărea. */
+  function construiesteScara(){
+    var box = document.getElementById("scara");
+    if(!box || box.children.length === 6) return;
+    var h = "";
+    for(var i = 1; i <= 6; i++){
+      h += '<div class="treapta" id="tr-' + i + '">' +
+             '<button type="button" class="tr-cap" onclick="scaraDeschide(' + i + ')">' +
+               '<span class="tr-nr"></span>' +
+               '<span><span class="tr-t"></span><span class="tr-rez"></span></span>' +
+               '<span class="tr-sg"></span>' +
+             '</button>' +
+             '<div class="tr-in" id="tr-in-' + i + '" hidden>' +
+               '<div class="tr-btn" id="tr-btn-' + i + '"></div>' +
+             '</div>' +
+           '</div>';
+    }
+    box.innerHTML = h;
+  }
+
   function deseneazaScara(){
     var box = document.getElementById("scara"); if(!box) return;
-    /* Cine doar privește clasamentul n-are ce face cu pașii organizatorului. */
-    if(isLocked() || viewerMode){ box.innerHTML=""; box.style.display="none"; return; }
-    box.style.display="";
+    /* Cine doar privește clasamentul n-are ce face cu pașii organizatorului. Arbitrul are
+       un singur lucru de făcut — cântărește — și îl are pe ecranul lui, întreg. */
+    if(isLocked() || viewerMode || esteArbitru()){
+      mutaInTreapta(0);
+      box.style.display = "none";
+      return;
+    }
+    box.style.display = "";
+    construiesteScara();
+
     var tr = treptele();
     /* Treapta de acum: prima care nu e gata. Dacă toate sunt, ultima — acolo se termină ziua. */
     var acum = 0;
-    for(var i=0;i<tr.length;i++) if(!tr[i].gata){ acum = tr[i].nr; break; }
-    if(!acum) acum = tr[tr.length-1].nr;
-    if(scaraDeschisa) acum = scaraDeschisa;
+    for(var i = 0; i < tr.length; i++) if(!tr[i].gata){ acum = tr[i].nr; break; }
+    if(!acum) acum = tr[tr.length - 1].nr;
+    /* O treaptă în care se LUCREAZĂ nu se închide singură sub degetul omului. Prinsă la
+       probă: înscrii primul pescar — cu standul lui, că așa e formularul — și pe loc sunt
+       gata și pescarii, și standurile, deci scara sărea la manșă și îți lua formularul de
+       sub deget, la al doilea om din treizeci și trei. Înscrierea n-are sfârșit pe care
+       să-l poată socoti cineva: se vede din bifele de deasupra că s-a făcut, iar mai
+       departe treci tu, cu degetul. Treptele fără lucru în ele (1, 5, 6) urcă singure. */
+    if(scaraAuto && MUTA[scaraAuto]) acum = scaraAuto;
+    scaraAuto = acum;
+    if(scaraDeschisa){ acum = scaraDeschisa; scaraAuto = acum; }
 
-    box.innerHTML = tr.map(function(x){
+    tr.forEach(function(x){
+      var cutie = document.getElementById("tr-" + x.nr); if(!cutie) return;
       var deschis = x.nr === acum;
-      var cls = deschis ? "acum" : (x.gata ? "gata" : "urmeaza");
-      var h = '<div class="treapta '+cls+'">'+
-        '<button type="button" class="tr-cap" onclick="scaraDeschide('+x.nr+')">'+
-          '<span class="tr-nr">'+(x.gata ? "✓" : x.nr)+'</span>'+
-          '<span><span class="tr-t">'+esc(x.t)+'</span>'+
-            (deschis ? '' : '<span class="tr-rez">'+esc(x.rez)+'</span>')+'</span>'+
-          '<span class="tr-sg">'+(deschis ? "▾" : "›")+'</span>'+
-        '</button>';
-      if(deschis){
-        h += '<div class="tr-in">';
-        /* Treapta a patra își pune panoul întreg: ceasul, cifrele, liderul, butonul.
-           Celelalte, un rând de rezumat și butonul care duce acolo unde se face. */
-        h += x.corp ? x.corp()
-           : '<div class="sl astept"><div class="sl-pas">'+esc(x.rez)+'</div>'+
-             '<button type="button" class="sl-act" onclick="'+x.a+'">'+esc(x.at)+'</button></div>';
-        h += '</div>';
-      }
-      return h + '</div>';
-    }).join("");
+      cutie.className = "treapta " + (deschis ? "acum" : (x.gata ? "gata" : "urmeaza"));
+      cutie.querySelector(".tr-nr").textContent = x.gata ? "✓" : String(x.nr);
+      cutie.querySelector(".tr-t").textContent  = x.t;
+      var rez = cutie.querySelector(".tr-rez");
+      rez.textContent = deschis ? "" : x.rez;
+      rez.hidden = deschis;
+      cutie.querySelector(".tr-sg").textContent = deschis ? "▾" : "›";
+      document.getElementById("tr-in-" + x.nr).hidden = !deschis;
+
+      var btn = document.getElementById("tr-btn-" + x.nr);
+      if(!deschis){ btn.innerHTML = ""; return; }
+      /* Treapta manșei își pune panoul întreg: ceasul, cifrele, liderul, butonul pasului.
+         Treptele care aduc cântarul la ele n-au nevoie de buton — lucrul e chiar acolo.
+         Restul primesc un rând de rezumat și butonul care duce unde se face. */
+      btn.innerHTML = x.corp ? x.corp()
+        : (MUTA[x.nr] ? ""
+          : '<div class="sl astept"><div class="sl-pas">' + esc(x.rez) + '</div>' +
+            '<button type="button" class="sl-act" onclick="' + x.a + '">' + esc(x.at) + '</button></div>');
+    });
+
+    mutaInTreapta(acum);
   }
 
   function improspateazaStatus(){
-    var el=document.getElementById("scara");
-    var elC=document.getElementById("status-cantar");
-    if(!el && !elC) return;
+    var el=document.getElementById("scara"); if(!el) return;
     var semn=semnaturaStatus();
     if(semn===statusSemn){
       /* doar ceasul curge: se împrospătează pe loc, fără să se redeseneze toată scara */
-      if(el){ var ceas=el.querySelector(".sl-ceas"); if(ceas) ceas.textContent="⏱ "+textCeas(); }
+      var ceas=el.querySelector(".sl-ceas"); if(ceas) ceas.textContent="⏱ "+textCeas();
       return;
     }
     statusSemn=semn;
-    if(el) deseneazaScara();
-    if(elC) elC.innerHTML=butonulPasului();
+    deseneazaScara();
   }
   /** cât ține o manșă, în minute: întâi cât s-a pus ultima oară, apoi cât e pe ceasul
       din Cronometru. Zero înseamnă „nu știu încă" — atunci se întreabă o dată. */

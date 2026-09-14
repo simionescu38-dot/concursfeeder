@@ -287,47 +287,34 @@ console.log("\n=== 5. Panoul de pe Acasă ===");
 }
 
 /* ================================================================
-   6. Butonul stă și pe ecranul de cântar.
+   6. Butonul de pe Cântar a IEȘIT — fiindcă n-a mai avut de ce să stea.
 
-   „Nu vreau să mă plimb prin aplicație să amețesc." Panoul cu pasul următor era DOAR pe
-   Acasă, iar treaba se face la Cântar. Într-un concurs asta însemna patru drumuri
-   dus-întors între cele două ecrane — de fiecare dată doar ca să te uiți ce urmează.
+   A fost pus când cântarul era un ecran aparte: panoul cu pasul următor era doar pe
+   Acasă, iar treaba se face la cântar, deci erau patru drumuri dus-întors pe concurs.
+   Acum cântarul e chiar TREAPTA A PATRA din scară, iar treapta își poartă butonul.
+   Două uși spre același lucru, pe același ecran, e tocmai ce scoatem de la o vreme.
    ================================================================ */
-console.log("\n=== 6. Același buton, și la Cântar ===");
+console.log("\n=== 6. Butonul de pe Cântar a ieșit ===");
 {
-  const cantar = src.slice(src.indexOf('id="view-cantar"'), src.indexOf('id="view-rank"'));
+  t("nu mai există un al doilea loc pentru el", /status-cantar/.test(src), false);
+  t("…nici funcția care îl desena", /butonulPasului/.test(src), false);
 
-  t("are locul lui sus pe cântar", /<div id="status-cantar" class="pas-sus arbhide"><\/div>/.test(cantar), true);
-  t("…deasupra manșelor, nu jos", cantar.indexOf('id="status-cantar"') < cantar.indexOf('id="mc-1"'), true);
-  /* Arbitrii au un singur lucru de făcut. Un buton care le spune „publică rezultatul"
-     e ceva ce n-au voie oricum. */
-  t("arbitrii nu-l văd", /id="status-cantar" class="pas-sus arbhide"/.test(cantar), true);
+  /* Drumul nu s-a rupt: butonul e în treapta manșei, prin panoul ei. */
+  const tr = H.grabFunction(src, "treptele");
+  t("treapta manșei poartă panoul, cu butonul lui", /corp: statusLiveHtml/.test(tr), true);
 
-  const bp = H.grabFunction(src, "butonulPasului");
-  t("e același pas ca pe Acasă", /pasulUrmator\(\)/.test(bp), true);
-  t("…doar butonul, fără panoul din jur", /sl-cifre|sl-lider|sl-cap/.test(bp), false);
-  /* Cine doar privește clasamentul nu are ce apăsa. */
-  t("cu lacătul pus nu se arată", /if\(isLocked\(\)\) return "";/.test(bp), true);
-  t("textul trece prin esc()", /esc\(pas\.t\)/.test(bp), true);
-  /* „Un singur buton scos în față pe ecran." Pe Cântar, acela e deja „+ Adaugă la listă".
-     Al doilea buton plin ar face ca niciunul să nu mai fie cel important — de-aia ăsta e
-     contur. Se vede oricum primul: e lat cât ecranul și stă sus de tot. */
-  t("butonul de sus nu e al doilea buton plin",
-    /\.pas-sus \.sl-act\{[^}]*background:var\(--teal-soft\)/.test(src), true);
-  t("…dar e scos în evidență cu contur",
-    /\.pas-sus \.sl-act\{[^}]*border:1\.5px solid var\(--teal\)/.test(src), true);
+  /* Toate drumurile din cod care duceau la cântar ajung acum în scară, pe treapta lui —
+     altfel ar fi aterizat pe un ecran din care s-a mutat tot. */
+  t("«showView(\'cantar\')» duce în scară, pe treapta a patra",
+    /if\(v==="cantar" && !esteArbitru\(\)\)\{ showView\("part"\); scaraDeschide\(4, true\); return; \}/.test(src), true);
+  /* Arbitrul n-are scară: la el, cântarul rămâne ecranul lui, întreg. */
+  t("…dar arbitrul rămâne pe ecranul lui", /if\(v==="part" && esteArbitru\(\)\)\{ v="cantar"; \}/.test(src), true);
+  t("…și scara nici nu se desenează pentru el",
+    /isLocked\(\) \|\| viewerMode \|\| esteArbitru\(\)/.test(src), true);
 
   const isp = H.grabFunction(src, "improspateazaStatus");
-  t("se umple odată cu cel de pe Acasă", /elC\.innerHTML=butonulPasului\(\);/.test(isp), true);
-  /* Dacă ar ieși devreme când lipsește panoul de pe Acasă, butonul de la Cântar n-ar mai
-     fi umplut niciodată pe un telefon care stă pe ecranul de cântar. */
-  t("nu iese devreme când unul dintre ele lipsește", /if\(!el && !elC\) return;/.test(isp), true);
-
-  t("se împrospătează la intrarea pe cântar",
-    /if\(v==="cantar"\)\{ renderList\(\); improspateazaStatus\(\); \}/.test(src), true);
-  /* Ceasul curge și cât cântărești: „🎣 Nădire grea · mai sunt 9:40" trebuie să scadă. */
-  t("…și cât curge ceasul, pe oricare dintre cele două ecrane",
-    /\(cant && cant\.classList\.contains\("active"\)\)\) improspateazaStatus\(\);/.test(src), true);
+  t("împrospătarea are un singur loc de umplut acum", /getElementById\("scara"\); if\(!el\) return;/.test(isp), true);
+  t("…și nu mai caută al doilea", /elC/.test(isp), false);
 }
 
 t.raport();

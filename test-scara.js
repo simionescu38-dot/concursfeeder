@@ -209,7 +209,23 @@ console.log("\n=== 6. Unde stă și cine o vede ===");
   t("o singură treaptă e deschisă odată",
     /var deschis = x\.nr === acum;/.test(src), true);
   t("…iar un pas terminat se poate redeschide",
-    /function scaraDeschide\(n\)\{[\s\S]{0,200}scaraDeschisa === n/.test(src), true);
+    /function scaraDeschide\(n, tine\)\{[\s\S]{0,200}scaraDeschisa === n/.test(src), true);
+  /* Drumurile venite din cod cer treapta lor și o ȚIN deschisă: un comutator ar
+     închide-o tocmai când omul a cerut-o. */
+  t("…dar drumurile din cod o țin deschisă, nu o comută",
+    /scaraDeschide\(4, true\)/.test(src) && /scaraDeschide\(3, true\)/.test(src), true);
+
+  /* Butonul pasului e sub mâna omului, în treapta manșei: trebuie să se schimbe ODATĂ cu
+     cântărirea, nu la următoarea bătaie de ceas. Prins la probă: cântăream ultimul pescar
+     și butonul mai zicea o secundă „Pornește manșa 2". */
+  t("scara se împrospătează la fiecare cântărire",
+    /function refreshCard[\s\S]{0,1200}improspateazaStatus\(\);/.test(src), true);
+  /* Cojile se fac o singură dată: dacă s-ar reface, nodurile mutate în ele ar fi șterse
+     odată cu ele — iar lista de pescari ar dispărea la fiecare cântărire. */
+  t("cojile treptelor se fac o singură dată",
+    /if\(!box \|\| box\.children\.length === 6\) return;/.test(src), true);
+  t("…iar nodurile se mută doar când se schimbă treapta",
+    /if\(scaraPozitia === nr\) return;/.test(src), true);
 
   /* Fără astea în semnătură, scara ar rămâne desenată cum era acum un sfert de oră. */
   ["scaraDeschisa", "state.balta", "currentArchiveId"].forEach((x) =>
