@@ -242,11 +242,11 @@ console.log("\n=== 7. Ce nu vede pe ecran ===");
   t("bara de jos dispare în modul arbitru", /body\.arb nav\.tabs\{display:none;\}/.test(src), true);
   t("lucrurile marcate „arbhide” se ascund", /body\.arb \.arbhide\{display:none !important;\}/.test(src), true);
   t("adăugarea de participanți e a organizatorului",
-    /<div class="card lockhide arbhide">\s*<div class="sec-title">Adaugă participant<\/div>/.test(src), true);
+    /<div class="card lockhide arbhide" id="card-adauga">\s*<div class="sec-title">Adaugă participant<\/div>/.test(src), true);
   t("tragerea la sorți la fel",
     /<div class="pliant mt lockhide arbhide" id="pliant-tragere">/.test(src), true);
   t("manșele le pune organizatorul, arbitrul le urmează",
-    /<div class="seg arbhide">\s*<button id="mc-1"/.test(src), true);
+    /<div class="seg arbhide" id="seg-manse">\s*<button id="mc-1"/.test(src), true);
   t("lista lui trece prin filtrul sectorului",
     /var visible=arbAiLui\(state\.participants\);/.test(src), true);
 }

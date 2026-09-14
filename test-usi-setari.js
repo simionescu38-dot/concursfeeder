@@ -427,7 +427,9 @@ console.log("\n=== 13. Ecranul «Fă concursul» ===");
     /id="card-concursul"[\s\S]{0,400}onclick="showView\('nou'\)"/.test(set), true);
 
   /* Bara de jos rămâne aprinsă pe Contul meu, ca la Baza de pescari. */
-  t("bara de jos știe de ecranul nou", /nou:"set"/.test(src), true);
+  /* „Fă concursul" e treapta 1 din scară, deci se agață de „Concursul" — butonul care
+     ține scara. Înainte se agăța de Contul meu, fiindcă de-acolo se ajungea la el. */
+  t("bara de jos știe de ecranul nou", /nou:"part"/.test(src), true);
   /* Rândurile de ore se fac din cod: la intrare trebuie aduse la zi. */
   t("orele se desenează la intrarea pe ecran", /if\(v==="nou"\) deseneazaOre\(\);/.test(src), true);
 }
@@ -453,7 +455,8 @@ console.log("\n=== 14. Semaforul de verificare ===");
     /id="view-verific"[\s\S]*?class="card( u[123])?"/.test(v) && /class="card u[123]"/.test(v), false);
 
   /* Bara de jos rămâne pe Cântar: de acolo vii, acolo te întorci să repari. */
-  t("bara de jos rămâne pe Cântar", /verific:"cantar"/.test(src), true);
+  /* Verificarea e treapta 5: se agață tot de „Concursul", ca toate treptele. */
+  t("bara de jos rămâne pe «Concursul»", /verific:"part"/.test(src), true);
   t("se redesenează la fiecare intrare",
     /if\(v==="verific"\) deseneazaVerificarea\(\);/.test(src), true);
 
