@@ -22,6 +22,7 @@ const TESTE = [
   ["Clasamentul sectorului, sub cântar", "test-sectorul.js"],
   ["Scara concursului", "test-scara.js"],
   ["Jurnalul spune cine", "test-jurnal-cine.js"],
+  ["Cântarul de mână", "test-cantar.js"],
   ["Ce urmează, pe Acasă", "test-ce-urmeaza.js"],
   ["Tandem în sezon", "test-tandem-sezon.js"],
   ["Standuri, după medie", "test-standuri-medie.js"],

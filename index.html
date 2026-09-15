@@ -464,6 +464,34 @@
     border-radius:12px; padding:10px 12px; font-size:13px; font-weight:700; margin-bottom:12px;}
   body.locked .lockbar{display:block;}
   .lockbar .ui-ico,.seg button .ui-ico{width:17px; height:17px; margin-right:5px; vertical-align:-4px;}
+  /* ---------- cântarul de mână ----------
+     Un pescar pe ecran, nu douăzeci și patru. Măsurat pe 412px: de la standul 1 la 24
+     erau 13 ecrane de derulat, fiindcă un rând de pescar ține 463 de pixeli — jumătate
+     de telefon pentru un singur om. Omul merge pe mal în ordine; acum merge și ecranul. */
+  .cm{text-align:center;}
+  .cm-cap{display:flex; align-items:center; justify-content:center; gap:8px;
+    font-size:12.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:8px;}
+  .cm-sec{padding:3px 9px; border-radius:999px; background:var(--amber-soft); color:#8a4f07;
+    letter-spacing:.03em;}
+  .cm-stand{font-size:42px; font-weight:850; line-height:1; letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums; margin-bottom:6px;}
+  .cm-nume{font-size:20px; font-weight:800; letter-spacing:-.01em; margin-bottom:4px;}
+  .cm-amanat{font-size:12.5px; font-weight:700; color:var(--amber); margin-bottom:8px;}
+  .cm-camp{display:flex; align-items:center; gap:8px; margin:10px 0 12px;}
+  .cm-camp .catch-in{min-height:60px; font-size:26px;}
+  .cm-camp b{font-size:15px; font-weight:800; color:var(--muted);}
+  .cm-doua{display:flex; gap:9px; margin-top:9px;}
+  .cm-doua .btn{flex:1; font-size:14.5px;}
+  .cm-gata{display:flex; flex-direction:column; align-items:center; gap:8px; padding:6px 0 2px;}
+  /* `display` bate `hidden`, deci ascunsul trebuie spus și aici — altfel bifa de sfârșit
+     răsare sub butoane în mijlocul cântăririi. Aceeași capcană ca la „Ies din arbitraj". */
+  .cm-gata[hidden], #cm-lucru[hidden]{display:none !important;}
+  .cm-bifa{width:54px; height:54px; border-radius:999px; background:var(--teal-soft);
+    color:var(--teal-d); display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:800;}
+  .cm-gata-t{font-size:18px; font-weight:850;}
+  .cm-gata-d{font-size:14px; color:var(--muted);}
   .searchbox{position:relative; margin-bottom:12px;}
   .searchbox .ui-ico{position:absolute; z-index:1; left:14px; top:50%; margin:0; transform:translateY(-50%); color:var(--muted);}
   .searchbox input{margin:0 !important; padding-left:42px;}
@@ -1049,11 +1077,20 @@
     <!-- Clasamentul sectorului stă AICI, sub cifrele de sus, nu la capătul listei:
          după o cântărire nu mai derulezi peste 33 de pescari ca să vezi ce s-a schimbat. -->
     <div id="sectorul" class="sect-live" style="display:none;"></div>
+    <div class="card cm" id="cantar-mana" style="display:none;"></div>
     <div id="warn-stand" style="display:none;"></div>
     <div id="warn-sector" style="display:none;"></div>
     <div id="warn-cod" style="display:none;"></div>
-    <div class="searchbox" id="cutie-cauta"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume, stand sau cod…" oninput="renderList()"></div>
-    <div id="list"></div>
+    <!-- Lista tuturor stă într-un pliant fiindcă, la cântărit, cel care contează e unul
+         singur — cel de la rând. Pliantul se deschide singur unde lista E treaba (la
+         înscriere, și pe ecranul arbitrului) și stă strâns unde nu e (la cântărit). -->
+    <div class="pliant mt" id="pliant-toti">
+      <button type="button" class="pliant-cap" aria-expanded="true" onclick="plianteaza('pliant-toti')"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg>Toți pescarii <span class="rar">pentru corecturi</span></button>
+      <div class="pliant-in">
+        <div class="searchbox" id="cutie-cauta"><svg class="ui-ico" aria-hidden="true"><use href="#i-search"></use></svg><input id="search-part" placeholder="Caută după nume, stand sau cod…" oninput="renderList()"></div>
+        <div id="list"></div>
+      </div>
+    </div>
 
     <!-- Aducerea pescarilor în concurs stătea în Contul meu, la setări — deși înscrierea
          se face AICI, pe ecranul de cântar, unde e și butonul „+ Adaugă la listă". Cine
@@ -4885,6 +4922,108 @@
     queueSave(); renderList(); renderRank();
   }
 
+  /* ---------- cântarul de mână ----------
+     „stand + nume → greutate → «Salvează și următorul»" — cuvintele lui, de la cei șase
+     pași. Lista sortată pe standuri era jumătatea de drum: ordinea era bună, dar tot
+     trebuia căutat omul în ea.
+
+     Coada NU se ține minte nicăieri. E chiar starea manșei, citită în ordinea
+     standurilor. Așa nu poate rămâne în urma adevărului: supraviețuiește reîncărcării,
+     sincronizării și schimbului de telefon, iar dacă altcineva cântărește standul 7 de
+     pe telefonul lui, el iese singur din coadă aici. O coadă ținută separat s-ar fi
+     dezlipit de realitate la prima cântărire venită din cameră. */
+  function cantarSir(){
+    var mi = state.manche||1;
+    var ai = arbAiLui(state.participants||[]).slice().sort(byStandM(mi))
+               .filter(function(p){ return nelamurit(p, mi); });
+    /* Cine a fost lăsat cu „Revin la el" se așază la coadă: te-ai hotărât o dată să-l
+       amâni, deci nu ți-l pune înapoi în față la următoarea atingere. */
+    var acum=[], amanati=[];
+    ai.forEach(function(p){
+      if(stareaLaMansa(p, mi)==="sarit") amanati.push(p); else acum.push(p);
+    });
+    return acum.concat(amanati);
+  }
+
+  function construiesteCantarul(box){
+    if(box.dataset.gata) return;
+    box.innerHTML =
+      '<div id="cm-lucru">' +
+        '<div class="cm-cap"><span>Standul</span><span class="cm-sec" id="cm-sec"></span></div>' +
+        '<div class="cm-stand" id="cm-stand"></div>' +
+        '<div class="cm-nume" id="cm-nume"></div>' +
+        '<div class="cm-amanat" id="cm-amanat" hidden>l-ai amânat — ai revenit la el</div>' +
+        '<div class="cm-camp">' +
+          '<input id="cm-kg" class="catch-in" inputmode="decimal" placeholder="ex: 8,65" ' +
+            'onkeydown="if(event.key===\'Enter\'){event.preventDefault();cantarSalveaza();}">' +
+          '<b>kg</b>' +
+        '</div>' +
+        '<button type="button" class="btn btn-primary" id="cm-salv" onclick="cantarSalveaza()"></button>' +
+        '<div class="cm-doua">' +
+          '<button type="button" class="btn btn-ghost" onclick="cantarStare(\'zero\')">Lampă</button>' +
+          '<button type="button" class="btn btn-ghost" onclick="cantarStare(\'sarit\')">Revin la el</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cm-gata" id="cm-gata" hidden>' +
+        '<div class="cm-bifa">✓</div>' +
+        '<div class="cm-gata-t" id="cm-gata-t"></div>' +
+        '<div class="cm-gata-d" id="cm-gata-d"></div>' +
+      '</div>';
+    box.dataset.gata = "1";
+  }
+
+  /* Coaja se face o singură dată, iar pe urmă se schimbă doar cuvintele din ea. Dacă s-ar
+     reface la fiecare cântărire, câmpul ar fi alt câmp — și tastatura telefonului s-ar
+     închide la fiecare pește. Exact ce trebuie să nu se întâmple la baltă. */
+  function deseneazaCantarul(){
+    var box = document.getElementById("cantar-mana"); if(!box) return;
+    var P = state.participants||[];
+    if(isLocked() || viewerMode || !P.length){ box.style.display="none"; return; }
+
+    var mi = state.manche||1;
+    var sir = cantarSir();
+    construiesteCantarul(box);
+    box.style.display = "";
+    var lucru = document.getElementById("cm-lucru");
+    var gata  = document.getElementById("cm-gata");
+
+    if(!sir.length){
+      lucru.hidden = true; gata.hidden = false;
+      var ai = arbAiLui(P);
+      document.getElementById("cm-gata-t").textContent = "Manșa "+mi+" e cântărită";
+      document.getElementById("cm-gata-d").textContent =
+        "Toți cei "+ai.length+", fără niciunul nelămurit.";
+      return;
+    }
+    gata.hidden = true; lucru.hidden = false;
+
+    var p = sir[0], urm = sir[1];
+    document.getElementById("cm-stand").textContent = standOfM(p, mi) || "—";
+    document.getElementById("cm-sec").textContent   = "sector "+(sectorOfM(p, mi) || "—");
+    document.getElementById("cm-nume").textContent  = nameOf(p);
+    document.getElementById("cm-amanat").hidden     = (stareaLaMansa(p, mi)!=="sarit");
+    document.getElementById("cm-salv").textContent  = urm
+      ? ("Salvează · mergi la "+(standOfM(urm, mi) || "următorul"))
+      : "Salvează · gata manșa";
+  }
+
+  function cantarSalveaza(){
+    if(guard()) return;
+    var p = cantarSir()[0]; if(!p) return;
+    var el = document.getElementById("cm-kg"); if(!el) return;
+    var v = num(el.value);
+    if(!(v>0)){ toast("Scrie greutatea, ori apasă „Lampă”"); el.focus(); return; }
+    el.value = "";
+    addCatchCore(p.id, null, v);
+    renderList();
+    /* Degetul rămâne unde era: câmpul e același nod, deci tastatura nu se închide. */
+    var camp = document.getElementById("cm-kg"); if(camp) camp.focus();
+  }
+  function cantarStare(k){
+    var p = cantarSir()[0]; if(!p) return;
+    puneStarea(p.id, k);   /* el pune și în jurnal, și redesenează, și spune ce-a făcut */
+  }
+
   function chipsHtml(p){
     var m=mOf(p, state.manche||1);
     var cs=m.catches||[]; var h=""; var L=isLocked();
@@ -4929,9 +5068,13 @@
       cine: cine || cineLucreaza()
     });
   }
-  function addCatchCore(id, photo){
-    var el=document.getElementById("catch-"+id); if(!el) return;
-    var v=num(el.value);
+  /* `val` vine de la cântarul de mână, care are un singur câmp pentru tot concursul, nu
+     unul pe fiecare pescar. Fără el, două câmpuri ar purta același id și cel de-al doilea
+     n-ar mai fi găsit niciodată. Când lipsește, se citește din card ca întotdeauna. */
+  function addCatchCore(id, photo, val){
+    var el = (val===undefined) ? document.getElementById("catch-"+id) : null;
+    if(val===undefined && !el) return;
+    var v = (val===undefined) ? num(el.value) : num(val);
     var p=state.participants.find(function(x){return x.id===id;}); if(!p) return;
     var m=mOf(p, state.manche||1);
     if(v>0){
@@ -4951,7 +5094,7 @@
       announceCatch(p, vr, loc, isLeaderNow);
       if(isLeaderNow){ showNewLeader(p); }
     }
-    el.value=""; el.focus();
+    if(el){ el.value=""; el.focus(); }
   }
   function addCatch(id){ if(guard()) return; addCatchCore(id, null); }
   var pozaDeschisa=null; // {id, idx, fel} — ca „Scoate poza" să știe pe cine lucrează
@@ -5107,6 +5250,7 @@
     improspateazaCantariti();
     improspateazaJurnal();
     deseneazaSectorul();
+    deseneazaCantarul();
     /* Scara ține cântarul în treapta ei, deci butonul pasului e chiar sub mâna omului:
        trebuie să se schimbe ODATĂ cu cântărirea, nu la următoarea bătaie de ceas. Prins
        la probă: cântăream ultimul pescar și butonul mai zicea o secundă „Pornește manșa
@@ -6679,6 +6823,7 @@
     updateWarnCod();
     improspateazaCantariti();
     deseneazaSectorul();
+    deseneazaCantarul();
     document.getElementById("st-total").textContent = fmt(sumAll());
     if(state.participants.length===0){
       list.innerHTML='<div class="empty"><div class="big">🎣</div>Niciun participant încă.<br>Adaugă primul stand mai sus.</div>';
@@ -7561,6 +7706,18 @@
     scaraAuto = scaraDeschisa;   // închisă de om → alegerea automată o ia de la capăt
     statusSemn = "";           // semnătura veche ar opri redesenarea
     improspateazaStatus();
+    /* Treapta manșei: cântarul vine sub ochi, ca pliantul tragerii. Antetele treptelor
+       de deasupra iau 212px din ecran, deci fără asta prima privire cade pe ele, nu pe
+       omul de cântărit. O singură dată, la deschiderea treptei — pe urmă cardul nu se
+       mai mișcă de sub deget, fiindcă e același nod la fiecare pește. */
+    if(scaraDeschisa === 4) setTimeout(function(){
+      var el = document.getElementById("cantar-mana");
+      if(!el || el.style.display === "none") return;
+      var bara = document.querySelector("header");
+      var sus = bara ? bara.getBoundingClientRect().height : 0;
+      var y = window.scrollY + el.getBoundingClientRect().top - sus - 10;
+      window.scrollTo({top: Math.max(0, y), behavior:"smooth"});
+    }, 90);
   }
 
   function treptele(){
@@ -7638,16 +7795,16 @@
      Treptele 2 și 4 cer amândouă lista — dar una singură e deschisă odată, deci nu se
      ceartă niciodată pe ea. */
   var MUTA = {
-    2: ["card-adauga", "pliant-import", "cutie-cauta", "list"],
+    2: ["card-adauga", "pliant-import", "pliant-toti"],
     3: ["pliant-tragere"],
-    4: ["seg-manse", "sumar-cantar", "sectorul", "warn-stand", "warn-sector", "warn-cod",
-        "cutie-cauta", "list", "pliant-jurnal"]
+    4: ["cantar-mana", "seg-manse", "sumar-cantar", "sectorul",
+        "warn-stand", "warn-sector", "warn-cod", "pliant-toti", "pliant-jurnal"]
   };
   /* Ordinea în care se întorc acasă. Contează: arbitrul nu vede scara, deci pentru el
      ecranul de cântar e chiar depozitul — dacă s-ar întoarce amestecate, i s-ar amesteca
      ecranul. */
-  var ORDINE_DEPOZIT = ["seg-manse", "card-adauga", "sumar-cantar", "sectorul",
-    "warn-stand", "warn-sector", "warn-cod", "cutie-cauta", "list",
+  var ORDINE_DEPOZIT = ["cantar-mana", "seg-manse", "card-adauga", "sumar-cantar", "sectorul",
+    "warn-stand", "warn-sector", "warn-cod", "pliant-toti",
     "pliant-import", "pliant-tragere", "pliant-jurnal"];
 
   var scaraPozitia = 0;      // în ce treaptă stau acum nodurile mutate
@@ -7667,7 +7824,28 @@
     ids.forEach(function(id){
       var el = document.getElementById(id); if(el) gazda.appendChild(el);
     });
+    /* Treapta manșei are acum o treabă adevărată în ea — cântarul — deci panoul ei
+       (ceasul, concurenții, kilogramele, liderul) trece DEDESUBT. E ceva ce privești
+       între doi pești, nu ceva ce atingi. Măsurat pe 412px: stătea 228px deasupra
+       cântarului și mai creștea cu 45 la primul pește, adică ecranul se ducea în jos
+       sub degetul omului tocmai când începea să cântărească. */
+    if(nr === 4){
+      var panou = document.getElementById("tr-btn-" + nr);
+      if(panou) gazda.appendChild(panou);
+    }
+    /* La înscriere lista E treaba, deci stă deschisă. La cântărit treaba e un singur om,
+       deci se strânge. Se pune o singură dată, la schimbarea treptei — dacă omul o
+       deschide cu mâna lui, rămâne deschisă până schimbă treapta. */
+    pliantPus("pliant-toti", nr !== 4);
     scaraPozitia = nr;
+  }
+
+  /* Deschide sau strânge un pliant ANUME, în loc să-l comute. */
+  function pliantPus(id, deschis){
+    var el = document.getElementById(id); if(!el) return;
+    var cuprins = el.querySelector(".pliant-in"); if(!cuprins) return;
+    if(cuprins.hidden === !deschis) return;
+    plianteaza(id);
   }
 
   /* Cojile se fac O SINGURĂ DATĂ. Dacă s-ar reface la fiecare desenare, nodurile mutate
