@@ -19,6 +19,9 @@ const H = require("./test-helpers.js");
 const t = H.creeazaVerificator();
 const sandbox = { console };
 vm.createContext(sandbox);
+/* Contopirea unește acum și jurnalele, ca rândurile arbitrului să nu se piardă când
+   organizatorul scrie peste o revizie mai nouă. */
+vm.runInContext(H.grabFunction(H.citeste("worker/index.js"), "unesteJurnalele"), sandbox);
 vm.runInContext(H.grabFunction(H.citeste("worker/index.js"), "contopesteStarea"), sandbox);
 
 /** un pescar cu o manșă: kg cu identitățile lor */

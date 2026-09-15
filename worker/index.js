@@ -389,6 +389,9 @@ function contopesteStarea(dinBaza, venit, sterse) {
     if (idVenite.has(v.id) || gropi.has(String(v.id))) continue;
     venit.participants.push(v);
   }
+  /* Și jurnalul, din aceeași pricină ca și cântăririle: dacă a scris cineva între timp,
+     rândurile lui nu se pierd fiindcă organizatorul a apăsat mai târziu. */
+  venit.jurnal = unesteJurnalele(dinBaza.jurnal, venit.jurnal);
 
   return venit;
 }
@@ -473,7 +476,26 @@ function doarCantaririle(dinBaza, venit) {
       }
     }
   }
+  /* Jurnalul arbitrului: se ADAUGĂ, nu se înlocuiește. Până acum se pierdea cu totul —
+     `rez` pornește din baza de date, iar `jurnal` nu e câmp de cântar, deci rândurile
+     scrise pe telefonul arbitrului nu ajungeau niciodată pe server. Adică tocmai
+     cântăririle făcute de arbitri lipseau din „cine a modificat, ce și când".
+     Se unesc după `id`, iar rândurile vechi nu se ating: arbitrul poate doar să adauge,
+     niciodată să șteargă sau să schimbe ce a scris organizatorul. */
+  rez.jurnal = unesteJurnalele(rez.jurnal, venit && venit.jurnal);
   return rez;
+}
+
+/* Reuniune după id, în ordinea timpului. Jurnalul e prin firea lui doar-adăugare —
+   „se adaugă, nu se șterg niciodată" scrie chiar pe ecranul lui. */
+function unesteJurnalele(vechi, venit) {
+  const a = Array.isArray(vechi) ? vechi : [];
+  const b = Array.isArray(venit) ? venit : [];
+  if (!b.length) return a;
+  const stiute = new Set(a.map((x) => x && x.id).filter(Boolean));
+  const noi = b.filter((x) => x && x.id && !stiute.has(x.id));
+  if (!noi.length) return a;
+  return a.concat(noi).sort((x, y) => (x.t || 0) - (y.t || 0));
 }
 
 export default {

@@ -530,7 +530,11 @@ function pune(c, randuri) {
     t("service worker-ul păstrează legenda", /form\.get\("title"\)[\s\S]{0,40}form\.get\("text"\)/.test(swSrc), true);
     t("…sub o adresă recunoscută de aplicație", /legenda-primita/.test(swSrc), true);
     t("aplicația o caută acolo", /indexOf\("legenda"\)/.test(src), true);
-    t("versiunea a fost urcată", /concurs-pescuit-v196/.test(swSrc), true);
+    /* Versiunea se urcă la FIECARE livrare, deci o cifră fixă aici s-ar rupe la
+       următoarea, din alt motiv decât pozele. Ce contează e că e cel puțin cea în care
+       au intrat ele. */
+    t("versiunea a fost urcată",
+      parseInt((/concurs-pescuit-v(\d+)/.exec(swSrc) || [0, 0])[1], 10) >= 197, true);
     /* „Nu-mi apare aplicația la Distribuie." Nu e lămurit dacă Androidul duce mai departe
        interogarea din „action"; dacă n-o duce, POST-ul vine curat pe „./index.html". Se
        prinde orice POST către aplicație — altfel ar pleca spre GitHub Pages, care nu
