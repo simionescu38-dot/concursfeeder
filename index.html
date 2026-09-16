@@ -481,8 +481,14 @@
   .cm-camp{display:flex; align-items:center; gap:8px; margin:10px 0 12px;}
   .cm-camp .catch-in{min-height:60px; font-size:26px;}
   .cm-camp b{font-size:15px; font-weight:800; color:var(--muted);}
-  .cm-doua{display:flex; gap:9px; margin-top:9px;}
-  .cm-doua .btn{flex:1; font-size:14.5px;}
+  /* Trei stări, nu două. „Lampă" e un rezultat — a pescuit și n-a prins. „Absent" e
+     altceva: n-a fost acolo. La 36 de înscriși cineva sigur nu vine, iar fără butonul
+     ăsta singurele alegeri de pe cântar erau amândouă greșite: ori îl treceai lampă, cu
+     loc și puncte pentru o manșă la care n-a fost, ori îl amânai la nesfârșit și
+     semaforul îți bloca publicarea.
+     Rândul se rupe pe telefoanele înguste, în loc să-și ciuntească vorbele. */
+  .cm-doua{display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;}
+  .cm-doua .btn{flex:1 1 30%; min-width:96px; font-size:14px; padding-inline:6px;}
   .cm-gata{display:flex; flex-direction:column; align-items:center; gap:8px; padding:6px 0 2px;}
   /* `display` bate `hidden`, deci ascunsul trebuie spus și aici — altfel bifa de sfârșit
      răsare sub butoane în mijlocul cântăririi. Aceeași capcană ca la „Ies din arbitraj". */
@@ -5012,6 +5018,7 @@
         '<button type="button" class="btn btn-primary" id="cm-salv" onclick="cantarSalveaza()"></button>' +
         '<div class="cm-doua">' +
           '<button type="button" class="btn btn-ghost" onclick="cantarStare(\'zero\')">Lampă</button>' +
+          '<button type="button" class="btn btn-ghost" onclick="cantarStare(\'absent\')">Absent</button>' +
           '<button type="button" class="btn btn-ghost" onclick="cantarStare(\'sarit\')">Revin la el</button>' +
         '</div>' +
       '</div>' +

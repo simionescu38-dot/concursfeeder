@@ -178,6 +178,14 @@ console.log("\n=== 7. Pe ecran ===");
   /* Numele sunt ale lui, din STARI_MANSA — nu unele scornite de mine. */
   t("scrie „Lampă”, cuvântul lui", /Lampă/.test(coaja), true);
   t("…și „Revin la el”, tot al lui", /Revin la el/.test(coaja), true);
+  /* „Absent" e a treia stare, și e alta decât „Lampă": lampă înseamnă a pescuit și n-a
+     prins — ia locul lui în sector. Absent înseamnă n-a fost acolo, și ia un punct peste
+     ultimul loc, ca absența să nu iasă niciodată mai bine decât prezența.
+     Lipsea de pe cântar: la 36 de înscriși cineva sigur nu vine, iar fără el singurele
+     alegeri erau amândouă greșite. */
+  t("…și „Absent”, care lipsea", /Absent/.test(coaja), true);
+  t("cele trei stări sunt toate pe cântar",
+    ["zero", "absent", "sarit"].every((k) => coaja.indexOf("cantarStare(\\'" + k + "\\')") >= 0), true);
   t("câmpul cheamă tastatura de cifre", /inputmode="decimal"/.test(coaja), true);
   /* Apostrofurile sunt scăpate cu „\” înăuntrul șirului din care se scrie HTML-ul,
      deci se caută după înțeles, nu după forma exactă. */
@@ -196,6 +204,19 @@ console.log("\n=== 7. Pe ecran ===");
   t("fără cifră nu salvează", /!\(v>0\)/.test(salv), true);
   t("…și te trimite la „Lampă”", /Lampă/.test(salv), true);
   t("lacătul oprește și cântarul", /guard\(\)/.test(salv), true);
+}
+
+/* ================================================================
+   7b. Absent nu e totuna cu lampă
+   ================================================================ */
+console.log("\n=== 7b. Absent ≠ Lampă ===");
+{
+  /* Amândouă scot omul din coadă, dar la punctaj sunt lucruri diferite. */
+  const c = pornire([om(1, "A", "absent"), om(2, "A", "zero"), om(3, "A", "cantarit")]);
+  t("amândouă îl scot din coadă", sir(c), []);
+  t("…dar starea rămâne a lui",
+    vm.runInContext("[stareaLaMansa(state.participants[0],1), stareaLaMansa(state.participants[1],1)]", c),
+    ["absent", "zero"]);
 }
 
 /* ================================================================
