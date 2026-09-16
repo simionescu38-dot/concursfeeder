@@ -492,6 +492,32 @@
     font-size:26px; font-weight:800;}
   .cm-gata-t{font-size:18px; font-weight:850;}
   .cm-gata-d{font-size:14px; color:var(--muted);}
+  /* ---------- ajutorul de două propoziții ----------
+     „Un buton de ajutor contextual de maximum două propoziții." Cuvintele lui.
+     Ajutorul de dinainte pornea de la ideea că omul citește acasă, pe îndelete: erau 49
+     de texte peste 100 de semne, cel mai lung de 721, cu nouă propoziții. El citește la
+     baltă, în picioare, cu cântarul în mână — și atunci nu citește deloc.
+     Semnul stă LÂNGĂ lucrul încurcat, nu pe alt ecran, și e mic dinadins: un buton ca
+     toate celelalte ar fi al doilea buton scos în față pe ecranul ăla. */
+  .aj{
+    width:22px; height:22px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center;
+    margin-left:7px; padding:0;
+    border:1px solid var(--line); border-radius:999px;
+    background:transparent; color:var(--muted);
+    font-family:inherit; font-size:13px; font-weight:800; line-height:1;
+    cursor:pointer; vertical-align:middle;
+  }
+  .aj:hover{color:var(--pine);}
+  .aj[aria-expanded="true"]{background:var(--teal-soft); color:var(--teal-d); border-color:var(--teal-d);}
+  .aj-txt{
+    margin:9px 0 0; padding:10px 12px;
+    border-left:3px solid var(--teal);
+    background:var(--teal-soft); border-radius:0 10px 10px 0;
+    font-size:14px; line-height:1.45; color:var(--pine);
+  }
+  /* `display` bate `hidden`, așa că ascunsul se spune și aici — pățit deja de două ori. */
+  .aj-txt[hidden]{display:none !important;}
   .searchbox{position:relative; margin-bottom:12px;}
   .searchbox .ui-ico{position:absolute; z-index:1; left:14px; top:50%; margin:0; transform:translateY(-50%); color:var(--muted);}
   .searchbox input{margin:0 !important; padding-left:42px;}
@@ -1303,16 +1329,17 @@
       <label class="f" style="margin-top:12px;">Număr de standuri la baltă</label>
       <input id="in-standuri" inputmode="numeric" placeholder="= nr. participanți" oninput="setNumStanduri(this.value)">
       <p class="hint" id="sec-preview" style="margin-top:8px;"></p>
-      <p class="hint">Standurile se împart pe sectoare în ordine, după intervalele de mai sus, iar sectorul se completează singur când scrii standul unui pescar. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul. Clasamentul pe sectoare grupează participanții după sectorul ales.</p>
+      <div style="text-align:right;"><button type="button" class="aj" aria-expanded="false" aria-label="Cum se pun sectoarele" onclick="ajuta(this,'sectoare')">?</button></div>
+      <p class="aj-txt" id="aj-sectoare" hidden>Sectorul se completează singur când scrii standul unui pescar, după intervalele de mai sus. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul.</p>
     </div>
 
     <div class="card lockhide">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșe</div>
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-fish"></use></svg>Manșe<button type="button" class="aj" aria-expanded="false" aria-label="Ce înseamnă manșele" onclick="ajuta(this,'manse')">?</button></div>
       <div class="seg">
         <button id="nm-2" class="on" onclick="setNumManse(2)">2 manșe</button>
         <button id="nm-3" onclick="setNumManse(3)">3 manșe</button>
       </div>
-      <p class="hint">Câte zile/manșe are concursul. Butoanele de cântărire și clasamentele (Manșa 1/2/3, General) se adaptează automat.</p>
+      <p class="aj-txt" id="aj-manse" hidden>Fiecare manșă are ziua și orele ei, puse mai jos — deci un concurs de sâmbătă și duminică e două manșe. La final, „General" adună locurile din fiecare manșă și câștigă cine are cele mai puține puncte.</p>
     </div>
 
     <!-- Ceasul stătea în Calendar, cu „(opțional)" scris lângă ora de început — adică pe
@@ -1395,17 +1422,14 @@
           <button id="sc-simplu" class="on" onclick="setScalaSectoare(false)">Locul 3 = 3 puncte</button>
           <button id="sc-scala" onclick="setScalaSectoare(true)">Îndreptat</button>
         </div>
-        <p class="hint"><b>Locul 3 = 3 puncte:</b> punctele rămân locurile din sector, oricât de mare e sectorul. <b>Îndreptat:</b> sectoarele mai mici se întind pe scala celui mai mare, ca ultimul dintr-un sector de 5 să ia tot cât ultimul dintr-unul de 6 — mai drept la sectoare foarte inegale, dar dă puncte cu zecimale (2,25 · 3,5). Când toate sectoarele au același număr de oameni, cele două variante dau exact aceleași puncte.</p>
+        <div style="text-align:right;"><button type="button" class="aj" aria-expanded="false" aria-label="Care e deosebirea" onclick="ajuta(this,'puncte')">?</button></div>
+        <p class="aj-txt" id="aj-puncte" hidden>„Locul 3 = 3 puncte" dă locul din sector ca punctaj, oricât de mare e sectorul. „Îndreptat" întinde sectoarele mici pe scala celui mai mare, ca ultimul dintr-un sector de 5 să ia cât ultimul dintr-unul de 6 — dar dă puncte cu zecimale.</p>
       </div>
     </div>
 
         <div class="card u1">
-      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-rules"></use></svg>Cum se calculează</div>
-      <p class="hint">
-        <b>Cantitatea</b> se introduce captură cu captură (apeși „+"), iar aplicația le adună. <b>Total = Cantitate + Pești extra.</b> CMMC (cel mai mare pește) se calculează automat din peștii extra, în tab-ul Statistici.
-        La egalitate de puncte, departajează totalul (cantitate + pești extra) mai mare. Datele se salvează automat.
-      </p>
-      <p class="hint"><b>Concurs pe mai multe zile (manșe):</b> în Setări alegi 2 sau 3 manșe pentru concurs. În tab-ul Participanți, sus, alegi manșa activă — tot ce cântărești merge acolo. În tab-ul Clasamente alegi ce vrei să vezi: fiecare manșă în parte sau <b>General</b> (suma tuturor). La „General" + „După puncte", clasamentul e suma locurilor din fiecare manșă — câștigă cine are cele mai puține puncte, exact ca la concursurile oficiale.</p>
+      <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-rules"></use></svg>Cum se calculează<button type="button" class="aj" aria-expanded="false" aria-label="Cum se calculează" onclick="ajuta(this,'calc')">?</button></div>
+      <p class="aj-txt" id="aj-calc" hidden>Totalul unui pescar e cantitatea plus peștii extra, adunate singure din fiecare cântărire. La puncte egale trece înainte cel cu totalul mai mare.</p>
     </div>
 
     <div class="card u2">
@@ -3788,7 +3812,7 @@
           "Camera live „"+syncRoom+"\" are deja alte date: „"+remoteName+"\" cu "+remoteN+" participanți, dar pe telefon ai doar "+localN+".\n\n"+
           "Dacă lucrezi acum, riști să suprascrii datele din cameră. Apasă OK doar dacă ești sigur că vrei să continui așa, sau Anulează și schimbă codul de cameră din Setări."
         );
-        if(!ok){ syncPaused=true; setSyncStatus("Sincronizare oprită automat — camera live avea alte date. Verifică în Setări.", true); }
+        if(!ok){ syncPaused=true; setSyncStatus("Sincronizare oprită automat — camera live avea alte date. Uită-te în Contul meu → Telefonul.", true); }
       }
     }).catch(function(){});
   }
@@ -4668,6 +4692,15 @@
     var id="u1";
     try{ id=localStorage.getItem(USA_KEY)||"u1"; }catch(e){}
     usaSet(id);
+  }
+
+  /* Ajutorul se deschide și se închide de la semnul lui. Butonul e dat ca argument, nu
+     căutat în pagină: cardurile se mută dintr-o treaptă în alta, iar un selector după
+     `onclick` s-ar rupe la prima mutare. */
+  function ajuta(b, id){
+    var t = document.getElementById("aj-" + id); if(!t) return;
+    t.hidden = !t.hidden;
+    if(b && b.setAttribute) b.setAttribute("aria-expanded", t.hidden ? "false" : "true");
   }
 
   function plianteaza(id){
@@ -6303,8 +6336,8 @@
     }).then(function(rez){
       if(!rez.randuri){
         spune(
-          rez.stare==="fara-cheie" ? "N-am cheia de scriere — pune-o în Setări și încearcă iar." :
-          rez.stare==="cheie-rea"  ? "Cheia de scriere nu e bună — uită-te în Setări." :
+          rez.stare==="fara-cheie" ? "N-am cheia de scriere — pune-o în Contul meu → Telefonul și încearcă iar." :
+          rez.stare==="cheie-rea"  ? "Cheia de scriere nu e bună — uită-te în Contul meu → Telefonul." :
           rez.stare==="fara-ai"    ? "Cititul de pe poză nu e pornit pe server." :
                                      "N-am putut citi foaia. Scrie lista de mână sau lipește-o ca text.");
         return;
