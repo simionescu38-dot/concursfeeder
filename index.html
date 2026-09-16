@@ -1290,6 +1290,7 @@
     <div id="rankBody"></div>
     <button class="btn btn-ghost mt" onclick="copyRank()"><svg class="ui-ico" aria-hidden="true"><use href="#i-copy"></use></svg>Copiază clasamentul</button>
     <button class="btn btn-ghost mt" onclick="shareImage()"><svg class="ui-ico" aria-hidden="true"><use href="#i-image"></use></svg>Imagine pentru WhatsApp / Facebook</button>
+    <button class="btn btn-ghost mt" onclick="descarcaTabel()"><svg class="ui-ico" aria-hidden="true"><use href="#i-copy"></use></svg>Tabel pentru Excel</button>
 
     <!-- Statisticile nu sunt un clasament, deci nu stăteau bine lângă „Pe sectoare" și
          „Final": se supuneau și butoanelor de manșă, deși au sens pe tot concursul.
@@ -8870,6 +8871,73 @@
       navigator.share({files:[file], title:"Date concurs pescuit"}).catch(function(err){ if(err && err.name!=="AbortError") downloadJson(json,name); });
     } else { downloadJson(json,name); }
   }
+  /* ---------- clasamentul ca tabel ----------
+     „Copiază clasamentul" scoate text de pus pe grup — „1. Ion Temciuc (St.1, Sec A) —
+     3 pct, 8,940 kg". Bun acolo, dar în Excel intră tot pe o coloană, fiindcă e o frază,
+     nu un tabel. Pentru socotelile clubului trebuia altceva.
+
+     Fișierul scoate TOT concursul dintr-o dată: fiecare manșă cu kilogramele, punctele și
+     starea ei, plus generalul — nu doar ce se vede pe ecran acum. Un tabel care răspunde
+     la o singură întrebare te pune să-l scoți de cinci ori.
+
+     Trei lucruri fac diferența între un fișier care se deschide și unul care iese strâmb
+     în Excel-ul românesc:
+       · despărțitorul e PUNCT-ȘI-VIRGULĂ, fiindcă zecimalele noastre sunt cu virgulă
+         („8,940"). Cu virgulă despărțitoare, fiecare greutate s-ar rupe în două coloane.
+       · la început se pune semnul de UTF-8, altfel „Gavrileț" se deschide „GavrileÈ›".
+       · rândurile se despart cu CRLF, cum le așteaptă Excel. */
+  function csvCamp(v){
+    var s = (v === null || v === undefined) ? "" : String(v);
+    return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function tabelClasament(){
+    var manse = manseRange().filter(mancheDisputata);
+    if(!manse.length) manse = [state.manche || 1];
+
+    var cap = ["Loc", "Stand", "Sector", "Nume"];
+    manse.forEach(function(mi){
+      cap.push("Manșa " + mi + " kg", "Manșa " + mi + " puncte", "Manșa " + mi + " stare");
+    });
+    cap.push("Total kg", "Total puncte", "Cel mai mare pește");
+
+    /* Ordinea din fișier e ordinea de pe ecran: dacă la final se socotește pe puncte,
+       tabelul vine la fel, ca să nu fie două adevăruri despre același concurs. */
+    var pmapT = pointsCombo();
+    var sir = (finMethod === "pct")
+      ? sortByPointsS(state.participants, pmapT, "total")
+      : sortRankS(state.participants, "total");
+
+    var randuri = [cap];
+    sir.forEach(function(p, i){
+      var r = [i + 1, standOfM(p, "total") || p.stand || "", sectorOfM(p, "total") || p.sector || "",
+               numeAfisat(p)];
+      manse.forEach(function(mi){
+        var pm = pointsMapS(mi);
+        var st = stareaLaMansa(p, mi);
+        r.push(fmt(totalOfM(p, mi)),
+               fmtPts(pm[p.id]),
+               STARI_MANSA[st] || (st === "cantarit" ? "Cântărit" : "Necântărit"));
+      });
+      r.push(fmt(totalOfM(p, "total")), fmtPts(pmapT[p.id]), fmt(cmmcAward(p, "total")));
+      randuri.push(r);
+    });
+    return randuri.map(function(r){ return r.map(csvCamp).join(";"); }).join("\r\n");
+  }
+  function descarcaTabel(){
+    if(!(state.participants || []).length){ toast("Niciun pescar în concurs"); return; }
+    var nume = (state.name || "clasament").trim().replace(/[\\/:*?"<>|]/g, "-").slice(0, 60);
+    var d = new Date(), z = function(n){ return (n < 10 ? "0" : "") + n; };
+    var cand = d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate());
+    var a = document.createElement("a");
+    /* „\uFEFF" e semnul care-i spune Excel-ului că fișierul e UTF-8. */
+    a.href = URL.createObjectURL(new Blob(["\uFEFF" + tabelClasament()],
+      {type: "text/csv;charset=utf-8"}));
+    a.download = nume + " " + cand + ".csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    toast("Tabel scos — se deschide în Excel");
+  }
+
   function downloadJson(json,name){
     var a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob([json],{type:"application/json"}));
