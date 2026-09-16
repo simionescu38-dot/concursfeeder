@@ -2066,6 +2066,24 @@
      câștigă mereu cursa, deci orice pește pleacă spre server cu identitatea lui. */
   function save(){ idCantaririlor(); try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){ toast("Stocare plină – șterge câteva poze"); } }
   function queueSave(){ clearTimeout(saveT); saveT=setTimeout(save, 200); queueSync(); updateUploadBar(); }
+  /* Scrisul se amână cu 200ms ca să nu se scrie de zece ori într-o secundă când intră o
+     cântărire. Dar la baltă telefonul se bagă în buzunar IMEDIAT după ultimul pescar, iar
+     un telefon care adoarme în răstimpul ăla nu mai apucă să scrie: ceasul amânat nu mai
+     bate niciodată, și cântărirea se pierde de tot.
+     Prins la probă, pe un concurs de două zile: cântăream 18 pescari sâmbătă, închideam
+     și redeschideam aplicația, și rămâneau 17. Al optsprezecelea — ultimul, cel de după
+     care pui telefonul în buzunar — nu mai era nicăieri.
+     Acum, când ecranul se stinge sau pagina pleacă, se scrie pe loc. */
+  function salveazaAcum(){
+    if(saveT){ clearTimeout(saveT); saveT=null; }
+    try{ save(); }catch(e){}
+  }
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden) salveazaAcum();
+  });
+  /* `pagehide` prinde și închiderea filei, și trecerea în fundal pe telefon — e singurul
+     care se dă pe iOS, unde `beforeunload` nu se dă deloc. */
+  window.addEventListener("pagehide", salveazaAcum);
   function load(){ try{ var v=localStorage.getItem(KEY); if(v){ var d=JSON.parse(v); if(d&&typeof d==="object"){ state=Object.assign(state,d); } } }catch(e){} normalize(); }
 
   // ---------- sincronizare live (cloud) ----------
