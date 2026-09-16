@@ -30,7 +30,11 @@ function carduri() {
   let m;
   while ((m = re.exec(set))) {
     const usa = (m[1].match(/\bu[123]\b/) || [""])[0];
-    out.push({ usa: usa, titlu: m[2].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim() });
+    /* Semnul „?" de ajutor stă în același rând cu titlul, dar nu E titlul: se scoate
+       întreg înainte de dezbrăcat, altfel cardul s-ar chema „Manșe?". */
+    out.push({ usa: usa, titlu: m[2]
+      .replace(/<button[^>]*class="aj"[\s\S]*?<\/button>/g, "")
+      .replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim() });
   }
   return out;
 }
@@ -401,7 +405,9 @@ console.log("\n=== 13. Ecranul «Fă concursul» ===");
 
   /* Exact lucrurile care fac un concurs, în ordinea în care se pun. */
   const titluri = (nou.match(/<div class="sec-title"[^>]*>([\s\S]*?)<\/div>/g) || [])
-    .map((x) => x.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim());
+    .map((x) => x
+      .replace(/<button[^>]*class="aj"[\s\S]*?<\/button>/g, "")
+      .replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").trim());
   t("are exact cele patru lucruri care fac un concurs", titluri,
     ["Numele concursului", "Sectoare", "Manșe", "Orele manșelor"]);
 
