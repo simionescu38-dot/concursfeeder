@@ -271,6 +271,9 @@
   /* coechipierul, mai șters: la cântărire cauți întâi titularul */
   .coech{font-weight:600; opacity:.62; font-size:.92em;}
   .hero{text-align:center; padding:4px 8px 10px; display:flex; flex-direction:column; align-items:center;}
+  /* `hidden` singur n-ar ajunge: .hero e display:flex, iar flex bate hidden — aceeași
+     capcană care a scos odată un ✓ de sub butoanele cântarului. */
+  #hero-acasa[hidden]{display:none !important;}
   .hdr-logo{position:absolute; left:16px; top:14px; width:36px; height:36px; border-radius:9px;}
   /* eticheta care spune la ce folosesc dalele de sub ea */
   .mg-lbl{margin:12px 2px 6px; font-size:10.5px; font-weight:800; letter-spacing:.09em;
@@ -1053,7 +1056,7 @@
          vii ale manșei n-au dispărut: au intrat în treapta a patra, unde le e locul. -->
     <div id="scara" class="scara"></div>
 
-    <div class="hero">
+    <div class="hero" id="hero-acasa">
       <div class="mg-wrap" id="meniu-grila" style="width:100%;"></div>
       <!-- Cifrele astea vorbesc despre ALTE concursuri, nu despre dalele de deasupra.
            Poartă însă același stil de card ca dalele, așa că fără eticheta lor se citeau
@@ -7878,6 +7881,13 @@
       var el = document.getElementById(id); if(el) dep.appendChild(el);
     });
     scaraPozitia = 0;
+    /* Dalele de sub scară („Statistici", „Sezon", „Regulament", „Strategie", „Sponsori")
+       și „Sunt organizator" sunt drumuri către ALTE ecrane. La cântărit omul are un
+       singur lucru de făcut, cu cântarul într-o mână — deci dedesubt nu mai are ce
+       căuta un perete de butoane străine. Se strâng, nu se șterg: revin cum închizi
+       cântarul. Pus AICI, înaintea ieșirii de mai jos, ca treapta închisă (nr = 0, care
+       n-are nimic în MUTA) să le aducă înapoi. */
+    heroPus(nr !== 4);
     var ids = MUTA[nr]; if(!ids) return;
     var gazda = document.getElementById("tr-in-" + nr); if(!gazda) return;
     ids.forEach(function(id){
@@ -7897,6 +7907,12 @@
        deschide cu mâna lui, rămâne deschisă până schimbă treapta. */
     pliantPus("pliant-toti", nr !== 4);
     scaraPozitia = nr;
+  }
+
+  /* Arată sau strânge dalele de pe Acasă, cu tot cu „Sunt organizator". */
+  function heroPus(vazut){
+    var el = document.getElementById("hero-acasa"); if(!el) return;
+    el.hidden = !vazut;
   }
 
   /* Deschide sau strânge un pliant ANUME, în loc să-l comute. */
