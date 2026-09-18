@@ -26,6 +26,7 @@ const TESTE = [
   ["Ultima cântărire nu se pierde", "test-salvare.js"],
   ["Ajutorul de două propoziții", "test-ajutor.js"],
   ["Sub cântar nu vine nimic străin", "test-hero-cantar.js"],
+  ["Sectoare care nu-s blocuri egale", "test-sectoare-inegale.js"],
   ["Tabelul pentru Excel", "test-tabel.js"],
   ["Ce urmează, pe Acasă", "test-ce-urmeaza.js"],
   ["Tandem în sezon", "test-tandem-sezon.js"],

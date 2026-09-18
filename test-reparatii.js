@@ -257,7 +257,8 @@ console.log("\n=== 7. Importul nu atinge manșele încheiate ===");
   ctx.toast = () => {}; ctx.showView = () => {}; ctx.uid = () => "imp";
   ctx.curataNumarul = () => false;
   ctx.document = { getElementById: () => ({ value: "3, Radu Nou", innerHTML: "" }) };
-  vm.runInContext(["parseImport", "splitName", "sectorRanges", "sectorForStand", "doImport"]
+  vm.runInContext(["parseImport", "splitName", "sectorRanges", "sectorForStand",
+     "intervaleScrise", "intervalele", "doImport"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
 
   ctx.state.participants = [{

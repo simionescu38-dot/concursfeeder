@@ -28,7 +28,7 @@ const FUNCTII = ["uid", "esc", "numManse", "manseRange", "emptyManche", "ensureM
   "citesteTragerea", "pescarulTragerii", "randuriTragerii", "sectorulTragerii",
   "ordineaTragerii", "numeleSePotriveste", "pescarDupaCod", "participantDupaCod",
   "cheiePescar", "numePescar",
-  "intervaleleTragerii", "verificaTragerea", "treceTragerea", "adaugaDinTragere",
+  "intervaleScrise", "intervalele", "intervaleleTragerii", "verificaTragerea", "treceTragerea", "adaugaDinTragere",
   "splitName", "curataNumarul"];
 
 /** un concurs adevărat, plus baza de pescari a sezonului */

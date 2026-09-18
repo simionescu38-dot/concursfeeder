@@ -30,7 +30,8 @@ function aplicatie(sectors, numStanduri, nrPescari) {
   };
   vm.createContext(ctx);
   vm.runInContext(
-    ["sectorRanges", "sectorForStand", "currentRanges", "sectorDinStand"]
+    ["sectorRanges", "sectorForStand", "intervaleScrise", "intervalele",
+     "currentRanges", "sectorDinStand"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }

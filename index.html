@@ -274,6 +274,8 @@
   /* `hidden` singur n-ar ajunge: .hero e display:flex, iar flex bate hidden — aceeași
      capcană care a scos odată un ✓ de sub butoanele cântarului. */
   #hero-acasa[hidden]{display:none !important;}
+  /* rândul care spune ce nu se leagă la sectoarele scrise de mână */
+  .sec-rau{color:var(--amber);}
   .hdr-logo{position:absolute; left:16px; top:14px; width:36px; height:36px; border-radius:9px;}
   /* eticheta care spune la ce folosesc dalele de sub ea */
   .mg-lbl{margin:12px 2px 6px; font-size:10.5px; font-weight:800; letter-spacing:.09em;
@@ -1337,7 +1339,7 @@
         <button class="btn btn-ghost" style="flex:0 0 96px;" onclick="addSector()">Adaugă</button>
       </div>
       <label class="f" style="margin-top:12px;">Număr de standuri la baltă</label>
-      <input id="in-standuri" inputmode="numeric" placeholder="= nr. participanți" oninput="setNumStanduri(this.value)">
+      <input id="in-standuri" placeholder="35   sau   A 1-8, B 9-17, C 18-26, D 27-35" oninput="setNumStanduri(this.value)">
       <p class="hint" id="sec-preview" style="margin-top:8px;"></p>
       <div style="text-align:right;"><button type="button" class="aj" aria-expanded="false" aria-label="Cum se pun sectoarele" onclick="ajuta(this,'sectoare')">?</button></div>
       <p class="aj-txt" id="aj-sectoare" hidden>Sectorul se completează singur când scrii standul unui pescar, după intervalele de mai sus. Îl poți schimba de mână oricând — rămâne cum l-ai pus, până corectezi standul.</p>
@@ -6076,9 +6078,7 @@
   }
 
   function intervaleleTragerii(){
-    var N=parseInt(state.numStanduri,10);
-    if(!N || N<1) N=(state.participants||[]).length;
-    return sectorRanges(N, state.sectors||[]);
+    return intervalele((state.participants||[]).length);
   }
 
   function verificaTragerea(){
@@ -7348,10 +7348,46 @@
   function sectorForStand(s, ranges){ for(var q=0;q<ranges.length;q++){ if(s>=ranges[q].from && s<=ranges[q].to) return ranges[q].sector; } return ""; }
   // câte standuri are balta. Nescris, presupunem unul de fiecare pescar — la concursurile
   // mici e chiar așa, iar cine are balta mai mare decât lista scrie numărul o dată.
-  function currentRanges(){
+  /* La unele bălți sectoarele NU sunt blocuri egale. Pe carnetul organizatorului:
+         A 1-8 (opt!) · B 9-17 · C 18-26 · D 27-35
+     Socoteala care taie N standuri în părți cât mai egale n-are cum să nimerească asta:
+     ea ar da 9/9/9/8. Nici ordinea literelor nu se potrivește totdeauna — cine a șters și
+     a adăugat un sector le are în cameră amestecate (B, C, A, D), iar împărțirea urmează
+     ordinea aia, nu alfabetul. Din 35 de standuri, 25 ieșeau în alt sector decât pe foaie.
+     Deci în ACEEAȘI căsuță se poate scrie fie numărul de standuri, ca până acum, fie chiar
+     rândurile de pe foaie. Ce e scris bate orice socoteală — foaia e adevărul, nu noi. */
+  function intervaleScrise(text, secs){
+    var s=(""+(text||"")).trim();
+    if(!s || /^\d+$/.test(s)) return null;          // doar o cifră: socoteala de dinainte
+    var cunoscute={}; (secs||[]).forEach(function(x){ cunoscute[String(x).trim().toUpperCase()]=x; });
+    var out=[], straine=[], gasit=false;
+    s.split(/[,;\n]/).forEach(function(bucata){
+      var m=bucata.trim().match(/^(.{1,12}?)\s*[:=]?\s*(\d{1,4})\s*[-–—]\s*(\d{1,4})$/);
+      if(!m) return;
+      gasit=true;
+      var litera=cunoscute[m[1].trim().toUpperCase()];
+      /* O literă care nu e sector al concursului NU se inventează aici: ar naște un sector
+         fantomă în clasament, pe care nimeni nu l-ar căuta. Se ține minte, ca s-o spună
+         rândul de dedesubt, și omul o adaugă cu butonul lui. */
+      if(!litera){ if(straine.indexOf(m[1].trim())<0) straine.push(m[1].trim()); return; }
+      var a=parseInt(m[2],10), b=parseInt(m[3],10);
+      if(a>b){ var v=a; a=b; b=v; }
+      out.push({sector:litera, from:a, to:b});
+    });
+    if(!gasit) return null;
+    out.straine=straine;
+    return out;
+  }
+  /* Intervalele de acum: cele scrise, dacă sunt; altfel socoteala veche. */
+  function intervalele(cateDacaLipseste){
+    var scrise=intervaleScrise(state.numStanduri, state.sectors);
+    if(scrise && scrise.length) return scrise;
     var N=parseInt(state.numStanduri,10);
-    if(!N || N<1) N=state.participants.length;
-    return sectorRanges(N, state.sectors);
+    if(!N || N<1) N=cateDacaLipseste;
+    return sectorRanges(N, state.sectors||[]);
+  }
+  function currentRanges(){
+    return intervalele((state.participants||[]).length);
   }
   function setNumStanduri(v){
     if(guard()) return;
@@ -7366,9 +7402,50 @@
     if(!state.sectors.length){ box.textContent="Adaugă întâi sectoare (A, B, C...)."; return; }
     var r=currentRanges();
     if(!r.length){ box.textContent="Scrie numărul de standuri, ca sectorul să se completeze singur."; return; }
-    var N=r[r.length-1].to;
-    box.innerHTML=N+" standuri · "+r.map(function(x){ return "<b>"+esc(x.sector)+"</b> "+x.from+"–"+x.to; }).join(" · ");
+    var N=0; r.forEach(function(x){ if(x.to>N) N=x.to; });
+    var h=N+" standuri · "+r.map(function(x){ return "<b>"+esc(x.sector)+"</b> "+x.from+"–"+x.to; }).join(" · ");
+    /* Rândurile scrise de mână pot avea găuri sau suprapuneri — o cifră greșită la
+       tastat. Amândouă se văd abia la premiere, dacă nu se spun aici: un stand fără
+       sector îl scoate pe om din clasamentul sectorului, iar unul în două sectoare îl
+       pune unde nu trebuie. */
+    var scrise=intervaleScrise(state.numStanduri, state.sectors);
+    if(scrise){
+      if((scrise.straine||[]).length)
+        h+='<br><b class="sec-rau">Nu-s sectoare ale concursului: '+esc(scrise.straine.join(", "))+
+           ". Adaugă-le mai sus.</b>";
+      var fara=[], duble=[];
+      for(var s=1; s<=N; s++){
+        var cate=0;
+        for(var q=0;q<r.length;q++) if(s>=r[q].from && s<=r[q].to) cate++;
+        if(cate===0) fara.push(s); else if(cate>1) duble.push(s);
+      }
+      if(fara.length)
+        h+='<br><b class="sec-rau">Fără sector: '+esc(sirScurt(fara))+"</b>";
+      if(duble.length)
+        h+='<br><b class="sec-rau">În două sectoare deodată: '+esc(sirScurt(duble))+"</b>";
+      /* Un sector uitat de tot nu lasă gaură — scurtează balta. „A 1-8, B 9-17, C 18-26"
+         pare întreg, dar cei nouă de la 27 în sus n-ar mai avea unde sta. Se vede numai
+         punând rândurile față în față cu câți oameni sunt în concurs. */
+      var cati=(state.participants||[]).length;
+      if(cati>N)
+        h+='<br><b class="sec-rau">Sunt '+cati+" pescari, dar rândurile scrise ajung doar la standul "+
+           N+". Lipsește un sector?</b>";
+    }
+    box.innerHTML=h;
   }
+  /* „1, 2, 3, 7, 8" se scrie „1–3, 7–8": la 35 de standuri, un șir de cifre ar umple
+     ecranul tocmai când omul caută greșeala. */
+  function sirScurt(nrs){
+    if(!nrs.length) return "";
+    var buc=[], a=nrs[0], b=nrs[0];
+    for(var i=1;i<=nrs.length;i++){
+      if(i<nrs.length && nrs[i]===b+1){ b=nrs[i]; continue; }
+      buc.push(a===b ? ""+a : (a+"–"+b));
+      if(i<nrs.length){ a=nrs[i]; b=nrs[i]; }
+    }
+    return buc.join(", ");
+  }
+
   // Sectorul urmează standul pe măsură ce se scrie. Ales o dată de mână, rămâne cum
   // l-a pus omul: la unele bălți sectoarele nu sunt blocuri consecutive de standuri,
   // iar o cifră corectată la stand nu are voie să-i șteargă alegerea.
@@ -7480,9 +7557,7 @@
     // Sectorul lipsă din import iese din intervale, exact ca atunci când scrii standul
     // de mână. Intervalele se calculează O DATĂ, după ce lista de sectoare e completă:
     // altfel un sector nou apărut la linia 20 ar rescrie împărțirea pentru primele 19.
-    var N=parseInt(state.numStanduri,10);
-    if(!N || N<1) N=state.participants.length+arr.length;
-    var ranges=sectorRanges(N, state.sectors);
+    var ranges=intervalele(state.participants.length+arr.length);
     arr.forEach(function(x){
       var nm=splitName(x.name);
       var sec=x.sector||"";
