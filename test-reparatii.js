@@ -258,7 +258,8 @@ console.log("\n=== 7. Importul nu atinge manșele încheiate ===");
   ctx.curataNumarul = () => false;
   ctx.document = { getElementById: () => ({ value: "3, Radu Nou", innerHTML: "" }) };
   vm.runInContext(["parseImport", "splitName", "sectorRanges", "sectorForStand",
-     "intervaleScrise", "intervalele", "doImport"]
+     "intervaleScrise", "intervalele", "faraSemne", "nameOf", "pescarulTragerii",
+     "dejaInConcurs", "doImport"]
     .map(n => grabFunction(src, n)).join("\n"), ctx);
 
   ctx.state.participants = [{
