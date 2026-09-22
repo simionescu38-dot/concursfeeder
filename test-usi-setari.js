@@ -152,6 +152,9 @@ console.log("\n=== 6. Cum se deschide o ușă ===");
       body: { dataset: {} },
       _b: {},
       getElementById(id) {
+        /* Numai butoanele ușilor există în DOM-ul ăsta de mimă. „view-set" lipsește
+           dinadins: aici se probează ușa, iar strânsul cardurilor are proba lui. */
+        if (id.indexOf("usa-") !== 0) return null;
         if (!this._b[id]) this._b[id] = { clasa: null, classList: { toggle: (c, on) => { ctx.document._b[id].clasa = on; } } };
         return this._b[id];
       },
@@ -164,7 +167,11 @@ console.log("\n=== 6. Cum se deschide o ușă ===");
   };
   vm.createContext(ctx);
   vm.runInContext('var USA_KEY = "concurs-usa-setari";', ctx);
-  vm.runInContext([H.grabFunction(src, "usaSet"), H.grabFunction(src, "usaPornire")].join("\n"), ctx);
+  /* `usaSet` strânge acum și cardurile ușii. Aici se probează ușa, nu strânsul — deci
+     DOM-ul de mimă n-are `view-set`, iar funcția adevărată iese pe prima linie. */
+  vm.runInContext([H.grabFunction(src, "cardPliabil"), H.grabFunction(src, "cardPus"),
+    H.grabFunction(src, "strangeCardurile"), H.grabFunction(src, "usaSet"),
+    H.grabFunction(src, "usaPornire")].join("\n"), ctx);
 
   vm.runInContext('usaSet("u2")', ctx);
   t("ușa cerută se deschide", ctx.document.body.dataset.usa, "u2");
@@ -478,6 +485,77 @@ console.log("\n=== 14. Semaforul de verificare ===");
   ["#3ddc84", "#f2b84b", "#ff6b6b"].forEach((c) =>
     t("semaforul are culoarea " + c, src.indexOf(c) > 0, true));
   t("…și niciuna nu e teal-ul butoanelor", /\.far\.[vpr]\s*\{[^}]*var\(--teal\)/.test(src), false);
+}
+
+/* ================================================================
+   Debaraua: cardurile rar folosite se strâng
+   ================================================================
+   Măsurat pe 412px, cu un concurs pornit: după ușa „Telefonul" stăteau șase carduri
+   desfăcute — 2229px, 2,5 ecrane; după „Nu merge ceva", opt carduri — 1821px. Sunt
+   lucruri la care omul umblă o dată la câteva luni. Acum rămâne titlul, iar o atingere
+   îl deschide: 751px și 848px, amândouă sub un ecran. Nu s-a șters niciun card.
+   ================================================================ */
+console.log("\n=== Debaraua din Contul meu ===");
+{
+  const vm2 = require("vm");
+  const ctx = { console };
+  vm2.createContext(ctx);
+  ["cardPliabil", "cardPus"].forEach((n) => vm2.runInContext(H.grabFunction(src, n), ctx));
+
+  /** un card de mimă, cu clasele lui */
+  const card = (clase, cuTitlu) => ({
+    _c: clase.split(" "),
+    classList: {
+      contains(x) { return this._o._c.indexOf(x) >= 0; },
+      toggle(x, on) { const i = this._o._c.indexOf(x);
+        if (on && i < 0) this._o._c.push(x);
+        if (!on && i >= 0) this._o._c.splice(i, 1); },
+    },
+    querySelector(sel) { return (cuTitlu && sel.indexOf(".sec-title") >= 0)
+      ? { _a: {}, setAttribute(k, v) { this._a[k] = v; } } : null; },
+  });
+  const fa = (clase, cuTitlu) => { const c = card(clase, cuTitlu); c.classList._o = c; return c; };
+  const pliabil = (c) => { ctx.__c = c; return vm2.runInContext("cardPliabil(__c)", ctx); };
+
+  t("cardurile ușii „Telefonul” se strâng", pliabil(fa("card u2", true)), true);
+  t("…și cele de la „Nu merge ceva”", pliabil(fa("card u3 lockhide", true)), true);
+  /* Ușa „Concursul" NU se atinge: acolo se intră înaintea fiecărui concurs. */
+  t("…dar cele de la „Concursul” NU", pliabil(fa("card u1", true)), false);
+  t("…iar un card fără titlu n-are de ce mâner", pliabil(fa("card u2", false)), false);
+
+  const c = fa("card u2", true);
+  ctx.__c = c;
+  vm2.runInContext("cardPus(__c, false)", ctx);
+  t("strâns, cardul poartă semnul", c._c.indexOf("strans") >= 0, true);
+  vm2.runInContext("cardPus(__c, true)", ctx);
+  t("…iar deschis, nu-l mai poartă", c._c.indexOf("strans") >= 0, false);
+}
+{
+  /* Capcana obișnuită: fără `!important`, corpul cardului ar rămâne pe ecran. */
+  t("regula care ascunde corpul cardului există",
+    /\.card\.strans > \*:not\(\.sec-title\)\{display:none !important;\}/.test(src), true);
+  t("…iar mânerul e cât un deget", /\.card\.plicat > \.sec-title\{[^}]*min-height:44px/.test(src), true);
+  t("…și arată că se deschide", /\.card\.plicat > \.sec-title::after\{content:"▾"/.test(src), true);
+
+  const u = H.grabFunction(src, "usaSet");
+  t("ușa le strânge de fiecare dată când intri", /strangeCardurile\(\);/.test(u), true);
+
+  const g = H.grabFunction(src, "strangeCardurile");
+  t("mânerul se pune o singură dată", /if\(!c\.dataset\.plicat\)/.test(g), true);
+  t("…și se poate apăsa și de la tastatură", /keydown/.test(g), true);
+
+  const m = H.grabFunction(src, "meniuGo");
+  t("cine e trimis la un card îl găsește deschis", /deschideCardul\(el\);/.test(m), true);
+
+  const l = H.grabFunction(src, "toggleLock");
+  t("„Setează întâi un PIN” duce chiar la cardul lui",
+    /meniuGo\('set', 'card-pin'\)/.test(l), true);
+  t("…iar cardul are numele după care e găsit",
+    /<div class="card u2" id="card-pin">/.test(src), true);
+}
+{
+  const m = H.citeste("sw.js").match(/concurs-pescuit-v(\d+)/);
+  t("telefonul ia varianta nouă (v207 sau mai nouă)", m && parseInt(m[1], 10) >= 207, true);
 }
 
 t.raport();
