@@ -74,6 +74,7 @@ function pornire(o) {
     "esteArbitru", "arbSalveaza", "arbIncarcat", "arbSectoare",
     "arbAlegeSector", "arbAiLui", "arbGata", "arbBara", "intraCaArbitru",
     "iesDinArbitru", "arbTrage", "linkArbitru", "queueSync", "improspateazaCantariti",
+    "byStandM", "standKeyM", "nameKey", "sectoareleCantarului", "deCantaritIn", "cantarSector",
   ].map((n) => H.grabFunction(src, n)).join("\n"), ctx);
   vm.runInContext('var ARB_KEY = "concurs-arbitru";', ctx);
   vm.runInContext('var ARB_CHEIE_DINAINTE = "concurs-cheie-dinainte";', ctx);
@@ -135,11 +136,24 @@ console.log("\n=== 3. Numărătoarea de sus ===");
   vm.runInContext("improspateazaCantariti()", c);
   t("arbitrul vede cât a făcut din sectorul lui", scris, "1 din 2");
 
+  /* Organizatorul cântărește tot pe sectoare — „le iau la rând, A, B, C, D" — deci
+     cifra de sus e a sectorului la care stă, nu a întregului concurs. Aici sectorul A
+     mai are un om necântărit, deci acolo stă cântarul. */
   const org = pornire({ arbitru: false, pescari: pescari });
+  org.cantarSectorul = "";
   let scrisOrg = "";
   org.document.getElementById = (id) => id === "st-count" ? { set textContent(v) { scrisOrg = v; }, get textContent() { return scrisOrg; } } : null;
   vm.runInContext("catiCantariti = function(){ return 3; }; improspateazaCantariti()", org);
-  t("organizatorul vede tot concursul", scrisOrg, "3 din 4");
+  t("organizatorul vede sectorul la care stă", scrisOrg, "1 din 2");
+
+  /* Când nu mai e niciun sector de cântărit, cifra se întoarce la tot concursul. */
+  const gata = pornire({ arbitru: false,
+    pescari: [pescar("a1", "A", [3]), pescar("b1", "B", [9])] });
+  gata.cantarSectorul = "";
+  let scrisGata = "";
+  gata.document.getElementById = (id) => id === "st-count" ? { set textContent(v) { scrisGata = v; }, get textContent() { return scrisGata; } } : null;
+  vm.runInContext("catiCantariti = function(){ return 2; }; improspateazaCantariti()", gata);
+  t("…iar cu totul cântărit, vede tot concursul", scrisGata, "2 din 2");
 }
 
 /* ================================================================

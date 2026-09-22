@@ -22,7 +22,8 @@ const t = H.creeazaVerificator();
 const FUNCTII = [
   "num", "numManse", "manseRange", "emptyManche", "ensureManche", "mOf",
   "standOfM", "sectorOfM", "nameOf", "nameKey", "standKeyM", "byStandM",
-  "esteArbitru", "arbAiLui", "stareaLaMansa", "nelamurit", "cantarSir",
+  "esteArbitru", "arbAiLui", "stareaLaMansa", "nelamurit",
+  "sectoareleCantarului", "deCantaritIn", "cantarSector", "cantarUrmatorul", "cantarSir",
 ];
 
 /** un pescar cu standul și sectorul lui, la manșa 1 */
@@ -44,8 +45,12 @@ function pornire(pescari, optiuni) {
   const ctx = {
     console, Math, String, Number, Array, Object, JSON, parseInt, parseFloat, isNaN,
     arbitruMode: !!o.arbitru, arbitruSector: o.sector || "",
-    state: { manche: o.mansa || 1, numManse: 2, sectors: ["A", "B", "C"], participants: pescari },
+    /* Fiecare pornire cu pescarii ei: „parcurs" chiar cântărește, iar obiectele erau
+       împărțite între probe — o probă o murdărea pe următoarea. */
+    state: { manche: o.mansa || 1, numManse: 2, sectors: ["A", "B", "C"],
+             participants: JSON.parse(JSON.stringify(pescari)) },
   };
+  ctx.cantarSectorul = o.sectorCantar === undefined ? "" : o.sectorCantar;
   vm.createContext(ctx);
   vm.runInContext("var STARI_MANSA=" + /var STARI_MANSA\s*=\s*(\{[\s\S]*?\});/.exec(src)[1] + ";", ctx);
   FUNCTII.forEach((f) => vm.runInContext(H.grabFunction(src, f), ctx));
@@ -56,6 +61,26 @@ function pornire(pescari, optiuni) {
     sunt lucruri diferite, iar cel de pe mal e al manșei. */
 const sir = (c) => vm.runInContext(
   "cantarSir().map(function(p){ return standOfM(p, state.manche||1); })", c);
+
+/** Drumul adevărat: cine-ți vine în față, unul după altul, până nu mai e nimeni.
+    Coada arată doar sectorul de acum, deci întrebarea „în ce ordine îi întâlnesc"
+    nu se mai poate pune dintr-o singură privire — se parcurge. */
+const parcurs = (c) => vm.runInContext(`(function(){
+  var mi = state.manche||1, out = [], paza = 0;
+  while(paza++ < 300){
+    var s = cantarSir();
+    if(!s.length){
+      var urm = cantarUrmatorul();
+      if(!urm) break;
+      cantarSectorul = urm;
+      continue;
+    }
+    var p = s[0];
+    out.push(standOfM(p, mi));
+    mOf(p, mi).catches = [1]; mOf(p, mi).stare = "";
+  }
+  return out;
+})()`, c);
 
 /* ================================================================
    1. Ordinea de pe mal
@@ -102,13 +127,16 @@ console.log("\n=== 2. Cine iese din coadă ===");
 console.log("\n=== 3. „Revin la el” ===");
 {
   const c = pornire([om(1, "A", "sarit"), om(2, "A"), om(3, "A")]);
-  t("cel amânat rămâne în coadă", sir(c).indexOf("1") >= 0, true);
-  t("…dar se așază la sfârșit", sir(c), ["2", "3", "1"]);
+  /* Coada de ACUM e doar a celor de cântărit; cel amânat nu ți se mai pune în față. */
+  t("cel amânat iese din coada de acum", sir(c), ["2", "3"]);
+  /* Dar nu se pierde: la capătul drumului tot îl întâlnești. */
+  t("…și-l întâlnești la sfârșit, după ceilalți", parcurs(c), ["2", "3", "1"]);
 }
 {
   /* Te-ai hotărât o dată să-l amâni: nu ți-l pune înapoi în față la următoarea atingere. */
   const c = pornire([om(1, "A", "sarit"), om(2, "A", "sarit"), om(3, "A")]);
-  t("doi amânați stau amândoi la coadă, în ordinea standurilor", sir(c), ["3", "1", "2"]);
+  t("doi amânați vin amândoi la sfârșit, în ordinea standurilor",
+    parcurs(c), ["3", "1", "2"]);
 }
 {
   const c = pornire([om(1, "A", "sarit"), om(2, "A", "cantarit")]);
@@ -139,12 +167,17 @@ console.log("\n=== 5. Coada arbitrului ===");
   const b = pornire(toti, { arbitru: true, sector: "B" });
   t("…fiecare pe al lui", sir(b), ["9", "10"]);
 
-  /* Cine ia toată balta îi are pe toți, ca organizatorul. */
+  /* Cine ia toată balta merge ca organizatorul: sector cu sector, pe mal. */
   const tot = pornire(toti, { arbitru: true, sector: "" });
-  t("arbitrul fără sector îi are pe toți", sir(tot), ["1", "2", "9", "10", "17"]);
+  t("arbitrul fără sector începe cu primul sector", sir(tot), ["1", "2"]);
+  t("…dar îi întâlnește pe toți, la rând", parcurs(tot), ["1", "2", "9", "10", "17"]);
 
+  /* „Cântăresc pe sectoare. Le iau la rând, A, B, C, D." — vorbele lui, despre ziua lui.
+     Coada e a sectorului de acum, nu a întregului concurs. */
   const org = pornire(toti);
-  t("organizatorul îi are pe toți", sir(org), ["1", "2", "9", "10", "17"]);
+  t("organizatorul primește un sector odată", sir(org), ["1", "2"]);
+  t("…iar după el urmează sectorul B", vm.runInContext("cantarUrmatorul()", org), "B");
+  t("…și-i întâlnește pe toți, în ordinea malului", parcurs(org), ["1", "2", "9", "10", "17"]);
 }
 
 /* ================================================================
@@ -162,9 +195,11 @@ console.log("\n=== 6. Manșa a doua ===");
   const m1 = pornire([a, b], { mansa: 1 });
   t("manșa 1 e cântărită", sir(m1), []);
 
+  /* În manșa 2 cei doi sunt în sectoare diferite (A și C), deci coada de acum îl are
+     doar pe cel din primul sector — iar drumul îi are pe amândoi, în ordinea malului. */
   const m2 = pornire([a, b], { mansa: 2 });
-  t("manșa 2 pornește de la capăt", sir(m2).length, 2);
-  t("…pe standurile ei, nu pe cele vechi", sir(m2), ["5", "20"]);
+  t("manșa 2 pornește de la capăt, din primul sector", sir(m2), ["5"]);
+  t("…pe standurile ei, nu pe cele vechi", parcurs(m2), ["5", "20"]);
 }
 
 /* ================================================================
@@ -173,8 +208,14 @@ console.log("\n=== 6. Manșa a doua ===");
 console.log("\n=== 7. Pe ecran ===");
 {
   const coaja = H.grabFunction(src, "construiesteCantarul");
-  t("butonul mare e unul singur",
-    (coaja.match(/btn-primary/g) || []).length, 1);
+  /* Un singur buton scos în față PE ECRAN. Coaja are doi — cel de salvat și cel de
+     trecut la sectorul următor — dar cele două blocuri nu stau niciodată împreună:
+     unul e în „cm-lucru", celălalt în oprirea dintre sectoare. */
+  const bucLucru = coaja.slice(coaja.indexOf("cm-lucru"), coaja.indexOf("cm-gata"));
+  t("în timpul cântăririi e un singur buton albastru",
+    (bucLucru.match(/btn-primary/g) || []).length, 1);
+  t("…iar oprirea dintre sectoare îl are pe al ei, în alt bloc",
+    /id="cm-sector-gata"[\s\S]*btn-primary[\s\S]*cantarTreciLaSector/.test(coaja), true);
   /* Numele sunt ale lui, din STARI_MANSA — nu unele scornite de mine. */
   t("scrie „Lampă”, cuvântul lui", /Lampă/.test(coaja), true);
   t("…și „Revin la el”, tot al lui", /Revin la el/.test(coaja), true);
@@ -239,6 +280,62 @@ console.log("\n=== 8. Locul lui în scară ===");
      primul pește — adică ecranul se ducea în jos tocmai sub degetul omului. */
   t("panoul treptei trece sub cântar",
     /nr === 4[\s\S]{0,200}tr-btn-[\s\S]{0,120}appendChild\(panou\)/.test(H.grabFunction(src, "mutaInTreapta")), true);
+}
+
+/* ================================================================
+   9. Un sector odată — și oprirea dintre ele
+   ================================================================ */
+console.log("\n=== 9. Sector cu sector, ca pe mal ===");
+{
+  const toti = [om(1, "A"), om(2, "A"), om(9, "B"), om(17, "B"), om(20, "C")];
+
+  const c = pornire(toti);
+  t("sectoarele vin în ordinea malului, nu a alfabetului",
+    vm.runInContext("JSON.stringify(sectoareleCantarului())", c), '["A","B","C"]');
+  t("„de cântărit” numără doar pe cei neatinși", vm.runInContext("deCantaritIn('B')", c), 2);
+  t("primul sector cu treabă e A", vm.runInContext("cantarSector()", c), "A");
+
+  /* Cel amânat NU ține sectorul pe loc — ăsta e rostul butonului. */
+  const cuAmanat = pornire([om(1, "A", "sarit"), om(2, "A", "cantarit"), om(9, "B")]);
+  t("un sector cu un singur amânat e socotit terminat",
+    vm.runInContext("deCantaritIn('A')", cuAmanat), 0);
+  /* …deci cântarul nu se oprește în el: trece direct la B, iar amânatul vine la sfârșit. */
+  t("…deci cântarul pornește direct de la B", vm.runInContext("cantarSector()", cuAmanat), "B");
+  t("…iar amânatul îl întâlnești la capătul zilei", parcurs(cuAmanat), ["9", "1"]);
+
+  /* Sectorul ținut minte se uită când nu mai e al manșei — altfel cântarul ar rămâne
+     agățat de drumul de ieri. Prins la probă, pe datele lui adevărate: cu sectoarele
+     vechi ale listei, standul 1 era în B, iar cântarul rămânea în B și după ce tragerea
+     îl mutase în A. */
+  const strain = pornire(toti, { sectorCantar: "Z" });
+  t("un sector care nu mai e al manșei se uită", vm.runInContext("cantarSector()", strain), "A");
+
+  /* …iar cele două uși prin care se schimbă drumul îl șterg ele însele. */
+  t("tragerea nouă șterge sectorul ținut minte",
+    /cantarSectorul="";/.test(H.grabFunction(src, "treceTragerea")), true);
+  t("…și pornirea manșei la fel",
+    /cantarSectorul="";/.test(H.grabFunction(src, "pornesteMansa")), true);
+  t("…și trecerea la altă manșă", /cantarSectorul="";/.test(H.grabFunction(src, "setManche")), true);
+}
+{
+  /* Oprirea dintre sectoare: ce scrie pe ea și ce face butonul. */
+  const coaja = H.grabFunction(src, "construiesteCantarul");
+  t("oprirea are blocul ei", /id="cm-sector-gata"/.test(coaja), true);
+  const d = H.grabFunction(src, "deseneazaCantarul");
+  t("…apare doar când sectorul s-a golit, dar mai e unul", /!sir\.length && urm/.test(d), true);
+  t("…spune ce sector s-a terminat", /"Sectorul "\+cantarSectorul\+" e gata"/.test(d), true);
+  t("…și câți ai amânat în el", /amânat, revii la el la sfârșit/.test(d), true);
+  t("butonul spune unde mergi", /"Trec la sectorul "\+urm/.test(d), true);
+  t("…iar apăsarea chiar mută cântarul acolo",
+    /cantarSectorul = cantarUrmatorul\(\)/.test(H.grabFunction(src, "cantarTreciLaSector")), true);
+}
+{
+  /* Numărătoarea de sus e a sectorului, nu a concursului. */
+  const f = H.grabFunction(src, "improspateazaCantariti");
+  t("cifra de sus se uită la sectorul de acum", /sec=cantarSector\(\)/.test(f), true);
+  t("…iar eticheta spune care sector", /"Cântăriți · sectorul "\+sec/.test(f), true);
+  t("…și se întoarce la tot concursul când nu mai e niciun sector",
+    /et0\.textContent = "Cântăriți"/.test(f), true);
 }
 
 t.raport();
