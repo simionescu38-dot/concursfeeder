@@ -460,6 +460,18 @@
   .pliant-cap .rar{font-size:11px; font-weight:700; letter-spacing:.04em;
     text-transform:uppercase; opacity:.7;}
   .pliant-in[hidden]{display:none;}
+  /* ---------- debaraua din „Contul meu" ----------
+     Cardurile de după ușile „Telefonul" și „Nu merge ceva" se strâng: rămâne titlul,
+     iar o atingere îl deschide. Titlul e mic (12px), deci ca mâner ar fi fost un chin
+     cu degete ude — de aceea capătă rândul lui, de 44px, ca orice buton adevărat. */
+  .card.plicat > .sec-title{display:flex; align-items:center; gap:8px; cursor:pointer;
+    font-size:14px; letter-spacing:.06em; margin:0; padding:10px 2px; min-height:44px;
+    -webkit-tap-highlight-color:transparent;}
+  .card.plicat > .sec-title::after{content:"▾"; margin-left:auto; font-size:16px;
+    transition:transform .15s;}
+  .card.plicat:not(.strans) > .sec-title::after{transform:rotate(180deg);}
+  .card.plicat:not(.strans) > .sec-title{margin-bottom:8px;}
+  .card.strans > *:not(.sec-title){display:none !important;}
   .sectors-list{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
   .sec-chip{display:flex; align-items:center; gap:6px; background:#e4eef9; border:1px solid var(--line); border-radius:999px; padding:5px 6px 5px 12px; font-weight:800;}
   .sec-chip button{border:0; background:#c9d9ea; width:22px; height:22px; border-radius:50%; font-weight:800; cursor:pointer; color:var(--teal-d);}
@@ -1579,7 +1591,7 @@
       <p class="hint" style="text-align:center;">Dacă doi organizatori cântăresc în paralel, folosiți <b>sincronizarea live</b> (cod de cameră + cheie), nu Export/Import: importul cu „Combină" înlocuiește participantul întreg și poate șterge cântăririle celuilalt telefon.</p>
     </div>
 
-    <div class="card u2">
+    <div class="card u2" id="card-pin">
       <div class="sec-title">Protecție cu PIN</div>
       <div id="pin-status" class="hint" style="margin:0 0 8px;"></div>
       <div class="lockhide">
@@ -2095,7 +2107,7 @@
     // trimitea organizatorul spre „setează un PIN, mai jos", adică spre un câmp pe care
     // nu-l putea vedea: fundătură perfectă pentru cine deschisese o dată linkul live.
     if(viewerMode){ exitViewerMode(); return; }
-    if(!state.pinHash){ showView('set'); toast("Setează întâi un PIN, mai jos"); return; }
+    if(!state.pinHash){ meniuGo('set', 'card-pin'); toast("Setează întâi un PIN, mai jos"); return; }
     if(isLocked()){
       var v=await askPin("PIN", "Deblochează", verifyPin);
       if(v===null) return;
@@ -3013,6 +3025,7 @@
          ușa lui — altfel saltul aterizează pe un card ascuns, adică nicăieri. */
       var usa=(el.className.match(/\bu[123]\b/)||[])[0];
       if(usa) usaSet(usa);
+      deschideCardul(el);
       el.scrollIntoView({block:"start", behavior:"smooth"});
     }, 60);
   }
@@ -4704,7 +4717,52 @@
       var b=document.getElementById("usa-"+x);
       if(b) b.classList.toggle("on", x===id);
     });
+    strangeCardurile();
   }
+  /* ---------- debaraua din „Contul meu" ----------
+     Măsurat pe 412px, cu un concurs pornit: după ușa „Telefonul" stăteau șase carduri
+     desfăcute — 2,5 ecrane de derulat; după „Nu merge ceva", opt carduri — 2 ecrane.
+     Sunt lucruri la care omul umblă o dată la câteva luni: PIN-ul, iconița pe ecran,
+     moderarea calendarului, Reset-ul. Nu merită să-i stea desfăcute sub ochi de fiecare
+     dată când intră după altceva.
+
+     Se strâng, nu se șterg — ca pliantele de pe Acasă. Rămâne titlul; o atingere îl
+     deschide. Ușa „Concursul" NU se atinge: acolo se intră înaintea fiecărui concurs,
+     iar cele patru carduri ale ei încap într-un ecran. */
+  function cardPliabil(c){
+    return !!c && c.classList.contains("card") &&
+           (c.classList.contains("u2") || c.classList.contains("u3")) &&
+           !!c.querySelector(":scope > .sec-title");
+  }
+  function cardPus(c, deschis){
+    c.classList.toggle("strans", !deschis);
+    var t=c.querySelector(":scope > .sec-title");
+    if(t) t.setAttribute("aria-expanded", deschis ? "true" : "false");
+  }
+  function strangeCardurile(){
+    var v=document.getElementById("view-set"); if(!v) return;
+    [].slice.call(v.querySelectorAll(".card")).forEach(function(c){
+      if(!cardPliabil(c)) return;
+      var t=c.querySelector(":scope > .sec-title");
+      /* Mânerul se pune o singură dată: `usaSet` trece pe aici la fiecare schimbare de
+         ușă, iar un ascultător pus de două ori ar deschide și ar închide dintr-o atingere. */
+      if(!c.dataset.plicat){
+        c.dataset.plicat="1";
+        c.classList.add("plicat");
+        t.setAttribute("role","button");
+        t.setAttribute("tabindex","0");
+        t.addEventListener("click", function(){ cardPus(c, c.classList.contains("strans")); });
+        t.addEventListener("keydown", function(e){
+          if(e.key==="Enter" || e.key===" "){ e.preventDefault(); cardPus(c, c.classList.contains("strans")); }
+        });
+      }
+      cardPus(c, false);
+    });
+  }
+  /* Cine e trimis ANUME la un card îl găsește deschis — altfel saltul ar ateriza pe un
+     titlu strâns, adică tot nicăieri. */
+  function deschideCardul(el){ if(cardPliabil(el)) cardPus(el, true); }
+
   /* Ușa deschisă se ține minte: cine e la al treilea concurs știe unde se duce, și n-are
      rost să caute din nou. */
   function usaPornire(){
