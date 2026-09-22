@@ -276,6 +276,13 @@
   #hero-acasa[hidden]{display:none !important;}
   /* rândul care spune ce nu se leagă la sectoarele scrise de mână */
   .sec-rau{color:var(--amber);}
+  /* Cifra dinaintea apăsării: câți ai, câți vei avea. Nu e o eroare — e socoteala pe
+     care omul o face oricum în cap, scrisă în locul lui. */
+  .imp-cat{display:block; margin:0 0 8px; padding:9px 11px; border-radius:11px;
+    background:#2a2417; border:1px solid #5d4b20; color:#f2c96b;
+    font-size:15px; font-weight:800; line-height:1.35;}
+  .imp-cat b{font-size:19px;}
+  .imp-cat .imp-alta{display:block; margin-top:5px; font-size:13px; font-weight:600; color:#d8c79a;}
   .hdr-logo{position:absolute; left:16px; top:14px; width:36px; height:36px; border-radius:9px;}
   /* eticheta care spune la ce folosesc dalele de sub ea */
   .mg-lbl{margin:12px 2px 6px; font-size:10.5px; font-weight:800; letter-spacing:.09em;
@@ -7653,6 +7660,19 @@
     out.ignorate=ignorate;
     return out;
   }
+  /* Cine din lista lipită e DEJA în concurs. Sâmbătă dimineață, cu 35 de oameni care
+     așteptau, foaia de tragere a intrat pe ușa de alături — cea care adaugă, nu cea care
+     mută — iar din 35 de pescari s-au făcut 61, cu nume duble și standuri date de trei
+     ori. Nimic nu l-a oprit: „Am găsit 35 participanți" era adevărat și liniștitor.
+     Se caută cu aceeași îngăduință ca la tragere: fără diacritice, în orice ordine. */
+  function dejaInConcurs(arr){
+    var gasiti=[];
+    (arr||[]).forEach(function(x){
+      var g=pescarulTragerii(x.name||"");
+      if(g && g.p) gasiti.push(nameOf(g.p));
+    });
+    return gasiti;
+  }
   function previewImport(){
     var arr=parseImport(document.getElementById("imp-text").value);
     var box=document.getElementById("imp-preview");
@@ -7662,7 +7682,21 @@
       return;
     }
     var s=arr.slice(0,4).map(function(x){ return "• "+(x.stand?("St."+x.stand+" "):"")+esc(x.name)+(x.sector?(" · Sec "+esc(x.sector)):""); }).join("<br>");
-    var h="Am găsit <b>"+arr.length+"</b> participanți:<br>"+s+(arr.length>4?"<br>…":"");
+    var h="";
+    /* Câți ai și câți vei avea — socoteala se face înaintea listei, nu după ea. */
+    var acum=(state.participants||[]).length;
+    if(acum){
+      var deja=dejaInConcurs(arr);
+      h+='<span class="imp-cat">Ai <b>'+acum+'</b> în concurs. După asta vei avea <b>'+
+         (acum+arr.length)+'</b>.';
+      if(deja.length){
+        h+='<span class="imp-alta">'+deja.length+(deja.length===1?" om de pe listă e":" oameni de pe listă sunt")+
+           " deja în concurs ("+esc(deja.slice(0,3).join(", "))+(deja.length>3?" și încă "+(deja.length-3):"")+
+           "). Dacă vrei doar să-i muți pe standuri, ăla e „Trec tragerea la sorți”, mai jos.</span>";
+      }
+      h+="</span>";
+    }
+    h+="Am găsit <b>"+arr.length+"</b> participanți:<br>"+s+(arr.length>4?"<br>…":"");
     // rândurile sărite se arată pe nume: dacă printre ele e un pescar, se vede pe loc
     if(ign.length){
       h+="<br><br>Am sărit <b>"+ign.length+"</b> "+(ign.length===1?"rând":"rânduri")+" (titlu, ore, taxe):<br>"+
@@ -7674,6 +7708,21 @@
     if(guard()) return;
     var arr=parseImport(document.getElementById("imp-text").value);
     if(!arr.length){ toast("Nimic de importat"); return; }
+    /* Rândul de mai sus ajută doar pe cine apasă întâi „Verifică". Cine apasă direct aici
+       nu vede nimic — și tocmai aia s-a întâmplat. Întrebarea se pune numai când lista
+       aduce oameni care sunt DEJA în concurs: un întârziat adăugat pe nume nou trece mai
+       departe fără să fie întrebat nimic. */
+    var acum=(state.participants||[]).length;
+    if(acum){
+      var deja=dejaInConcurs(arr);
+      if(deja.length && !confirm(
+        deja.length+(deja.length===1?" om de pe listă e":" oameni de pe listă sunt")+
+        " DEJA în concurs:\n   "+deja.slice(0,4).join("\n   ")+
+        (deja.length>4 ? ("\n   și încă "+(deja.length-4)) : "")+
+        "\n\nUșa asta ADAUGĂ oameni. Ai "+acum+", vei avea "+(acum+arr.length)+".\n"+
+        "Dacă vrei doar să-i muți pe standuri, închide aici și folosește „Trec tragerea la sorți”.\n\n"+
+        "Îi adaugi oricum?")) return;
+    }
     arr.forEach(function(x){
       if(x.sector && state.sectors.indexOf(x.sector)<0) state.sectors.push(x.sector);
     });

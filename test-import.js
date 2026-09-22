@@ -109,4 +109,65 @@ console.log("\n=== 3. Cifre care nu sunt standuri ===");
   t("…și n-are ce sări", gol.ignorate.length, 0);
 }
 
+/* ================================================================
+   N. Ușa care ADAUGĂ spune ce ai și ce vei avea
+   ================================================================
+
+   Sâmbătă dimineață, cu 35 de oameni care așteptau, foaia de tragere a intrat pe ușa
+   de alături — cea care adaugă, nu cea care mută. Din 35 de pescari s-au făcut 61, cu
+   13 nume duble și 18 standuri date de două-trei ori. Nimic nu l-a oprit: mesajul
+   „Am găsit 35 participanți" era adevărat și liniștitor.
+
+   Acum ușa spune cifra pe care omul o face oricum în cap — și întreabă, dar NUMAI când
+   lista aduce oameni care sunt deja înăuntru.
+   ================================================================ */
+console.log("\n=== Ușa care adaugă: ce ai, ce vei avea ===");
+{
+  /* numele lui adevărate, scrise pe listă altfel decât pe foaia de tragere */
+  const om = (prenume, nume) => ({ id: "p" + prenume + nume, prenume, nume,
+    stand: "", sector: "", m: {} });
+  const lot = [om("Mahu", "George"), om("Năstase", "Adrian"), om("Lazar", "Adrian"),
+               om("Vizitiu", "Dragoș"), om("Catalin", "Canuta")];
+
+  const c = { console, state: { participants: JSON.parse(JSON.stringify(lot)) } };
+  vm.createContext(c);
+  ["faraSemne", "nameOf", "pescarulTragerii", "dejaInConcurs"]
+    .forEach((n) => vm.runInContext(grabFunction(src, n), c));
+  const deja = (nume) => vm.runInContext(
+    "dejaInConcurs(" + JSON.stringify(nume.map((n) => ({ name: n }))) + ").length", c);
+
+  /* Exact perechile de sâmbătă: foaia de tragere scria numele pe dos. */
+  t("„George Mahu” e recunoscut ca „Mahu George”", deja(["George Mahu"]), 1);
+  t("…și „Adrian Nastase” ca „Năstase Adrian”, fără diacritice", deja(["Adrian Nastase"]), 1);
+  t("…și „Cătălin Cănuță” ca „Catalin Canuta”", deja(["Cătălin Cănuță"]), 1);
+  t("toată foaia de tragere e recunoscută",
+    deja(["George Mahu", "Adrian Nastase", "Adrian Lazăr", "Dragoș Vizitiu", "Cătălin Cănuță"]), 5);
+  t("…iar un întârziat adevărat nu e", deja(["Ion Temciuc"]), 0);
+  t("…și nici lista goală", deja([]), 0);
+
+  /* Rândul de dinaintea apăsării */
+  const f = grabFunction(src, "previewImport");
+  t("rândul spune câți ai acum", /Ai <b>'\+acum\+'<\/b> în concurs/.test(f), true);
+  t("…și câți vei avea după", /vei avea <b>'\+\s*\(acum\+arr\.length\)\+'<\/b>/.test(f), true);
+  t("…și apare doar când chiar ai pe cineva", /var acum=\(state\.participants\|\|\[\]\)\.length;\s*if\(acum\)/.test(f), true);
+  t("…iar când unii sunt deja înăuntru, arată ușa cealaltă",
+    /Trec tragerea la sorți/.test(f), true);
+
+  /* Oprirea de dinaintea adăugării — pentru cine nu apasă „Verifică" */
+  const d = grabFunction(src, "doImport");
+  t("ușa întreabă înainte să adauge oameni care-s deja înăuntru",
+    /if\(deja\.length && !confirm\(/.test(d), true);
+  t("…și spune în întrebare ce ai și ce vei avea",
+    /Ai "\+acum\+", vei avea "\+\(acum\+arr\.length\)/.test(d), true);
+  t("…și trimite spre ușa care MUTĂ", /Trec tragerea la sorți/.test(d), true);
+  t("…dar tace când concursul e gol", /var acum=\(state\.participants\|\|\[\]\)\.length;\s*if\(acum\)\{/.test(d), true);
+  t("…și tace și când niciun nume nu e deja înăuntru",
+    /deja\.length && !confirm/.test(d), true);
+}
+
+{
+  const m = citeste(path.join(RADACINA, "sw.js")).match(/concurs-pescuit-v(\d+)/);
+  t("telefonul ia varianta nouă (v206 sau mai nouă)", m && parseInt(m[1], 10) >= 206, true);
+}
+
 t.raport();
