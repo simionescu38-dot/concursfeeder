@@ -28,7 +28,9 @@ const MOTOR = [
   "absentLaMansa", "stareaLaMansa", "nelamurit", "standuriNecantarite",
   "improspateazaNecantarite", "pointsMapS", "mancheDisputata", "pointsCombo", "bestMancheOf",
   "sortByPointsS", "sortRankS", "currentPmap", "scopeLabel", "roDate",
-  "rankRows", "rankColumnsHtml"
+  "rankRows", "rankColumnsHtml",
+  /* capul de sector spune de acum și cât a dat sectorul */
+  "kgPeSectoare"
 ];
 const IESIRI = ["renderRank", "copyRank", "printRank", "planImagine"];
 
@@ -364,6 +366,36 @@ console.log("\n=== 7. Pe sectoare: kilogramele, peste tot ===");
   const dinPdf = [...pdfSec.split("</table>")[1].matchAll(/<td class="c">\d+<\/td><td>([^<]*)<\/td>/g)].map(m => m[1]);
   t("sectorul A de pe ecran e pe kilograme", dinEcran, sectorA);
   t("sectorul A din PDF e același", dinPdf, sectorA);
+}
+
+/* ================================================================
+   7b. Capul de sector spune și cât a dat sectorul
+   ================================================================
+   Furat de la SF League. Nu e un rând nou pe ecran: e același cap de sector, cu cifrele
+   care lipseau. Aritmetica trebuie să se vadă — kilogramele împărțite la câți au fost
+   dau media scrisă alături. */
+console.log("\n=== 7b. Capul de sector ===");
+{
+  const box = mediu();
+  asaza(box, 1, false, SECTOARE_INEGALE);
+  pune(box, "sec", "kg", 1);
+  vm.runInContext("renderRank();", box);
+  const html = box.__el["rankBody"].innerHTML;
+  const capete = [...html.matchAll(/<span class="tag">Sector ([^<]*)<\/span><span class="cnt">([^<]*)<\/span>/g)]
+    .map(m => [m[1], m[2]]);
+  t("fiecare sector are un cap", capete.length > 1, true);
+  t("capul spune câți, cât și media",
+    /^\d+ pescari · [\d.,]+ kg · media [\d.,]+$/.test(capete[0][1]), true);
+  /* Cifrele din cap sunt ale sectorului din clasament, nu altele. */
+  capete.forEach(function (c) {
+    const sec = c[0];
+    const kg = vm.runInContext(
+      "(function(){var s=kgPeSectoare(1).filter(function(x){return (x.sector||'Fără sector')===" +
+      JSON.stringify(sec) + ";})[0]; return s? fmt(s.kg)+'|'+s.cati+'|'+fmt(s.media) : '';})()", box);
+    const scris = c[1].match(/^(\d+) pescari · ([\d.,]+) kg · media ([\d.,]+)$/);
+    t("sectorul " + sec + ": cifrele din cap sunt ale lui",
+      scris ? [scris[2], scris[1], scris[3]].join("|") : "(nescris)", kg);
+  });
 }
 
 /* ================================================================

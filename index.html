@@ -7644,8 +7644,16 @@
       state.participants.forEach(function(p){ var k=sectorOfM(p,rankScope)||"Fără sector"; if(!secs[k]){secs[k]=[];order.push(k);} secs[k].push(p); });
       order.sort(function(a,b){return a.localeCompare(b,"ro");});
       var html="";
+      /* Capul de sector spunea doar câți sunt. Acum spune și cât au dat — furat de la
+         SF League, unde stă pe pagina de rezultat. Nu e un rând nou: e același cap, cu
+         cifrele care lipseau. Cheia goală („fără sector") poartă aici alt nume. */
+      var cat={};
+      kgPeSectoare(rankScope).forEach(function(s){ cat[s.sector || "Fără sector"]=s; });
       order.forEach(function(k){
-        html+='<div class="sector-h"><span class="tag">Sector '+esc(k)+'</span><span class="cnt">'+secs[k].length+' participanți</span></div>';
+        var q=cat[k];
+        html+='<div class="sector-h"><span class="tag">Sector '+esc(k)+'</span><span class="cnt">'+
+          (q ? (q.cati+" pescari · "+fmt(q.kg)+" kg · media "+fmt(q.media))
+             : (secs[k].length+" participanți"))+'</span></div>';
         html+='<table><thead><tr><th class="pos">#</th><th>Participant</th><th class="kg" style="width:52px;">Pct</th><th class="kg">kg</th></tr></thead><tbody>'+
           rankRows(sortRankS(secs[k],rankScope),{pmap:pmap,mi:rankScope})+'</tbody></table>';
       });
@@ -8162,6 +8170,33 @@
       return { sector:k, castigator: kg>1e-9 ? pri : null, kg:kg };
     });
   }
+  /* ---------- cât a dat fiecare sector ----------
+     La premiere se pune întrebarea asta cu voce tare: unde era peștele azi, și a fost
+     tragerea dreaptă? Câștigătorii de sector se știau de mult; cât a dat SECTORUL, nu.
+     Se numără aceiași oameni ca la câștigători — cine n-a fost la manșă nu intră, nici
+     în kilograme, nici în medie. Altfel un sector cu doi absenți ar părea slab tocmai
+     fiindcă n-au venit, iar la premiere s-ar citi drept tragere nedreaptă. */
+  function kgPeSectoare(mi){
+    var secs={}, order=[];
+    (state.participants||[]).forEach(function(p){
+      if(absentLaMansa(p,mi)) return;
+      var k=sectorOfM(p,mi)||"";
+      if(!secs[k]){ secs[k]=[]; order.push(k); }
+      secs[k].push(p);
+    });
+    order.sort(function(a,b){ return a.localeCompare(b,"ro"); });
+    return order.map(function(k){
+      var kg=secs[k].reduce(function(s,p){ return s+totalOfM(p,mi); }, 0);
+      return { sector:k, cati:secs[k].length, kg:kg,
+               media: secs[k].length ? kg/secs[k].length : 0 };
+    });
+  }
+  /** Sectorul cu cel mai mult pește, sau null cât nu s-a cântărit nimic nicăieri. */
+  function sectorulCelMaiBun(mi){
+    var top=null;
+    kgPeSectoare(mi).forEach(function(s){ if(s.kg>1e-9 && (!top || s.kg>top.kg)) top=s; });
+    return top;
+  }
   /** cel mai mare pește al manșei, sau null dacă nimeni n-are pești extra */
   function celMaiMarePeste(mi){
     var cu=state.participants.filter(function(p){ return cmmcAward(p,mi)>0; });
@@ -8184,6 +8219,12 @@
       });
       var mare=celMaiMarePeste(mi);
       if(mare) h+='<div>🐟 Cel mai mare pește: <b>'+esc(nameOf(mare.p))+'</b> — '+fmt(mare.kg)+' kg</div>';
+      /* Cu un singur sector n-ai ce compara, deci nici ce spune. */
+      var top=sectorulCelMaiBun(mi);
+      if(top && top.sector && kgPeSectoare(mi).length>1){
+        h+='<div>⚖️ Cel mai mult pește: sectorul <b>'+esc(top.sector)+'</b> — '+
+           fmt(top.kg)+' kg</div>';
+      }
     }
     h+='<button type="button" class="sl-vezi" onclick="veziClasamentulMansei('+mi+')">Vezi clasamentul manșei →</button>';
     return h+'</div>';
@@ -8232,6 +8273,11 @@
       });
       var mare=celMaiMarePeste(mi);
       parti.push(mare ? mare.p.id+"≻"+fmt(mare.kg) : "");
+      /* Sectorul cel mai bun se poate schimba fără să se miște vreun câștigător: doi
+         oameni din sectoare diferite fac schimb de kilograme, totalul rămâne, iar pe
+         ecran ar sta scris sectorul greșit — tocmai ăla se citește cu voce tare. */
+      var topS=sectorulCelMaiBun(mi);
+      parti.push(topS ? topS.sector+"≻"+fmt(topS.kg) : "");
     }
     return parti.join("|");
   }

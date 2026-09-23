@@ -256,6 +256,7 @@ function concurs(oameni, o) {
     grabFunction(src, "absentLaMansa"), grabFunction(src, "totalOf"),
     grabFunction(src, "cateCapturi"), grabFunction(src, "stareaMansei"), grabFunction(src, "leaderId"),
     grabFunction(src, "castigatoriPeSectoare"), grabFunction(src, "celMaiMarePeste"),
+    grabFunction(src, "kgPeSectoare"), grabFunction(src, "sectorulCelMaiBun"),
     grabFunction(src, "rezumatMansei"), grabFunction(src, "semnaturaStatus"),
     /* Semnătura ține minte și pasul următor, altfel panoul rămâne cu butonul vechi după
        tragerea la sorți. Deci pasul, cu tot ce ține de el, intră și aici — adevărat,
@@ -352,6 +353,58 @@ console.log("\n=== 14. Ce scrie în panou ===");
   t("…și nu inventează câștigători", /🥇/.test(h), false);
 }
 
+/* ================================================================
+   14b. Cât a dat fiecare sector
+   ================================================================
+   Furat de la SF League, unde stă pe pagina de rezultat. La premiere se pune întrebarea
+   cu voce tare: unde era peștele azi, și a fost tragerea dreaptă? Câștigătorii de sector
+   se știau de mult; cât a dat SECTORUL, nu. */
+console.log("\n=== 14b. Cât a dat fiecare sector ===");
+{
+  const b = concurs([["Urias", "A", "1", 31.0], ["Greu", "A", "2", 9.0],
+                     ["Micu", "B", "6", 9.0], ["Sub", "B", "7", 7.0]]);
+  const pe = b.ruleaza("kgPeSectoare(1)");
+  t("fiecare sector își are totalul", pe.map(s => s.sector + ":" + b.ruleaza("fmt")(s.kg)),
+    ["A:40,000", "B:16,000"]);
+  t("…și media pe pescar", pe.map(s => b.ruleaza("fmt")(s.media)), ["20,000", "8,000"]);
+  t("…și câți au fost", pe.map(s => s.cati), [2, 2]);
+  t("sectoarele vin în ordine", pe.map(s => s.sector), ["A", "B"]);
+  t("cel mai mult pește a dat A", b.ruleaza("sectorulCelMaiBun(1).sector"), "A");
+  /* Peștele extra intră în totalul sectorului, ca peste tot în aplicație. */
+  const c = concurs([["Urias", "A", "1", 5.0], ["Micu", "B", "6", 4.0, 3.0]]);
+  t("peștele extra intră și el în sector",
+    c.ruleaza("sectorulCelMaiBun(1).sector"), "B");
+}
+{
+  /* Cine n-a fost la manșă nu trage sectorul în jos: nici în kilograme, nici în medie.
+     Altfel un sector cu doi absenți ar părea slab tocmai fiindcă n-au venit — iar la
+     premiere s-ar citi drept tragere nedreaptă. */
+  const b = concurs([["Venit", "A", "1", 20.0], ["Lipsa", "A", "", null],
+                     ["Altul", "B", "6", 12.0]]);
+  const pe = b.ruleaza("kgPeSectoare(1)");
+  t("absentul nu intră la numărătoare", pe.map(s => s.cati), [1, 1]);
+  t("…deci media sectorului A rămâne întreagă",
+    pe.map(s => b.ruleaza("fmt")(s.media)), ["20,000", "12,000"]);
+}
+{
+  /* Cât nu s-a cântărit nimic nicăieri, n-are cine să fie cel mai bun. */
+  const b = concurs([["Unu", "A", "1", null], ["Doi", "B", "2", null]]);
+  t("fără niciun cântar, niciun sector cel mai bun", b.ruleaza("sectorulCelMaiBun(1)"), null);
+}
+{
+  const b = concurs([["Urias", "A", "1", 31.0], ["Micu", "B", "6", 9.0]]);
+  const h = b.ruleaza("rezumatMansei(1)");
+  t("panoul spune care sector a dat cel mai mult",
+    /Cel mai mult pește: sectorul <b>A<\/b> — 31,000 kg/.test(h), true);
+}
+{
+  /* Cu un singur sector n-ai ce compara, deci nici ce spune. */
+  const b = concurs([["Urias", "A", "1", 31.0], ["Greu", "A", "2", 9.0]]);
+  const h = b.ruleaza("rezumatMansei(1)");
+  t("cu un singur sector, panoul tace", /Cel mai mult pește/.test(h), false);
+  t("…dar câștigătorul sectorului tot se vede", /Sector A: <b>Urias<\/b>/.test(h), true);
+}
+
 console.log("\n=== 15. Semnătura prinde și rezumatul ===");
 {
   /* Contraexemplul care a cerut lărgirea semnăturii: în sectorul B, Mimi scade de la
@@ -387,6 +440,27 @@ console.log("\n=== 15. Semnătura prinde și rezumatul ===");
     [a.ruleaza("celMaiMarePeste(1).p.prenume"), c.ruleaza("celMaiMarePeste(1).p.prenume")], ["Bob", "Ana"]);
   t("…deci semnătura TREBUIE să fie alta",
     a.ruleaza("semnaturaStatus()") !== c.ruleaza("semnaturaStatus()"), true);
+}
+{
+  /* Al doilea contraexemplu, pentru sectorul cel mai bun: doi oameni din sectoare
+     DIFERITE, niciunul câștigător la el, fac schimb de un kilogram. Totalul concursului
+     rămâne, capturile la fel, liderul la fel, amândoi câștigătorii de sector la fel —
+     dar sectorul cu cel mai mult pește trece de la A la B. Fără el în semnătură, pe
+     ecran ar rămâne scris sectorul greșit, tocmai ăla care se citește cu voce tare. */
+  const inainte = concurs([["Mare", "A", "1", 10.0], ["Coada", "A", "2", 2.0],
+                           ["Alt", "B", "6", 9.0], ["Ultim", "B", "7", 2.0]]);
+  const dupa    = concurs([["Mare", "A", "1", 10.0], ["Coada", "A", "2", 1.0],
+                           ["Alt", "B", "6", 9.0], ["Ultim", "B", "7", 3.0]]);
+  t("totalul e chiar același",
+    inainte.ruleaza("state.participants.reduce(function(s,p){return s+totalOfM(p,1);},0)"),
+    dupa.ruleaza("state.participants.reduce(function(s,p){return s+totalOfM(p,1);},0)"), 0.0001);
+  t("liderul e chiar același", inainte.ruleaza("leaderId()"), dupa.ruleaza("leaderId()"));
+  t("câștigătorii de sector sunt aceiași", sectoare(inainte), sectoare(dupa));
+  t("dar sectorul cel mai bun chiar s-a schimbat",
+    [inainte.ruleaza("sectorulCelMaiBun(1).sector"), dupa.ruleaza("sectorulCelMaiBun(1).sector")],
+    ["A", "B"]);
+  t("…deci semnătura TREBUIE să fie alta",
+    inainte.ruleaza("semnaturaStatus()") !== dupa.ruleaza("semnaturaStatus()"), true);
 }
 {
   // cât manșa e în desfășurare, semnătura n-are de ce să care sectoarele
