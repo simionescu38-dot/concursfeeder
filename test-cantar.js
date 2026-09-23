@@ -24,6 +24,9 @@ const FUNCTII = [
   "standOfM", "sectorOfM", "nameOf", "nameKey", "standKeyM", "byStandM",
   "esteArbitru", "arbAiLui", "stareaLaMansa", "nelamurit",
   "sectoareleCantarului", "deCantaritIn", "cantarSector", "cantarUrmatorul", "cantarSir",
+  "cantarOmul", "cantarSariLa", "cantarSariLaId",
+  "fmt", "esc", "cantOfM", "extraOfM", "totalOfM",
+  "randurileSectorului", "tabelRand", "deseneazaTabelul",
 ];
 
 /** un pescar cu standul și sectorul lui, la manșa 1 */
@@ -51,6 +54,20 @@ function pornire(pescari, optiuni) {
              participants: JSON.parse(JSON.stringify(pescari)) },
   };
   ctx.cantarSectorul = o.sectorCantar === undefined ? "" : o.sectorCantar;
+  ctx.cantarTinta = "";
+  ctx.toast = function(t){ ctx.__toast = t; };
+  ctx.deseneazaCantarul = function(){};
+  ctx.improspateazaCantariti = function(){};
+  ctx.deseneazaSectorul = function(){};
+  /* Ecranul e o scenă goală, în afară de cele două jumătăți de tabel: foaia sectorului
+     chiar se desenează în probe, ca să se vadă ce scrie în ea. Restul id-urilor rămân
+     nule dinadins — nimic din ce se probează aici n-are voie să depindă de ecran. */
+  ctx.__noduri = {};
+  ctx.document = { getElementById: function(id){
+    if(id !== "cm-tab-sus" && id !== "cm-tab-jos") return null;
+    if(!ctx.__noduri[id]) ctx.__noduri[id] = { innerHTML: "", hidden: false };
+    return ctx.__noduri[id];
+  } };
   vm.createContext(ctx);
   vm.runInContext("var STARI_MANSA=" + /var STARI_MANSA\s*=\s*(\{[\s\S]*?\});/.exec(src)[1] + ";", ctx);
   FUNCTII.forEach((f) => vm.runInContext(H.grabFunction(src, f), ctx));
@@ -322,7 +339,11 @@ console.log("\n=== 9. Sector cu sector, ca pe mal ===");
   const coaja = H.grabFunction(src, "construiesteCantarul");
   t("oprirea are blocul ei", /id="cm-sector-gata"/.test(coaja), true);
   const d = H.grabFunction(src, "deseneazaCantarul");
-  t("…apare doar când sectorul s-a golit, dar mai e unul", /!sir\.length && urm/.test(d), true);
+  t("…apare doar când sectorul s-a golit, dar mai e unul",
+    /!sir\.length && !cantarTinta && urm/.test(d), true);
+  /* Dacă ai sărit anume la cineva, oprirea nu se pune în fața ta: l-ai cerut, îl primești. */
+  t("…și nu se pune în fața ta când ai sărit la cineva",
+    /!cantarTinta/.test(d), true);
   t("…spune ce sector s-a terminat", /"Sectorul "\+cantarSectorul\+" e gata"/.test(d), true);
   t("…și câți ai amânat în el", /amânat, revii la el la sfârșit/.test(d), true);
   t("butonul spune unde mergi", /"Trec la sectorul "\+urm/.test(d), true);
@@ -336,6 +357,151 @@ console.log("\n=== 9. Sector cu sector, ca pe mal ===");
   t("…iar eticheta spune care sector", /"Cântăriți · sectorul "\+sec/.test(f), true);
   t("…și se întoarce la tot concursul când nu mai e niciun sector",
     /et0\.textContent = "Cântăriți"/.test(f), true);
+}
+
+/* ================================================================
+   10. Săritura: cântarul nu-ți mai impune ordinea
+   ================================================================
+   „Vreau mai multă libertate în aplicație." Cântarul dădea pescarii unul câte unul, în
+   ordinea standurilor — dacă venea unul la tine mai devreme, și la baltă vine, trebuia
+   să-l cauți în „Toți pescarii". Acum atingi numărul standului, scrii altul, și sare.
+   ================================================================ */
+console.log("\n=== 10. Sari la cine vrei ===");
+{
+  const lot = [om(1, "A"), om(2, "A"), om(9, "B"), om(20, "C")];
+  const c = pornire(lot);
+  const peCantar = () => vm.runInContext("(cantarOmul()||{}).id", c);
+  const standul = () => vm.runInContext(
+    "cantarOmul() ? standOfM(cantarOmul(), state.manche||1) : null", c);
+
+  t("fără săritură, pe cântar e primul din șir", standul(), "1");
+
+  vm.runInContext("cantarSariLa('20')", c);
+  t("sari la standul 20 — chiar acolo ajungi", standul(), "20");
+  /* Săritura e un ocol, nu o mutare: tu rămâi unde stai pe mal. */
+  t("…dar sectorul de acum NU se mută după el", c.cantarSectorul, "A");
+
+  /* Săritura ține un singur om: după ce l-ai lămurit, cântarul se întoarce în șir. */
+  vm.runInContext("cantarTinta=''", c);
+  t("după ce l-ai lămurit, te întorci exact de unde erai", standul(), "1");
+
+  /* Un stand care nu există nu te mută nicăieri, dar ți-o spune. */
+  const d = pornire(lot);
+  vm.runInContext("cantarSariLa('99')", d);
+  t("un stand inexistent nu te mută", vm.runInContext("(cantarOmul()||{}).id", d),
+    vm.runInContext("(cantarSir()[0]||{}).id", d));
+  t("…dar îți spune de ce", /Niciun pescar pe standul 99/.test(d.__toast || ""), true);
+
+  /* „12" îl găsește și pe cel scris „12 B". */
+  const e = pornire([om("12 B", "B"), om(3, "A")]);
+  vm.runInContext("cantarSariLa('12')", e);
+  t("cifra din stand e de ajuns, chiar dacă standul are literă",
+    vm.runInContext("standOfM(cantarOmul(), state.manche||1)", e), "12 B");
+
+  /* Gol înseamnă „lasă-mă înapoi în șir". */
+  const f = pornire(lot);
+  vm.runInContext("cantarSariLa('9'); cantarSariLa('')", f);
+  t("scrii gol și te întorci în șir", vm.runInContext("cantarTinta", f), "");
+}
+{
+  /* Mânerul: numărul standului e și butonul, fără să fi apărut vreun buton nou. */
+  const coaja = H.grabFunction(src, "construiesteCantarul");
+  t("numărul standului se poate atinge", /id="cm-stand"[^>]*onclick="cantarSariDeschide\(\)"/.test(coaja), true);
+  t("…și de la tastatură", /id="cm-stand"[\s\S]{0,200}onkeydown/.test(coaja), true);
+  t("…iar capul spune că se atinge", /Standul · atinge/.test(coaja), true);
+  t("câmpul de sărit spune ce vrea", /placeholder="sari la standul…"/.test(coaja), true);
+  t("…Enter sare, Escape renunță",
+    /cantarSariGata\(\)[\s\S]{0,120}Escape[\s\S]{0,40}cantarSariInchide/.test(coaja), true);
+  /* Capcana obișnuită: fără `!important`, numărul ar rămâne pe ecran peste câmp. */
+  t("ascunderea numărului chiar ține", /\.cm-stand\[hidden\]\{display:none !important;\}/.test(src), true);
+  t("…și a câmpului la fel", /\.cm-sari\[hidden\]\{display:none !important;\}/.test(src), true);
+
+  const sv = H.grabFunction(src, "cantarSalveaza");
+  t("după cântărire, ocolul se termină", /cantarTinta = "";/.test(sv), true);
+  const st = H.grabFunction(src, "cantarStare");
+  t("…și după o stare, la fel", /cantarTinta = "";/.test(st), true);
+}
+
+/* ================================================================
+   11. Foaia sectorului
+   ================================================================
+   „Dimineața fac tragerea, pun standurile, apoi cântăresc pe sectoare. Le iau la rând,
+   A, B, C, D." Fișa lui de hârtie e un tabel de opt-nouă rânduri. Aici se probează că
+   ecranul e același tabel: tot sectorul la rând, cel deschis în mijlocul lui, și
+   atingerea oricărui rând duce chiar acolo. */
+console.log("\n=== 11. Foaia sectorului ===");
+{
+  const lot = [om(1, "A"), om(2, "A", "cantarit"), om(3, "A", "zero"), om(4, "A"), om(9, "B")];
+  const c = pornire(lot);
+  const randuri = (unde) => (c.__noduri[unde] ? c.__noduri[unde].innerHTML : "");
+  const standuri = (unde) => (randuri(unde).match(/cm-r-st">([^<]*)</g) || [])
+    .map((x) => x.replace(/.*">/, "").replace("<", ""));
+
+  vm.runInContext("deseneazaTabelul(cantarOmul(), state.manche||1)", c);
+
+  /* Cel deschis e standul 1 — deci nu apare ca rând: el E blocul din mijloc. */
+  t("foaia are sectorul întreg, fără cel deschis", standuri("cm-tab-sus").concat(standuri("cm-tab-jos")),
+    ["2", "3", "4"]);
+  t("cel deschis nu se scrie de două ori", /cm-r-st">1</.test(randuri("cm-tab-sus") + randuri("cm-tab-jos")), false);
+  t("rândurile de după el stau dedesubt", standuri("cm-tab-jos"), ["2", "3", "4"]);
+  t("…iar deasupra nu e nimic", randuri("cm-tab-sus"), "");
+  t("jumătatea goală se ascunde", c.__noduri["cm-tab-sus"].hidden, true);
+  t("…cea plină, nu", c.__noduri["cm-tab-jos"].hidden, false);
+
+  /* Sectorul altuia nu intră pe foaie: cântarul lucrează un sector o dată. */
+  t("omul din alt sector nu intră pe foaie",
+    /Pescar9/.test(randuri("cm-tab-sus") + randuri("cm-tab-jos")), false);
+
+  /* Ce-ai scris deja se vede în dreptul lui — asta e tot rostul foii. */
+  t("kilogramele scrise se văd pe rând", /cm-r-kg">5,500</.test(randuri("cm-tab-jos")), true);
+  t("„Lampă” se vede la fel de bine", /cm-r-kg">Lampă</.test(randuri("cm-tab-jos")), true);
+  t("cine n-a fost cântărit are liniuță", /cm-r-kg">–|cm-r-kg">—/.test(
+    vm.runInContext("tabelRand(state.participants[0], 1)", c)), true);
+
+  /* Rândul deschis se mută odată cu omul: după ce-i scrii cifra lui 1, mijlocul foii
+     coboară la primul nelămurit de sub el — 4 — iar 1 trece deasupra, cu cifra scrisă. */
+  vm.runInContext("mOf(state.participants[0], 1).catches=[3]; deseneazaTabelul(cantarOmul(), state.manche||1)", c);
+  t("după ce l-ai lămurit, se deschide rândul următor", standuri("cm-tab-sus"), ["1", "2", "3"]);
+  t("…iar sub el nu mai e nimeni", standuri("cm-tab-jos"), []);
+  t("…iar cel lămurit trece deasupra, cu cifra lui",
+    /cm-r-kg">3,000</.test(randuri("cm-tab-sus")), true);
+}
+{
+  /* Atingerea rândului: același ocol ca săritura scrisă, doar arătat cu degetul. */
+  const c = pornire([om(1, "A"), om(2, "A"), om(9, "B"), om(20, "C")]);
+  const standul = () => vm.runInContext(
+    "cantarOmul() ? standOfM(cantarOmul(), state.manche||1) : null", c);
+  vm.runInContext("cantarSector()", c);            /* sectorul de acum: A */
+  vm.runInContext("cantarSariLaId('s2')", c);
+  t("atingi un rând și cântarul se deschide acolo", standul(), "2");
+  t("…fără să te mute de pe mal", c.cantarSectorul, "A");
+  /* Și rândul altui sector, dacă l-ai căutat: tot ocol, tot fără mutare. */
+  vm.runInContext("cantarSariLaId('s20')", c);
+  t("merge și pentru un om din alt sector", standul(), "20");
+  t("…iar sectorul foii rămâne al tău", c.cantarSectorul, "A");
+  /* Un id care nu există nu strică nimic. */
+  vm.runInContext("cantarSariLaId('nimeni')", c);
+  t("un rând care nu există nu te mută", standul(), "20");
+}
+{
+  const coaja = H.grabFunction(src, "construiesteCantarul");
+  t("foaia are o jumătate deasupra câmpului", /id="cm-tab-sus"/.test(coaja), true);
+  t("…și una dedesubt", /id="cm-tab-jos"/.test(coaja), true);
+  /* Câmpul de kg stă ÎNTRE ele și nu se reface: altfel s-ar închide tastatura. */
+  t("câmpul de kg stă între cele două jumătăți",
+    coaja.indexOf('id="cm-tab-sus"') < coaja.indexOf('id="cm-kg"') &&
+    coaja.indexOf('id="cm-kg"') < coaja.indexOf('id="cm-tab-jos"'), true);
+  t("coaja se face o singură dată", /box\.dataset\.gata/.test(coaja), true);
+  const rand = H.grabFunction(src, "tabelRand");
+  t("rândul se atinge", /onclick="cantarSariLaId/.test(rand), true);
+  t("…și de la tastatură", /onkeydown=/.test(rand), true);
+  t("numele se scrie curat", /esc\(nameOf\(q\)\)/.test(rand), true);
+  t("ascunderea jumătăților chiar ține",
+    /\.cm-tabel\[hidden\]\{display:none !important;\}/.test(src), true);
+}
+{
+  const m = H.citeste("sw.js").match(/concurs-pescuit-v(\d+)/);
+  t("telefonul ia varianta nouă (v210 sau mai nouă)", m && parseInt(m[1], 10) >= 210, true);
 }
 
 t.raport();
