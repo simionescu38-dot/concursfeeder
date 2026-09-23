@@ -6809,6 +6809,14 @@
   function updateWarnStand(){
     var w=document.getElementById("warn-stand");
     if(!w) return;
+    /* După ce ceasul a sunat, banda roșie n-are ce să mai dreagă: nimeni nu mai pleacă
+       pe alt stand. Iar la cântar, cei doi de pe același stand se văd oricum unul sub
+       altul pe foaia sectorului, cu numele lângă număr — acolo unde te uiți, nu pe alt
+       ecran. Deci tace exact când aplicația însăși spune „🏁 Concurs încheiat".
+       Celelalte două benzi NU tac: sectorul lipsă strică punctajul la premiere, iar
+       codul dublu amestecă doi oameni la clasamentul de sezon. Amândouă se îndreaptă
+       după ce s-a strigat stop, deci amândouă au ce spune. */
+    if(stareaMansei()==="incheiata"){ w.textContent=""; w.style.display="none"; return; }
     var mi=state.manche||1, pe={};
     state.participants.forEach(function(p){
       var st=standOfM(p,mi); if(!st) return;
@@ -9012,7 +9020,10 @@
         }
         txt="⏱ Timp rămas: "+fmtDur(state.endAt-now); timerWasRunning=true;
       } else {
-        txt="🏁 Concurs încheiat"; if(timerWasRunning){ timerWasRunning=false; alarmEnd(); }
+        /* Chiar în clipa în care sună finalul, banda cu standuri duble se retrage —
+           altfel ar mai sta pe ecran până la următoarea redesenare a listei. */
+        txt="🏁 Concurs încheiat";
+        if(timerWasRunning){ timerWasRunning=false; alarmEnd(); updateWarnStand(); }
       }
     }
     if(bar){ bar.style.display=show?"block":"none"; bar.textContent=txt; }

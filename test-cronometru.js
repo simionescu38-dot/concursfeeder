@@ -47,7 +47,10 @@ function mediu(stare) {
   class CeasFals extends Date {}
   CeasFals.now = () => acum;
   const ctx = {
-    state: stare,
+    /* De când banda cu standuri duble se retrage chiar la sunetul finalului, `timerTick`
+       o cheamă — deci proba ceasului are nevoie și de ea, cu tot ce-i trebuie ei. Lista
+       de pescari lipsea din starea asta: ceasul nu se uită la oameni, banda da. */
+    state: Object.assign({ participants: [], manche: 1, numManse: 2 }, stare),
     Date: CeasFals,
     document: { getElementById: el },
     setInterval: () => 1, clearInterval: () => {},
@@ -75,6 +78,14 @@ function mediu(stare) {
     grabFunction(src, "hhmm"),
     grabFunction(src, "toLocalInput"),
     grabFunction(src, "fmtDur"),
+    grabFunction(src, "emptyManche"),
+    grabFunction(src, "manseRange"),
+    grabFunction(src, "ensureManche"),
+    grabFunction(src, "mOf"),
+    grabFunction(src, "standOfM"),
+    grabFunction(src, "nameOf"),
+    grabFunction(src, "stareaMansei"),
+    grabFunction(src, "updateWarnStand"),
     grabFunction(src, "timerTick")
   ].join("\n"), ctx);
   return {
@@ -250,6 +261,23 @@ t("câmpurile din Setări nu se mai completează de două ori",
   m.ruleaza("timerTick");
   t("fără concurs: tăcere", m.alarme.slice(), []);
   t("fără concurs: bara stă ascunsă", m.camp.timerBar.style.display, "none");
+}
+
+// „Fă-o să tacă după ce concursul e gata." Banda cu standuri duble strigă cât se
+// pescuiește — doi oameni chiar ajung pe același loc. La sunetul finalului se retrage
+// singură, în aceeași clipă, nu la următoarea redesenare a listei.
+{
+  const m = mediu({ startAt: FINAL - 60 * MIN, endAt: FINAL, nadireMin: 0 });
+  m.ctx.state.participants = [
+    { id:"a", nume:"Ion",  prenume:"", m:{ 1:{catches:[],extras:[],stand:"5",sector:"A"} } },
+    { id:"b", nume:"Vlad", prenume:"", m:{ 1:{catches:[],extras:[],stand:"5",sector:"A"} } }
+  ];
+  m.la(FINAL - 10 * MIN); m.ruleaza("timerTick");
+  m.ctx.updateWarnStand();
+  t("cât se pescuiește, banda standurilor strigă", m.camp["warn-stand"].style.display, "block");
+  m.la(FINAL + 1000); m.ruleaza("timerTick");
+  t("la sunetul finalului, tace singură", m.camp["warn-stand"].style.display, "none");
+  t("…și finalul chiar a sunat", m.alarme.slice().pop(), "end");
 }
 
 t.raport();
