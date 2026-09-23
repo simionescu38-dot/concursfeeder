@@ -458,7 +458,12 @@ console.log("\n=== 14. Semaforul de verificare ===");
   const v = src.slice(deLaV, src.indexOf("</section>", deLaV));
 
   t("ecranul există", deLaV > 0, true);
-  t("are drum înapoi la Cântar", /showView\('cantar'\)/.test(v), true);
+  /* Scria „‹ Înapoi la Cântar", dar cântarul nu mai e ecran al organizatorului de când
+     a intrat în scară ca treapta a patra — iar la verificare ajunge numai el. Butonul îl
+     trimitea pe numele unui loc pe care nu-l vede. Duce tot acolo unde ducea. */
+  t("are drum înapoi Acasă", /showView\('part'\)/.test(v), true);
+  t("…și nu mai trimite la un ecran pe care organizatorul nu-l vede",
+    /showView\('cantar'\)/.test(v), false);
   t("are cele trei locuri care se umplu din cod",
     ["verific-far", "verific-lista", "verific-buton"].filter((id) => v.indexOf('id="' + id + '"') >= 0).length, 3);
 

@@ -1295,7 +1295,11 @@
   </section>
 
   <!-- CLASAMENTE -->
+  <!-- Clasamentul atârnă de Acasă, ca „Fă concursul", „Strategie", „Regulament" și
+       „Sponsori" — dar era singurul dintre ele fără drum înapoi: ieșeai numai pe bara de
+       jos. Cinci frați cu ușă și unul fără e tocmai ce se simte drept „neorganizată". -->
   <section class="view" id="view-rank">
+    <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
     <div class="seg">
       <button id="rs-1" class="on" onclick="setRankScope(1)">Manșa 1</button>
       <button id="rs-2" onclick="setRankScope(2)">Manșa 2</button>
@@ -1399,7 +1403,11 @@
        Nu e un card în „Contul meu": e un pas din zi, la care ajungi de pe Cântar,
        de la butonul „ce urmează", după ce ai cântărit tot. -->
   <section class="view" id="view-verific">
-    <button class="btn-link" onclick="showView('cantar')">‹ Înapoi la Cântar</button>
+    <!-- Scria „‹ Înapoi la Cântar". Cântarul nu mai e un ecran al organizatorului de
+         când a intrat în scară, ca treapta a patra — iar la verificare ajunge NUMAI
+         organizatorul, din scară. Deci butonul îl trimitea pe numele unui ecran pe care
+         nu-l vede niciodată. Duce tot acolo unde ducea, doar că acum îi spune pe nume. -->
+    <button class="btn-link" onclick="showView('part')">‹ Înapoi la Acasă</button>
     <div class="card">
       <div class="sec-title"><svg class="ui-ico" aria-hidden="true"><use href="#i-flag"></use></svg>Verificarea concursului</div>
       <div id="verific-far"></div>
