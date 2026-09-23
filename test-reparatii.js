@@ -13,14 +13,17 @@ function aplicatie(numManse, manche) {
   const ctx = {
     state: { participants: [], manche: manche || 1, numManse: numManse || 2,
              sectors: ["A", "B"], sponsors: [], rules: "" },
-    console, num: x => parseFloat(x) || 0, save(){}
+    console, num: x => parseFloat(x) || 0, save(){},
+    /* Ceasul concursului: fără el, `stareaMansei()` spune „fara-ceas" și benzile
+       rămân aprinse ca întotdeauna. Probele care vor ceasul îl pun singure. */
+    nowSync: () => Date.now()
   };
   vm.createContext(ctx);
   vm.runInContext(
     ["emptyManche", "numManse", "scalaSectoare", "manseRange", "ensureManche", "mOf", "sectorOfM", "standOfM",
      "mancheDeAfisat", "setStandSector", "cantOfM", "extraOfM", "cmmcOfM", "totalOfM",
      "cmmcAward", "absentLaMansa", "pointsMapS", "mancheDisputata", "pointsCombo", "normalize", "curataNumarul",
-     "nameOf", "numeAfisat", "tandem", "updateWarnStand"]
+     "nameOf", "numeAfisat", "tandem", "updateWarnStand", "stareaMansei"]
       .map(n => grabFunction(src, n)).join("\n"), ctx);
   return ctx;
 }
@@ -159,6 +162,24 @@ console.log("\n=== 5. Standuri duble ===");
   t("spune și de ce contează", /captura se poate trece pe cine nu trebuie/.test(w.textContent), true);
   t("nu pomenește standul curat", /standul 9/.test(w.textContent), false);
 
+  /* „Fă-o să tacă după ce concursul e gata." Cât se pescuiește, banda strigă — la baltă
+     doi oameni chiar ajung pe același loc. După ce ceasul a sunat, nu mai are ce drege:
+     nimeni nu mai pleacă pe alt stand, iar la cântar cei doi se văd unul sub altul pe
+     foaia sectorului, cu numele lângă număr. */
+  ctx.state.startAt = Date.now() - 3*3600*1000;
+  ctx.state.endAt   = Date.now() + 3600*1000;
+  t("cât mai e timp, banda strigă mai departe", arata().style.display, "block");
+  ctx.state.endAt = Date.now() - 60*1000;
+  t("după ce ceasul a sunat, tace", arata().style.display, "none");
+  t("…și nu rămâne text nevăzut în pagină", cutie.textContent, "");
+  /* Fără ceas pus, nu se știe că s-a terminat ceva: banda rămâne cum era. */
+  ctx.state.startAt = null; ctx.state.endAt = null;
+  t("fără ceas pus, banda strigă ca înainte", arata().style.display, "block");
+  /* Și la manșa următoare, cu ceas nou, strigă din nou. */
+  ctx.state.startAt = Date.now() - 600*1000;
+  ctx.state.endAt   = Date.now() + 600*1000;
+  t("la manșa următoare, cu ceas nou, strigă din nou", arata().style.display, "block");
+
   // avertismentul e al manșei active: manșa 2 are altă repartizare
   pune([["Ion","5","1"], ["Vlad","5","2"], ["Radu","9","3"]]);
   ctx.state.manche = 2;
@@ -178,6 +199,19 @@ console.log("\n=== 5. Standuri duble ===");
   t("le arată pe amândouă", /standul 12 e dat de 2 ori/.test(w2.textContent), true);
   t("iar standurile ies în ordine numerică",
     w2.textContent.indexOf("standul 5") < w2.textContent.indexOf("standul 12"), true);
+}
+
+{
+  /* Doar banda standurilor tace. Celelalte două se îndreaptă tocmai DUPĂ ce s-a strigat
+     stop — sectorul lipsă strică punctajul la premiere, codul dublu amestecă doi oameni
+     la clasamentul de sezon — deci n-au voie să amuțească odată cu ceasul. */
+  t("sectorul lipsă nu se uită la ceas",
+    /stareaMansei/.test(grabFunction(src, "updateWarnSector")), false);
+  t("codul dublu nici el",
+    /stareaMansei/.test(grabFunction(src, "updateWarnCod")), false);
+  /* Și se retrage chiar în clipa finalului, nu la următoarea redesenare a listei. */
+  t("banda standurilor se retrage chiar când sună finalul",
+    /Concurs încheiat[\s\S]{0,260}updateWarnStand\(\)/.test(grabFunction(src, "timerTick")), true);
 }
 
 /* ================================================================
