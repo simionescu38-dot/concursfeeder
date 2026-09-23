@@ -501,6 +501,15 @@
   .cm-stand{font-size:42px; font-weight:850; line-height:1; letter-spacing:-.03em;
     font-variant-numeric:tabular-nums; margin-bottom:6px;}
   .cm-nume{font-size:20px; font-weight:800; letter-spacing:-.01em; margin-bottom:4px;}
+  /* Numărul standului e și mâner: îl atingi și sari la cine vrei. Linia punctată e
+     singurul semn că se poate atinge — un buton în plus ar fi fost tocmai ce n-avem
+     loc să punem pe ecranul ăsta. */
+  .cm-stand{cursor:pointer; border-bottom:2px dotted var(--line); display:inline-block;
+    padding:0 10px 2px;}
+  .cm-stand[hidden]{display:none !important;}
+  .cm-sari{width:100%; max-width:260px; margin:0 auto 6px; display:block; text-align:center;
+    font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; min-height:56px;}
+  .cm-sari[hidden]{display:none !important;}
   .cm-amanat{font-size:12.5px; font-weight:700; color:var(--amber); margin-bottom:8px;}
   .cm-camp{display:flex; align-items:center; gap:8px; margin:10px 0 12px;}
   .cm-camp .catch-in{min-height:60px; font-size:26px;}
@@ -5171,8 +5180,15 @@
     if(box.dataset.gata) return;
     box.innerHTML =
       '<div id="cm-lucru">' +
-        '<div class="cm-cap"><span>Standul</span><span class="cm-sec" id="cm-sec"></span></div>' +
-        '<div class="cm-stand" id="cm-stand"></div>' +
+        '<div class="cm-cap"><span>Standul · atinge</span><span class="cm-sec" id="cm-sec"></span></div>' +
+        '<div class="cm-stand" id="cm-stand" role="button" tabindex="0" ' +
+          'onclick="cantarSariDeschide()" ' +
+          'onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();cantarSariDeschide();}"></div>' +
+        '<input id="cm-sari" class="cm-sari catch-in" inputmode="numeric" hidden ' +
+          'placeholder="sari la standul…" ' +
+          'onkeydown="if(event.key===\'Enter\'){event.preventDefault();cantarSariGata();}' +
+            'if(event.key===\'Escape\'){cantarSariInchide();}" ' +
+          'onblur="cantarSariGata()">' +
         '<div class="cm-nume" id="cm-nume"></div>' +
         '<div class="cm-amanat" id="cm-amanat" hidden>l-ai amânat — ai revenit la el</div>' +
         '<div class="cm-camp">' +
@@ -5220,9 +5236,11 @@
     var gata  = document.getElementById("cm-gata");
     var secGata = document.getElementById("cm-sector-gata");
 
-    /* Sectorul s-a terminat, dar ziua nu: oprire, cu un singur buton. */
-    var urm = !sir.length ? cantarUrmatorul() : "";
-    if(!sir.length && urm){
+    /* Sectorul s-a terminat, dar ziua nu: oprire, cu un singur buton. Dacă ai sărit
+       anume la cineva, oprirea nu se pune în fața ta — l-ai cerut, îl primești. */
+    var omul = cantarOmul();
+    var urm = (!sir.length && !cantarTinta) ? cantarUrmatorul() : "";
+    if(!sir.length && !cantarTinta && urm){
       lucru.hidden = true; gata.hidden = true; secGata.hidden = false;
       var amanatiAici = arbAiLui(state.participants||[]).filter(function(q){
         return (sectorOfM(q, mi)||"") === cantarSectorul && stareaLaMansa(q, mi) === "sarit";
@@ -5240,7 +5258,7 @@
     }
     secGata.hidden = true;
 
-    if(!sir.length){
+    if(!omul){
       /* Nu mai e nimic nicăieri: cântarul iese din sector, ca cifrele de sus să vorbească
          iar despre tot concursul, nu despre ultimul sector călcat. */
       cantarSectorul = "";
@@ -5252,20 +5270,80 @@
       return;
     }
     gata.hidden = true; lucru.hidden = false;
+    cantarSariInchide();          /* câmpul de sărit nu rămâne deschis peste alt om */
 
-    var p = sir[0], urm = sir[1];
+    var p = omul;
+    /* Cine urmează: primul din șir care nu e chiar cel de pe ecran. */
+    var urmatorul = sir.filter(function(q){ return q.id !== p.id; })[0];
     document.getElementById("cm-stand").textContent = standOfM(p, mi) || "—";
     document.getElementById("cm-sec").textContent   = "sector "+(sectorOfM(p, mi) || "—");
     document.getElementById("cm-nume").textContent  = nameOf(p);
     document.getElementById("cm-amanat").hidden     = (stareaLaMansa(p, mi)!=="sarit");
-    document.getElementById("cm-salv").textContent  = urm
-      ? ("Salvează · mergi la "+(standOfM(urm, mi) || "următorul"))
+    document.getElementById("cm-salv").textContent  = urmatorul
+      ? ("Salvează · mergi la "+(standOfM(urmatorul, mi) || "următorul"))
       : "Salvează · gata manșa";
+  }
+
+  /* ---------- săritura ----------
+     „Vreau mai multă libertate în aplicație." Cântarul îți dădea pescarii unul câte
+     unul, în ordinea standurilor, și atât: dacă venea unul la tine mai devreme — și la
+     baltă vine — trebuia să-l cauți în „Toți pescarii". Acum atingi numărul standului,
+     scrii altul, și cântarul sare acolo. În orice sector, la oricine.
+
+     Săritura ține un singur om: după ce l-ai cântărit (ori i-ai pus o stare), cântarul
+     se întoarce singur în șir, de unde-l lăsase. Nu-ți ține minte un ocol pe care nu
+     l-ai cerut de două ori. */
+  var cantarTinta = "";
+  function cantarOmul(){
+    if(cantarTinta){
+      var g = (state.participants||[]).filter(function(q){ return q.id===cantarTinta; })[0];
+      if(g) return g;
+      cantarTinta = "";      /* a fost șters între timp */
+    }
+    return cantarSir()[0] || null;
+  }
+  function cantarSariDeschide(){
+    var n=document.getElementById("cm-stand"), i=document.getElementById("cm-sari");
+    if(!n || !i) return;
+    n.hidden=true; i.hidden=false; i.value=""; i.focus();
+  }
+  function cantarSariInchide(){
+    var n=document.getElementById("cm-stand"), i=document.getElementById("cm-sari");
+    if(!n || !i) return;
+    i.hidden=true; n.hidden=false;
+  }
+  /* Enter și ieșirea din câmp duc amândouă aici; a doua oară nu mai are ce face. */
+  function cantarSariGata(){
+    var i=document.getElementById("cm-sari");
+    if(!i || i.hidden) return;
+    var v=(i.value||"").trim();
+    cantarSariInchide();
+    if(v) cantarSariLa(v);
+  }
+  function cantarSariLa(stand){
+    var mi=state.manche||1, s=(""+(stand||"")).trim();
+    if(!s){ cantarTinta=""; deseneazaCantarul(); return; }
+    var nr=parseInt(s,10);
+    /* „12" îl găsește și pe cel scris „12 B": standul se compară și ca text, și ca cifră
+       dinăuntru, exact ca peste tot în aplicație. */
+    var gasit=arbAiLui(state.participants||[]).filter(function(p){
+      var st=(standOfM(p, mi)||"").trim();
+      return st===s || (!isNaN(nr) && standKeyM(p, mi)===nr);
+    })[0];
+    if(!gasit){ toast("Niciun pescar pe standul "+s); return; }
+    cantarTinta=gasit.id;
+    /* Săritura e un OCOL, nu o mutare: la baltă tu rămâi unde stai, doar omul a venit la
+       tine mai devreme. Deci sectorul de acum nu se schimbă — după ce-l lămurești, te
+       întorci exact de unde erai. Prins la probă: fără asta, un om din C te muta în C și
+       te lăsa acolo. */
+    deseneazaCantarul(); improspateazaCantariti(); deseneazaSectorul();
+    var camp=document.getElementById("cm-kg"); if(camp) camp.focus();
   }
 
   function cantarSalveaza(){
     if(guard()) return;
-    var p = cantarSir()[0]; if(!p) return;
+    var p = cantarOmul(); if(!p) return;
+    cantarTinta = "";          /* ocolul s-a terminat: înapoi în șir */
     var el = document.getElementById("cm-kg"); if(!el) return;
     var v = num(el.value);
     if(!(v>0)){ toast("Scrie greutatea, ori apasă „Lampă”"); el.focus(); return; }
@@ -5276,7 +5354,8 @@
     var camp = document.getElementById("cm-kg"); if(camp) camp.focus();
   }
   function cantarStare(k){
-    var p = cantarSir()[0]; if(!p) return;
+    var p = cantarOmul(); if(!p) return;
+    cantarTinta = "";          /* ocolul s-a terminat: înapoi în șir */
     puneStarea(p.id, k);   /* el pune și în jurnal, și redesenează, și spune ce-a făcut */
   }
 
