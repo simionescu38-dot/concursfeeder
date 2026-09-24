@@ -325,4 +325,27 @@ console.log("\n=== 6. Butonul de pe Cântar a ieșit ===");
   t("…și nu mai caută al doilea", /elC/.test(isp), false);
 }
 
+/* ================================================================
+   Cutii în cutii
+   ================================================================
+   „Tot nu îmi place, cum e așezată." Măsurat la 412px, pe Acasă: blocurile late stăteau
+   pe OPT margini diferite din stânga, fiindcă treapta e o ramă, iar cardul mutat în ea
+   mai punea una — cu alt colț (16px peste 14px) și cu încă 14px de fiecare parte.
+   Rândurile foii sectorului ajungeau la 43px de marginea ecranului. */
+console.log("\n=== Cutii în cutii ===");
+{
+  t("cardul mutat în treaptă își pierde rama",
+    /\.tr-in > \.card\{background:transparent; border:0; border-radius:0; padding:0;/.test(src), true);
+  t("…și umbra", /\.tr-in > \.card\{[^}]*box-shadow:none/.test(src), true);
+  t("…iar ultimul din treaptă nu lasă spațiu gol la coadă",
+    /\.tr-in > \.card:last-child\{margin-bottom:0;\}/.test(src), true);
+  t("clasamentul sectorului își pierde și el rama",
+    /\.tr-in > \.sect-live\{background:transparent; border:0/.test(src), true);
+  /* Panoul manșei ÎȘI PĂSTREAZĂ rama: culoarea lui spune în ce stare e ziua. */
+  t("panoul manșei rămâne cu rama lui", /\.tr-in > \.sl\{/.test(src), false);
+  /* Rama nu se pierde acolo unde cardul chiar e singur pe ecran: regula e legată de
+     treaptă, nu de card. */
+  t("regula ține de treaptă, nu de card", /\.card\{background:var\(--card\); border:1px solid var\(--line\)/.test(src), true);
+}
+
 t.raport();
