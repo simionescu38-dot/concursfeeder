@@ -55,6 +55,7 @@ function pornire(pescari, optiuni) {
   };
   ctx.cantarSectorul = o.sectorCantar === undefined ? "" : o.sectorCantar;
   ctx.cantarTinta = "";
+  ctx.cantarSectorulVazut = "";
   ctx.toast = function(t){ ctx.__toast = t; };
   ctx.deseneazaCantarul = function(){};
   ctx.improspateazaCantariti = function(){};
@@ -225,14 +226,13 @@ console.log("\n=== 6. Manșa a doua ===");
 console.log("\n=== 7. Pe ecran ===");
 {
   const coaja = H.grabFunction(src, "construiesteCantarul");
-  /* Un singur buton scos în față PE ECRAN. Coaja are doi — cel de salvat și cel de
-     trecut la sectorul următor — dar cele două blocuri nu stau niciodată împreună:
-     unul e în „cm-lucru", celălalt în oprirea dintre sectoare. */
+  /* Un singur buton scos în față PE ECRAN, și acum chiar unul singur în toată coaja:
+     al doilea era al opririi dintre sectoare, iar oprirea a plecat. */
   const bucLucru = coaja.slice(coaja.indexOf("cm-lucru"), coaja.indexOf("cm-gata"));
   t("în timpul cântăririi e un singur buton albastru",
     (bucLucru.match(/btn-primary/g) || []).length, 1);
-  t("…iar oprirea dintre sectoare îl are pe al ei, în alt bloc",
-    /id="cm-sector-gata"[\s\S]*btn-primary[\s\S]*cantarTreciLaSector/.test(coaja), true);
+  t("…și niciunul în altă parte a cojii",
+    (coaja.match(/btn-primary/g) || []).length, 1);
   /* Numele sunt ale lui, din STARI_MANSA — nu unele scornite de mine. */
   t("scrie „Lampă”, cuvântul lui", /Lampă/.test(coaja), true);
   t("…și „Revin la el”, tot al lui", /Revin la el/.test(coaja), true);
@@ -335,20 +335,31 @@ console.log("\n=== 9. Sector cu sector, ca pe mal ===");
   t("…și trecerea la altă manșă", /cantarSectorul="";/.test(H.grabFunction(src, "setManche")), true);
 }
 {
-  /* Oprirea dintre sectoare: ce scrie pe ea și ce face butonul. */
+  /* „Vreau mai multă libertate." O săptămână aici a stat o oprire cu un buton —
+     „Sectorul A e gata · Trec la sectorul B" — și pe aia a arătat-o cu degetul.
+     Acum cântarul trece singur mai departe, iar mutarea se vede și se spune. */
   const coaja = H.grabFunction(src, "construiesteCantarul");
-  t("oprirea are blocul ei", /id="cm-sector-gata"/.test(coaja), true);
-  const d = H.grabFunction(src, "deseneazaCantarul");
-  t("…apare doar când sectorul s-a golit, dar mai e unul",
-    /!sir\.length && !cantarTinta && urm/.test(d), true);
-  /* Dacă ai sărit anume la cineva, oprirea nu se pune în fața ta: l-ai cerut, îl primești. */
-  t("…și nu se pune în fața ta când ai sărit la cineva",
-    /!cantarTinta/.test(d), true);
-  t("…spune ce sector s-a terminat", /"Sectorul "\+cantarSectorul\+" e gata"/.test(d), true);
-  t("…și câți ai amânat în el", /amânat, revii la el la sfârșit/.test(d), true);
-  t("butonul spune unde mergi", /"Trec la sectorul "\+urm/.test(d), true);
-  t("…iar apăsarea chiar mută cântarul acolo",
-    /cantarSectorul = cantarUrmatorul\(\)/.test(H.grabFunction(src, "cantarTreciLaSector")), true);
+  t("oprirea dintre sectoare nu mai există pe ecran",
+    /cm-sector-gata|cantarTreciLaSector/.test(coaja), false);
+  t("…nici în tot fișierul", /cm-sector-gata|cantarTreciLaSector/.test(src), false);
+
+  const c = pornire([om(1, "A", "cantarit"), om(2, "A", "cantarit"),
+                     om(9, "B"), om(17, "B"), om(20, "C")]);
+  t("sectorul A e terminat", vm.runInContext("deCantaritIn('A')", c), 0);
+  t("…iar cântarul nu se oprește: îți dă oamenii lui B", sir(c), ["9", "17"]);
+  t("…și chiar s-a mutat în B", c.cantarSectorul, "B");
+
+  /* Drumul întreg, fără nicio apăsare de trecere: A, B, C, la rând. */
+  const d = pornire([om(1, "A"), om(2, "A"), om(9, "B"), om(20, "C")]);
+  t("ziua curge dintr-o bucată, sector după sector", parcurs(d), ["1", "2", "9", "20"]);
+
+  /* Rândul care trece: se spune o dată, când sectorul chiar s-a schimbat. */
+  const des = H.grabFunction(src, "deseneazaCantarul");
+  t("mutarea e spusă printr-un rând care trece",
+    /toast\("Sectorul "\+cantarSectorulVazut\+" e gata · treci la "\+secTabel\)/.test(des), true);
+  t("…doar când chiar s-a schimbat", /secTabel !== cantarSectorulVazut/.test(des), true);
+  t("…iar la capătul manșei se uită și ce-a văzut",
+    /cantarSectorul = ""; cantarSectorulVazut = "";/.test(des), true);
 }
 {
   /* Numărătoarea de sus e a sectorului, nu a concursului. */
@@ -501,7 +512,7 @@ console.log("\n=== 11. Foaia sectorului ===");
 }
 {
   const m = H.citeste("sw.js").match(/concurs-pescuit-v(\d+)/);
-  t("telefonul ia varianta nouă (v210 sau mai nouă)", m && parseInt(m[1], 10) >= 210, true);
+  t("telefonul ia varianta nouă (v213 sau mai nouă)", m && parseInt(m[1], 10) >= 213, true);
 }
 
 t.raport();

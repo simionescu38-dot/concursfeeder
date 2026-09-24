@@ -546,7 +546,7 @@
   .cm-gata{display:flex; flex-direction:column; align-items:center; gap:8px; padding:6px 0 2px;}
   /* `display` bate `hidden`, deci ascunsul trebuie spus și aici — altfel bifa de sfârșit
      răsare sub butoane în mijlocul cântăririi. Aceeași capcană ca la „Ies din arbitraj". */
-  .cm-gata[hidden], #cm-lucru[hidden], #cm-sector-gata[hidden]{display:none !important;}
+  .cm-gata[hidden], #cm-lucru[hidden]{display:none !important;}
   .cm-bifa{width:54px; height:54px; border-radius:999px; background:var(--teal-soft);
     color:var(--teal-d); display:flex; align-items:center; justify-content:center;
     font-size:26px; font-weight:800;}
@@ -4873,7 +4873,7 @@
     state.manche=mi;
     /* Manșa nouă are altă tragere, deci alt drum pe mal: cântarul o ia de la primul
        sector, nu de unde rămăsese ieri. */
-    cantarSectorul="";
+    cantarSectorul=""; cantarSectorulVazut="";
     /* Manșa nouă vine cu ceasul ei. Fără asta, „Treci la manșa 2" lăsa pe ecran orele
        manșei 1 — demult trecute — și ziua părea încheiată înainte să înceapă. */
     if(aplicaOreleMansei(mi)){
@@ -5169,12 +5169,9 @@
     for(var w = 0; w < i; w++) if(deCantaritIn(toate[w])) return toate[w];
     return "";
   }
-  function cantarTreciLaSector(){
-    cantarSectorul = cantarUrmatorul();
-    deseneazaCantarul();
-    improspateazaCantariti();
-    deseneazaSectorul();
-  }
+  /* Ce sector avea foaia la desenarea de dinainte: numai ca să se știe când s-a
+     schimbat de la sine, și să fie spus o dată. */
+  var cantarSectorulVazut = "";
   function cantarSir(){
     var mi = state.manche||1;
     var ai = arbAiLui(state.participants||[]).slice().sort(byStandM(mi))
@@ -5192,7 +5189,17 @@
     if(sec){
       var aleLui = acum.filter(function(p){ return (sectorOfM(p, mi)||"") === sec; });
       if(aleLui.length) return aleLui;
-      if(cantarUrmatorul()) return [];   /* sectorul s-a terminat: oprire, nu trecere */
+      /* Sectorul s-a terminat. „Vreau mai multă libertate în aplicație." O săptămână
+         aici a stat o oprire cu un buton — „Sectorul A e gata · Trec la sectorul B" —
+         iar el a arătat-o cu degetul când l-am întrebat ce-l ține în lesă. Avea
+         dreptate: el își ia cântarul și pleacă pe mal oricum, fără voia aplicației.
+         Deci cântarul merge mai departe singur, iar mutarea se vede: capul foii scrie
+         alt sector, numărul mare e alt stand, și un rând care trece i-o spune. */
+      var urm = cantarUrmatorul();
+      if(urm){
+        cantarSectorul = urm;
+        return acum.filter(function(p){ return (sectorOfM(p, mi)||"") === urm; });
+      }
     }
     return amanati;
   }
@@ -5231,15 +5238,6 @@
         '<div class="cm-bifa">✓</div>' +
         '<div class="cm-gata-t" id="cm-gata-t"></div>' +
         '<div class="cm-gata-d" id="cm-gata-d"></div>' +
-      '</div>' +
-      /* Oprirea dintre sectoare. Nu e o veste, e un pas: la capătul sectorului omul își
-         ia cântarul și merge în altă parte a malului, iar butonul e chiar mersul acela. */
-      '<div class="cm-gata" id="cm-sector-gata" hidden>' +
-        '<div class="cm-bifa">✓</div>' +
-        '<div class="cm-gata-t" id="cm-sec-t"></div>' +
-        '<div class="cm-gata-d" id="cm-sec-d"></div>' +
-        '<button type="button" class="btn btn-primary mt" id="cm-sec-b" ' +
-          'onclick="cantarTreciLaSector()"></button>' +
       '</div>';
     box.dataset.gata = "1";
   }
@@ -5258,34 +5256,12 @@
     box.style.display = "";
     var lucru = document.getElementById("cm-lucru");
     var gata  = document.getElementById("cm-gata");
-    var secGata = document.getElementById("cm-sector-gata");
 
-    /* Sectorul s-a terminat, dar ziua nu: oprire, cu un singur buton. Dacă ai sărit
-       anume la cineva, oprirea nu se pune în fața ta — l-ai cerut, îl primești. */
     var omul = cantarOmul();
-    var urm = (!sir.length && !cantarTinta) ? cantarUrmatorul() : "";
-    if(!sir.length && !cantarTinta && urm){
-      lucru.hidden = true; gata.hidden = true; secGata.hidden = false;
-      var amanatiAici = arbAiLui(state.participants||[]).filter(function(q){
-        return (sectorOfM(q, mi)||"") === cantarSectorul && stareaLaMansa(q, mi) === "sarit";
-      }).length;
-      var aiSectorului = arbAiLui(state.participants||[]).filter(function(q){
-        return (sectorOfM(q, mi)||"") === cantarSectorul;
-      }).length;
-      document.getElementById("cm-sec-t").textContent = "Sectorul "+cantarSectorul+" e gata";
-      document.getElementById("cm-sec-d").textContent =
-        (aiSectorului - amanatiAici)+" din "+aiSectorului+" cântăriți"+
-        (amanatiAici ? (" · "+amanatiAici+(amanatiAici===1?" amânat, revii la el la sfârșit":
-                                           " amânați, revii la ei la sfârșit")) : "");
-      document.getElementById("cm-sec-b").textContent = "Trec la sectorul "+urm;
-      return;
-    }
-    secGata.hidden = true;
-
     if(!omul){
       /* Nu mai e nimic nicăieri: cântarul iese din sector, ca cifrele de sus să vorbească
          iar despre tot concursul, nu despre ultimul sector călcat. */
-      cantarSectorul = "";
+      cantarSectorul = ""; cantarSectorulVazut = "";
       lucru.hidden = true; gata.hidden = false;
       var ai = arbAiLui(P);
       document.getElementById("cm-gata-t").textContent = "Manșa "+mi+" e cântărită";
@@ -5300,6 +5276,12 @@
     /* Cine urmează: primul din șir care nu e chiar cel de pe ecran. */
     var urmatorul = sir.filter(function(q){ return q.id !== p.id; })[0];
     var secTabel = deseneazaTabelul(p, mi);
+    /* Sectorul s-a schimbat de la sine, fiindcă cel de dinainte s-a terminat. Nu te mai
+       opresc cu un buton, dar nici nu te las să afli singur: un rând care trece. */
+    if(secTabel && cantarSectorulVazut && secTabel !== cantarSectorulVazut){
+      toast("Sectorul "+cantarSectorulVazut+" e gata · treci la "+secTabel);
+    }
+    cantarSectorulVazut = secTabel || "";
     var titlu = document.getElementById("cm-tab-t");
     if(titlu) titlu.textContent = secTabel
       ? ("Sectorul "+secTabel+" · manșa "+mi)
@@ -6545,7 +6527,7 @@
     /* Tragere nouă înseamnă alt drum pe mal: cântarul o ia de la primul sector, nu de
        unde rămăsese înainte. Prins la probă — cu sectoarele vechi ale listei, standul 1
        era în B, iar cântarul rămânea agățat de B și după ce tragerea îl mutase în A. */
-    cantarSectorul="";
+    cantarSectorul=""; cantarSectorulVazut="";
     queueSave(); renderList();
     toast(intra.length+" "+(intra.length===1?"pescar mutat":"pescari mutați")+" pe standuri");
   }
@@ -8552,7 +8534,7 @@
      cealaltă; acum e o apăsare. */
   function pornesteMansa(){
     if(guard()) return;
-    cantarSectorul="";                 /* ziua începe de la primul sector */
+    cantarSectorul=""; cantarSectorulVazut="";   /* ziua începe de la primul sector */
     var mi=state.manche||1, now=nowSync();
     var min=durataMansei();
     if(!min){
