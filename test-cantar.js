@@ -512,7 +512,7 @@ console.log("\n=== 11. Foaia sectorului ===");
 }
 {
   const m = H.citeste("sw.js").match(/concurs-pescuit-v(\d+)/);
-  t("telefonul ia varianta nouă (v214 sau mai nouă)", m && parseInt(m[1], 10) >= 214, true);
+  t("telefonul ia varianta nouă (v215 sau mai nouă)", m && parseInt(m[1], 10) >= 215, true);
 }
 
 t.raport();

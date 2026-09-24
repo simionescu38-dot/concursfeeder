@@ -427,6 +427,21 @@ console.log("\n=== 7c. Ordinea pe ecranul de Clasament ===");
   /* Și n-a apărut niciun buton nou: tot trei sunt. */
   t("tot trei drumuri afară, niciunul nou",
     (ecran.match(/btn btn-ghost mt/g) || []).length, 3);
+
+  /* Cardul de la capăt se chema „Sezon", dar lucrul din el e sfârșitul zilei de azi.
+     Ușa spre clasamentul de sezon era a DOUA — prima e dala „Sezon" de pe Acasă. */
+  t("cardul de la capăt spune ce e în el",
+    /id="card-final"[\s\S]{0,120}Sfârșitul de concurs/.test(ecran), true);
+  t("…iar 🏁 e chiar primul lucru din el",
+    /Sfârșitul de concurs[\s\S]{0,200}amTerminatConcursul\(\)/.test(ecran), true);
+  t("a doua ușă spre sezon a plecat de pe ecranul concursului",
+    /sezon\.html/.test(ecran), false);
+  /* Dar ușa rămâne: dala „Sezon" de pe Acasă duce în același loc. */
+  t("…iar dala „Sezon” de pe Acasă e tot acolo",
+    /\["medal","Sezon","meniuLink\('sezon\.html'\)"\]/.test(src), true);
+  /* Un singur buton scos în față pe ecran. */
+  t("un singur buton albastru pe tot ecranul",
+    (ecran.match(/btn-primary/g) || []).length, 1);
 }
 
 /* ================================================================

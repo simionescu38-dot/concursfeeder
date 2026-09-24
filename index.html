@@ -1363,10 +1363,13 @@
       <div class="pliant-in" hidden><div id="statBody"></div></div>
     </div>
 
+    <!-- Cardul se chema „Sezon", dar lucrul din el e sfârșitul zilei de azi: 🏁. Ușa spre
+         clasamentul de sezon era a DOUA — prima e dala „Sezon" de pe Acasă, care duce în
+         același loc. Două uși spre același loc e tocmai ce am scos din aplicație, iar
+         aici îl și dezbrăca pe 🏁 de titlul lui. Numele e al aplicației, nu scornit: în
+         scară, treapta 6 spune de mult „Deschide sfârșitul de concurs". -->
     <div class="card mt" id="card-final">
-      <div class="sec-title">Sezon</div>
-      <a class="btn btn-ghost" style="display:block;text-align:center;text-decoration:none;" href="sezon.html"><svg class="ui-ico" aria-hidden="true"><use href="#i-trophy"></use></svg>Clasament de sezon (toate concursurile)</a>
-      <p class="hint">Combină automat rezultatele din toate concursurile sincronizate și arată clasamentul pe tot sezonul.</p>
+      <div class="sec-title">Sfârșitul de concurs</div>
       <button class="btn btn-primary mt lockhide" onclick="amTerminatConcursul()"><svg class="ui-ico" aria-hidden="true"><use href="#i-flag"></use></svg>Am terminat concursul</button>
       <p class="hint" id="necantarite" style="margin:8px 0 0;"></p>
       <p class="hint" id="archive-status">Apasă o singură dată, la sfârșit. Salvează concursul în clasamentul de sezon, se uită pe server că a ajuns cu adevărat, și abia apoi te întreabă dacă golește lista pentru data viitoare.</p>
