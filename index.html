@@ -436,6 +436,21 @@
   .treapta.urmeaza .tr-t{font-weight:600; color:var(--muted);}
   .tr-in{padding:0 13px 13px;}
   .tr-in .sl{margin:0;}
+  /* Cutii în cutii. Treapta e DEJA o ramă; cardul mutat în ea mai punea una — cu alt
+     colț (16px peste 14px), cu încă 14px de margine pe fiecare parte și cu umbra lui.
+     Măsurat la 412px, pe Acasă: rândurile foii sectorului ajungeau la 43px de marginea
+     din stânga, iar blocurile late ale ecranului stăteau pe OPT margini diferite. Două
+     rame în jurul aceluiași lucru nu spun nimic în plus — doar îngustează ecranul și
+     fac marginea zimțată. Înăuntrul treptei, cardul își pierde rama. */
+  .tr-in > .card{background:transparent; border:0; border-radius:0; padding:0;
+                 box-shadow:none; margin-bottom:10px;}
+  .tr-in > .card:last-child{margin-bottom:0;}
+  /* La fel și clasamentul sectorului: e o listă, nu o veste — n-are nevoie de ramă ca
+     să se vadă, are titlul ei. Panoul manșei (.sl) își PĂSTREAZĂ rama: culoarea lui
+     spune în ce stare e ziua (se pescuiește, s-a terminat, nu a început), iar aia e o
+     veste, nu o listă. */
+  .tr-in > .sect-live{background:transparent; border:0; border-radius:0;
+                      padding:0; margin-bottom:10px;}
   .pas-sus{margin:0 0 12px;}
   .pas-sus .sl-act{margin-top:0; background:var(--teal-soft); color:var(--teal-d);
     border:1.5px solid var(--teal); box-shadow:none;}
