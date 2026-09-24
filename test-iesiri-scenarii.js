@@ -399,6 +399,37 @@ console.log("\n=== 7b. Capul de sector ===");
 }
 
 /* ================================================================
+   7c. Ordinea de pe ecranul de Clasament
+   ================================================================
+   „Interfața nu-mi place, nu are o ordine." Măsurat la 412px, cu 35 de pescari pe
+   sectoare: primul dintre cele trei drumuri afară — copiat, imagine, Excel — începea la
+   2668px, adică trei ecrane de derulat peste tabel, tocmai la premiere, cu oamenii în
+   jurul tău. Acum stau sus, lângă butoanele de manșă. */
+console.log("\n=== 7c. Ordinea pe ecranul de Clasament ===");
+{
+  const ecran = src.slice(src.indexOf('id="view-rank"'), src.indexOf('id="view-nou"'));
+  const loc = (x) => ecran.indexOf(x);
+  t("ecranul chiar a fost găsit", ecran.length > 500, true);
+  t("întâi drumul înapoi", loc("showView('part')") < loc('class="seg"'), true);
+  t("…apoi butoanele de manșă", loc('class="seg"') < loc("copyRank()"), true);
+  t("„Copiază clasamentul” vine înaintea tabelului",
+    loc("copyRank()") < loc('id="rankBody"'), true);
+  t("…la fel imaginea pentru WhatsApp", loc("shareImage()") < loc('id="rankBody"'), true);
+  t("…și tabelul pentru Excel", loc("descarcaTabel()") < loc('id="rankBody"'), true);
+  /* Cel mai mare pește rămâne lipit de tabel, nu despărțit de butoane. */
+  t("cel mai mare pește rămâne lângă tabel",
+    loc("descarcaTabel()") < loc('id="cmmcBox"') && loc('id="cmmcBox"') < loc('id="rankBody"'), true);
+  /* Ce se citește rar rămâne la capăt: statisticile și sezonul. */
+  t("statisticile rămân la capăt", loc('id="rankBody"') < loc('id="pliant-stat"'), true);
+  /* Numele sunt ale lui, neatinse. */
+  t("numele butoanelor n-au fost schimbate",
+    /Copiază clasamentul[\s\S]*Imagine pentru WhatsApp \/ Facebook[\s\S]*Tabel pentru Excel/.test(ecran), true);
+  /* Și n-a apărut niciun buton nou: tot trei sunt. */
+  t("tot trei drumuri afară, niciunul nou",
+    (ecran.match(/btn btn-ghost mt/g) || []).length, 3);
+}
+
+/* ================================================================
    8. Harnașamentul chiar rulează codul livrat
    Dacă vreo ieșire ar fi ocolită (o excepție înghițită, un element care nu se umple),
    verificările de mai sus ar compara liste goale între ele și ar trece toate. Aici se

@@ -1344,11 +1344,16 @@
       <button id="fm-kg" class="on" onclick="setFinMethod('kg')">După kg</button>
       <button id="fm-pct" onclick="setFinMethod('pct')">După puncte</button>
     </div>
-    <div id="cmmcBox"></div>
-    <div id="rankBody"></div>
+    <!-- Cele trei drumuri afară — pe grup, pe Facebook, în Excel. Stăteau la CAPĂTUL
+         ecranului: măsurat la 412px, cu 35 de pescari pe sectoare, primul dintre ele
+         începea la 2668px, adică trei ecrane de derulat peste tabel, tocmai la premiere,
+         cu oamenii în jurul tău. Acum stau sus, lângă butoanele de manșă, unde ajungi
+         din prima privire. Tabelul coboară cu 174px — atât costă, și face. -->
     <button class="btn btn-ghost mt" onclick="copyRank()"><svg class="ui-ico" aria-hidden="true"><use href="#i-copy"></use></svg>Copiază clasamentul</button>
     <button class="btn btn-ghost mt" onclick="shareImage()"><svg class="ui-ico" aria-hidden="true"><use href="#i-image"></use></svg>Imagine pentru WhatsApp / Facebook</button>
     <button class="btn btn-ghost mt" onclick="descarcaTabel()"><svg class="ui-ico" aria-hidden="true"><use href="#i-copy"></use></svg>Tabel pentru Excel</button>
+    <div id="cmmcBox"></div>
+    <div id="rankBody"></div>
 
     <!-- Statisticile nu sunt un clasament, deci nu stăteau bine lângă „Pe sectoare" și
          „Final": se supuneau și butoanelor de manșă, deși au sens pe tot concursul.
